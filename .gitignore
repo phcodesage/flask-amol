@@ -1,0 +1,33 @@
+node_modules
+# Environment files
+.env
+myenv/
+mynewenv/
+
+# Database files
+mydatabase.db
+migrations/
+instance/
+
+# Generated files
+__pycache__/
+venv/
+
+# Project specific files
+requirements.txt
+start_app.sh
+how-to-start.txt
+
+# IDE and development tool settings
+.idea/
+.vscode/
+
+# Optional ignores
+static/
+uploaded_audios/
+uploads/
+
+# Source code (optional for closed-source projects)
+src/
+
+coturn
