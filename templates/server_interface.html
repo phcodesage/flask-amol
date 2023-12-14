@@ -378,9 +378,8 @@ input[type="color"], select {
         </div>
     </div>
     <!-- Warning Message -->
-<div id="deviceWarning" class="alert alert-warning" style="display: none;">
-    Please select a valid device before choosing a color.
-</div>
+    <div id="deviceWarning" class="alert alert-warning">
+    </div>
     <!-- Call Interface Modal -->
 <div class="modal fade" id="callInterfaceModal" tabindex="-1" role="dialog" aria-labelledby="callInterfaceModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -422,15 +421,13 @@ input[type="color"], select {
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
           <button type="button" class="btn btn-primary" id="confirmColor">Select Color</button>
-          <button onclick="startServer()">Start Server</button>
-          <button onclick="stopServer()">Stop Server</button>
-
         </div>
       </div>
     </div>
   </div>
 <script>
-const warningElement = document.getElementById('deviceWarning');
+
+let warningElement = document.getElementById('deviceWarning');
 let typingTimeout;
 let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
 let localStream;
@@ -581,14 +578,13 @@ function closeModal() {
 }
 
 
-
+//function to initialize a call to the device
 async function startCall() {
     if (!peerConnection) {
         await setupPeerConnection();
     } // Initialize the peer connection first
 
     const localVideo = document.getElementById('localVideo');
-    let warningElement = document.getElementById('deviceWarning');
     if (!warningElement) {
         warningElement = { style: {}, textContent: '' }; // Dummy object to prevent errors
     }
@@ -1185,7 +1181,6 @@ function sendChatMessage() {
 
 // Function to display a warning message to the user
 function displayWarning(message) {
-    const warningElement = document.getElementById('alert-message');
     if (warningElement) {
         warningElement.innerText = message;
         warningElement.classList.remove('d-none');
@@ -1225,69 +1220,45 @@ document.addEventListener('DOMContentLoaded', function() {
 function openColorPickerModal() {
   // Reset the color picker value or set to a default
   document.getElementById('colorPicker').value = '#ffffff';
-
   // Show the modal
   $('#colorPickerModal').modal('show');
 
-  // Close the modal after 5 seconds if no color is chosen
-  const modalTimeout = setTimeout(() => {
-    $('#colorPickerModal').modal('hide');
-  }, 5000);
 
   // When a color is confirmed, change the background color
   document.getElementById('confirmColor').onclick = function() {
-    clearTimeout(modalTimeout); // Clear the timeout to prevent auto-close
     changeBackgroundColor(); // Call your function to change the color
     $('#colorPickerModal').modal('hide'); // Hide the modal
   };
 }
 
 function changeBackgroundColor() {
-    // Trigger the color picker modal
+    $('#colorPickerModal').modal({
+        backdrop: 'static', // Prevent closing when clicking outside
+        keyboard: false // Prevent closing with the escape key
+    });
+
+    // Show the modal
     $('#colorPickerModal').modal('show');
 
-    // Define a function to close the modal, which can be canceled if user is interacting with the color picker
-    let modalTimeout;
-    function startModalTimeout() {
-        modalTimeout = setTimeout(() => {
-            $('#colorPickerModal').modal('hide');
-        }, 15000);
-    }
-
-    // When the color input gains focus, clear any existing timeout
-    $('#colorPicker').off().on('focus', function() {
-        clearTimeout(modalTimeout);
-    });
-
-    // When the color input loses focus, start the timeout to close the modal
-    $('#colorPicker').off().on('blur', function() {
-        startModalTimeout();
-    });
-
-    // When the modal opens, start the timeout
-    $('#colorPickerModal').off().on('shown.bs.modal', function() {
-        startModalTimeout();
-    });
-
-    // When a color is selected, change the background color of the target device and clear the timeout
+    // When a color is selected, change the background color of the target device
     $('#confirmColor').off().on('click', function() {
-        clearTimeout(modalTimeout); // Clear the timeout as the user has made a selection
         const targetDevice = document.getElementById('deviceSelectChat').value;
         const chosenColor = document.getElementById('colorPicker').value;
-        const warningElement = document.getElementById('deviceWarning');
 
         if (targetDevice !== 'Select a device' && targetDevice !== 'Server') {
             socket.emit('change_color', {
                 target_device: targetDevice,
                 color: chosenColor
             });
-            warningElement.style.display = "none";
+
+            // Append message to chat box indicating the successful color change
+            appendMessageToChat("Server", `Successfully changed the background color of ${targetDevice} with the color of ${chosenColor}.`, 'server-message');
+
             $('#colorPickerModal').modal('hide'); // Hide the modal once the color is selected
-        } else {
-            warningElement.style.display = "block"; // Show the warning when no device is selected
-        }
+        } 
     });
 }
+
 
 
 
@@ -1354,14 +1325,7 @@ document.getElementById('file-input').addEventListener('change', function(e) {
     }
 });
 
-
-// Add the event listener to your file input
-document.getElementById('file-input').addEventListener('change', function(e) {
-    if (this.files.length > 0) {
-        sendFileToDevice(this.files[0]);
-    }
-});
-
+// Function to add the message to chatbox as a server message
 function appendMessageToChat(sender, messageContent, className) {
     const chatContainer = document.getElementById('chat-container');
     const msg = createMessageElement(`${sender}: ${messageContent}`, className);
@@ -1370,7 +1334,6 @@ function appendMessageToChat(sender, messageContent, className) {
 }
 
 function hideWarning() {
-    const warningElement = document.getElementById('alert-message');
     if (warningElement) {
         warningElement.classList.add('d-none');
     } else {

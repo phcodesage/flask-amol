@@ -409,34 +409,32 @@ def delete_file(filename):
 
 @socketio.on('connect')
 def handle_connect():
-    device_name = session.get('device_name')
+    device_name = get_device_name_from_session()
     if device_name:
         device = Device.query.filter_by(name=device_name).first()
         if device:
             device.is_connected = True
             db.session.commit()
-
             if device_name not in connected_devices:
                 connected_devices.append(device_name)
                 emit('device_connected', {'device_name': device_name, 'status': 'connected'})
-                update_connected_devices_list()  # Call this to update the global list
+            update_connected_devices_list()
             device_socket_map[device_name] = request.sid
-
 
 
 @socketio.on('disconnect')
 def handle_disconnect():
-    disconnected_device = [device for device, sid in device_socket_map.items() if sid == request.sid]
-    if disconnected_device:
-        device_name = disconnected_device[0]
+    device_name = get_device_name_from_session()
+    if device_name in device_socket_map:
         device = Device.query.filter_by(name=device_name).first()
         if device:
             device.is_connected = False
             db.session.commit()
-        connected_devices.remove(device_name)
+            connected_devices.remove(device_name)
         del device_socket_map[device_name]
-    emit('update_device_list', connected_devices, broadcast=True)
-    
+        update_connected_devices_list()
+
+
 @socketio.on('server_typing')
 def handle_server_typing_event(data):
     print("Received a server_typing event with data:", data)

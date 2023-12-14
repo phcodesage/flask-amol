@@ -441,31 +441,6 @@ body {
         </div>
     </div>
 
-
-
-
-<!-- Call Modal -->
-<div class="modal fade" tabindex="-1" role="dialog" aria-labelledby="callModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="callModalLabel">Incoming Call</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">×</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <h5>You have an incoming call!</h5>
-                <p>Would you like to answer the call?</p>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-success" id="answerCall">Answer Call</button>
-                <button type="button" class="btn btn-danger" id="declineCall">Decline Call</button>
-            </div>
-        </div>
-    </div>
-</div>
-
         <!-- Color Picker Modal -->
 <div class="modal" id="colorPickerModal" tabindex="-1" aria-labelledby="colorPickerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -859,11 +834,7 @@ async function handleAnswerCall() {
     } catch (error) {
         console.error('Error in handleAnswerCall:', error);
     }
-}
-
-
-
-
+};
 
 
 async function populateDeviceSelection() {
