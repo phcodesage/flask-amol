@@ -1054,10 +1054,10 @@ socket.on('broadcast_message_to_server', function(data) {
     const messageText = `${senderName}: ${data.message}`; // Create the message text
 
     // Define class based on the sender
-    const className = senderName.toLowerCase() === 'server' ? 'server-message' : 'device-message';
+    const className = data.message_class || 'server-message';
     
     // Use the createMessageElement function to create the message element
-    const msgElement = createMessageElement(messageText, className, data.timestamp);
+    const msg = createMessageElement(`${data.sender_device}: ${data.message}`, messageClass, data.timestamp);
 
     // Get the chat container and append the new message element to it
     const chatContainer = document.getElementById('chat-container');

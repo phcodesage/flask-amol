@@ -682,10 +682,11 @@ function uploadFile(file) {
 }
 
     function scrollToBottom() {
-        const container = document.getElementById('chat-container');
-        container.scrollTop = container.scrollHeight;
-    }
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
 
+    //message function to server
     function sendMessage() {
     console.log("sendMessage called");
     // Reference to the message input
@@ -712,32 +713,32 @@ function uploadFile(file) {
             warningDiv.remove();
         }, 3000);
 
-        return; // Do not proceed with sending
+        return; // Do not proceed with sending empty messages
     }
+    
+    // Correct place to append the message to the chat
+    const nameOfDevice = "{{ device_name }}"; // Replace with actual device name retrieval logic
+    const messageClass = 'device-message';
 
-
-
-    // Emitting the message using socket.io
-    // This needs to be retrieved or set accordingly
-    const server = "Server";
-    const nameOfDevice = "{{ device_name }}";    // This might need to be retrieved dynamically too
+    // Emitting the message to the server with message class
     socket.emit('chat_message_to_server', {
         name: nameOfDevice,
         message: messageContent,
-        target_device: server
+        message_class: messageClass
     });
 
     // Display the sent message in the chat container
-    const msg = createMessageElement(messageContent, 'device-message');
-    msg.classList.add('chat-message', 'device-message');
-
-
+    const msg = createMessageElement(messageContent, messageClass);
+    msg.classList.add('chat-message', messageClass);
     document.getElementById('chat-container').appendChild(msg);
     msg.style.opacity = 1; // Trigger the transition
     scrollToBottom();
 
     messageInput.textContent = ''; // Clear the input field
-    }
+};
+
+ 
+
     
 
     // Toggle Timestamps

@@ -506,22 +506,24 @@ def handle_change_server_color(data):
 def handle_message_to_server(data):
     sender_device = data.get('name')
     message_content = data.get('message')
+    message_class = data.get('message_class', 'server-message')  # Default to 'server-message' if not provided
 
     # Get the current UTC timestamp
     timestamp = datetime.utcnow()
-    formatted_timestamp = timestamp.strftime('%Y-%m-%d %H:%M:%S')
 
-    # Save the message to the database with the sender's device name
-    new_message = Message(sender=sender_device, content=message_content, timestamp=timestamp)
+    # Save the message to the database with the sender's device name and class
+    new_message = Message(sender=sender_device, content=message_content, timestamp=timestamp, message_class=message_class)
     db.session.add(new_message)
     db.session.commit()
 
     # Prepare the data to send to the client
-    data['timestamp'] = formatted_timestamp
+    data['timestamp'] = timestamp.strftime('%Y-%m-%d %H:%M:%S')
     data['sender'] = sender_device
+    data['message_class'] = message_class  # Make sure to include this in the emitted data
 
     # Broadcast the message to the server interface
     emit('broadcast_message_to_server', data, broadcast=True)
+
 
 @socketio.on('change_color')
 def change_color(data):
