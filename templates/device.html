@@ -748,7 +748,8 @@ function showSuccessAlert() {
     }, 3000);
 }
 
-function createMessageElement(messageContent, className) {
+function createMessageElement(messageContent, className, existingTimestamp = null) {
+    // Create the main message div
     const msg = document.createElement('div');
     msg.classList.add('chat-message', 'animate__fadeIn', 'animate__animated');
 
@@ -762,24 +763,26 @@ function createMessageElement(messageContent, className) {
     clipboardIcon.setAttribute('title', 'Copy to Clipboard');
     clipboardIcon.innerHTML = '📋';
     clipboardIcon.addEventListener('click', function() {
-        const timestampText = msg.querySelector('.timestamp') ? msg.querySelector('.timestamp').textContent : '';
+        const timestampText = msg.querySelector('.timestamp').textContent;
         const messageText = msg.querySelector('span:not(.clipboard-icon):not(.timestamp)').textContent;
         copyToClipboard(timestampText + messageText);
     });
-    msg.appendChild(clipboardIcon); // Append clipboardIcon to the main message div
+    msg.appendChild(clipboardIcon);
 
-    // Create and append the timestamp span only if timestamps are enabled
-    if (showTimestamps) {
-        const timestamp = document.createElement('span');
-        timestamp.classList.add('timestamp');
-        timestamp.innerHTML = formatTimestamp() + ' - ';
-        msg.appendChild(timestamp); // Append timestamp to the main message div
-    }
+    // Create the timestamp span
+    const timestamp = document.createElement('span');
+    timestamp.classList.add('timestamp');
+    // If an existing timestamp is provided, use it, otherwise generate a new one
+    const timestampText = existingTimestamp ? existingTimestamp : formatTimestamp();
+    timestamp.innerHTML = timestampText + ' - ';
+    // The style.display can be set based on whether you want it shown or hidden by default
+    timestamp.style.display = 'none'; // Set this to 'none' if you want it hidden by default
+    msg.appendChild(timestamp);
 
     // Create the text content span
     const text = document.createElement('span');
     text.innerHTML = messageContent;
-    msg.appendChild(text); // Append text to the main message div
+    msg.appendChild(text);
 
     return msg;
 }
@@ -1528,12 +1531,12 @@ async function handleCallReception(offer) {;nmjbvcxz
 
 
 document.getElementById('send-notification').addEventListener('click', function() {
-    console.log('clicked the send_notification button!')
+    console.log('clicked the send_notification button!');
 
     // Emit a notification message to the server
     socket.emit('send_notification_to_server', { target_device: deviceName, notification: 'Sent a notification!' });
 
-    // Create and display the notification log message in the chatbox
+    // Create and display the notification log message in the chatbox with timestamp
     const notificationLogMessage = "Sent a notification to the server!";
     const msgElement = createMessageElement(notificationLogMessage, 'device-message');
 
@@ -1542,6 +1545,7 @@ document.getElementById('send-notification').addEventListener('click', function(
 
     scrollToBottom(); // Assuming you have a scrollToBottom function to keep the chatbox scrolled to the most recent message
 });
+
 
 
 
