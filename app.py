@@ -773,17 +773,19 @@ def fetch_messages():
     messages = Message.query.order_by(Message.timestamp).all()
 
     # Convert the messages to a format suitable for your frontend (e.g., JSON)
-    # Normalize the sender to 'server' for the server messages
     message_list = [
         {
-            "sender": "server" if msg.sender.lower() == 'server' else msg.sender,
+            "sender": msg.sender,
             "content": msg.content,
-            "timestamp": msg.timestamp.isoformat() if msg.timestamp else None
+            "timestamp": msg.timestamp.isoformat() if msg.timestamp else None,
+            "message_class": msg.message_class  # Include the message_class attribute
         }
         for msg in messages
     ]
     
     return jsonify(message_list)
+
+
 
 
 ##calling feature

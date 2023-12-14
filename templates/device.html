@@ -739,7 +739,39 @@ function uploadFile(file) {
 
  
 
-    
+function fetchMessages() {
+    fetch('/fetch_messages')
+    .then(response => response.json())
+    .then(data => {
+        const chatContainer = document.getElementById('chat-container');
+        data.forEach(message => {
+            // Apply 'server-message' class if the sender is 'server' (case-insensitive comparison)
+            const className = message.sender.toLowerCase() === 'server' ? 'server-message' : 'device-message';
+
+            // Prepend the sender's name to the message content
+            const fullMessage = `${message.sender.charAt(0).toUpperCase() + message.sender.slice(1)}: ${message.content}`;
+
+            // Create message element with the full message and the appropriate class
+            const messageElement = createMessageElement(
+                fullMessage,
+                className,
+                new Date(message.timestamp).toLocaleString()
+            );
+            chatContainer.appendChild(messageElement);
+        });
+        scrollToBottom(chatContainer);
+    })
+    .catch(error => {
+        console.error('Error fetching messages:', error);
+    });
+}
+
+// Call this function when the page is ready
+document.addEventListener('DOMContentLoaded', fetchMessages);
+
+
+// Call this function when the page is ready
+document.addEventListener('DOMContentLoaded', fetchMessages);
 
     // Toggle Timestamps
     function toggleTimestamps() {
@@ -883,7 +915,6 @@ function createMessageElement(messageContent, className, existingTimestamp = nul
     // The style.display can be set based on whether you want it shown or hidden by default
     timestamp.style.display = 'none'; // Set this to 'none' if you want it hidden by default
     msg.appendChild(timestamp);
-
     // Create the text content span
     const text = document.createElement('span');
     text.innerHTML = messageContent;
