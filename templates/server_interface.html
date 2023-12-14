@@ -471,14 +471,18 @@ function updateDropdown(elementId, deviceList) {
 
 
     // Bind the send button to the sendMessage function
-    sendMessageButton.addEventListener('click', sendChatMessage);
-
-    messageInput.addEventListener('keydown', function(event) {
-    if (event.key === 'Enter' || event.keyCode === 13) {
-        event.preventDefault(); // Prevent adding a newline in the textarea
-        sendMessageButton.click(); // Simulate a click on the send button
+    if (sendMessageButton) {
+        sendMessageButton.addEventListener('click', sendChatMessage);
     }
-})
+
+    if (messageInput) {
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' || event.keyCode === 13) {
+                event.preventDefault(); // Prevent adding a newline in the textarea
+                sendChatMessage();
+            }
+        });
+    }
   
 // Prevent default behavior (Prevent file from being opened)
 chatContainer.addEventListener('dragover', function(e) {
@@ -1151,8 +1155,16 @@ function sendChatMessage() {
     }
 
     const messageContent = messageInput.innerText.trim();
-    const targetDevice = document.getElementById('deviceSelectChat').value;
+    if (!messageContent) {
+        console.error('No message content.');
+        return; // Prevent sending empty messages
+    }
 
+    const targetDevice = document.getElementById('deviceSelectChat').value;
+    if (targetDevice === 'Select a device') {
+        console.error('No device selected.');
+        return;
+    }
 
     if (targetDevice === 'Select a device') {
         console.error('No device selected.');
@@ -1325,6 +1337,7 @@ document.getElementById('file-input').addEventListener('change', function(e) {
     }
 });
 
+/*
 // Function to add the message to chatbox as a server message
 function appendMessageToChat(sender, messageContent, className) {
     const chatContainer = document.getElementById('chat-container');
@@ -1332,7 +1345,7 @@ function appendMessageToChat(sender, messageContent, className) {
     chatContainer.appendChild(msg);
     chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
 }
-
+*/
 function hideWarning() {
     if (warningElement) {
         warningElement.classList.add('d-none');
@@ -1425,32 +1438,6 @@ function fetchMessages() {
         }
     }
 
-
-// Event listener for typing in the input
-messageInput.addEventListener('input', function() {
-    const currentText = this.innerText.trim();
-
-    // Emit an event whenever the client is typing
-    if (currentText) {
-        socket.emit('server_typing', { message: currentText });
-    }
-});
-
-// Event listener for message send (could be Enter key or Send button click)
-function sendMessage() {
-    const messageContent = messageInput.innerText.trim();
-
-    if (messageContent) {
-        // Emit the chat message to the server
-        socket.emit('chat_message', { message: messageContent });
-
-        // After sending the message, emit 'stop typing'
-        socket.emit('server_stop_typing');
-
-        // Clear the message input
-        messageInput.innerText = '';
-    }
-}
 
 
 document.addEventListener("DOMContentLoaded", function() {
