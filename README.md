@@ -36,7 +36,11 @@ This Flask-based project provides a server interface that facilitates communicat
 Contributions to the project are welcome. Please follow the standard fork, branch, and pull request workflow.
 
 ## License
-[Your preferred license]
+
+All rights reserved. Copyright 2023, PHCODESAGE.TECH.
+
+The code and associated documentation in this project are proprietary to [Your Name or Your Company's Name]. Unauthorized copying of files, via any medium, distribution, modification, public display, or performance of this material without prior written permission from PHCODESAGE.TECH is strictly prohibited.
+
 
 ## Contact
 For any queries or contributions, please contact rechceltoledo@gmail.com.
