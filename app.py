@@ -672,6 +672,29 @@ def change_background_color_request():
     return jsonify(status='fail', message='Device not found'), 400
 
 
+##upload-file route
+@app.route('/upload_file', methods=['POST'])
+def upload_file():
+    file = request.files['file']
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+
+        ensure_upload_folder_exists()
+
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+
+        # Use 'send' for broadcasting to all clients
+        socketio.emit('file_uploaded', {'filename': filename})
+
+        # Create a public URL for the uploaded file
+        public_url = url_for('static', filename=os.path.join('uploads', filename))
+
+        # Include the 'success' field in the response
+        return jsonify(success=True, status='success', message='File uploaded successfully', url=public_url), 200
+
+    return jsonify(success=False, status='fail', message='Failed to upload file'), 400
+
 @app.route('/upload_audio', methods=['POST'])
 def upload_audio():
     if 'audio' not in request.files:
