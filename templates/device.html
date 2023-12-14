@@ -129,6 +129,9 @@ body {
     display: block;
 }
 
+#call-modal-div {
+    display: none;
+}
 
 #message-input {
     background-color: var(--muted);
@@ -1145,17 +1148,25 @@ document.addEventListener('dblclick', function(e) {
     });
 
     socket.on('broadcast_message', function(data) {
-    if (data.name && data.name.trim().toLowerCase() === 'server') {
-        const messagesList = document.getElementById('chat-container');
+    const messagesList = document.getElementById('chat-container');
 
-        setTimeout(function() {
-            const msg = createMessageElement("Server: " + data.message, 'server-message', data.timestamp);  // Passing the timestamp
-            msg.classList.add('chat-message', 'server-message');
-            msg.style.opacity = 1;
-            messagesList.appendChild(msg);
-            scrollToBottom();
-        }, 0);
-    }
+    // Assuming that 'message_class' is sent correctly from the server,
+    // which should be either 'server-message' or 'device-message'.
+    const messageClass = data.message_class || 'server-message'; // Fallback to 'server-message' if undefined
+
+    // Use 'setTimeout' to ensure that the UI update happens after the current execution context.
+    setTimeout(function() {
+        // Create the message element with the received class
+        const msg = createMessageElement(`${data.sender_device}: ${data.message}`, messageClass, data.timestamp);
+        // Add the 'chat-message' class and the specific class (server or device) for styling
+        msg.classList.add('chat-message', messageClass);
+        // Ensure the message is fully visible (not transparent)
+        msg.style.opacity = 1;
+        // Append the new message to the messages list
+        messagesList.appendChild(msg);
+        // Scroll to the bottom of the chat container to show the new message
+        scrollToBottom();
+    }, 0);
 });
 
 socket.on('ice_candidate', async (data) => {

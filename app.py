@@ -89,9 +89,10 @@ class Message(db.Model):
     sender = db.Column(db.String(100), nullable=False)
     content = db.Column(db.Text, nullable=False)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    message_class = db.Column(db.String(100), nullable=False)
 
     def __repr__(self):
-        return f"Message('{self.sender}', '{self.content}', '{self.timestamp}')"
+       return f"Message('{self.sender}', '{self.content}', '{self.timestamp}', '{self.message_class}')"
 
 
 # Initialize SocketIO and other components
@@ -461,7 +462,8 @@ def handle_client_stop_typing_event(data):
 @socketio.on('chat_message_to_device')
 def handle_chat_message(data):
     target_device = data.get('target_device')
-    sender_device = data.get('sender_device')  # This is 'Server' when the server is sending the message
+    sender_device = data.get('sender_device')  # This could be 'Server' or the device name
+    message_class = data.get('message_class')  # This will be 'server-message' or 'device-message'
     
     # Get the current UTC timestamp
     timestamp = datetime.utcnow()
@@ -470,19 +472,27 @@ def handle_chat_message(data):
     # Add the formatted timestamp to the message data
     data['timestamp'] = formatted_timestamp
 
-    # Save the chat message to the database with 'Server' as the sender
-    message = Message(sender="Server", content=data['message'], timestamp=timestamp)
-    db.session.add(message)
-    db.session.commit()
-
+    # Save the chat message to the database
+    try:
+        message = Message(
+            sender=data['sender_device'],
+            content=data['message'],
+            message_class=data['message_class']
+        )
+        db.session.add(message)
+        db.session.commit()
+        print("Message saved to database.")
+    except Exception as e:
+        print("An error occurred while saving the message:", e)
+        db.session.rollback()
+    
     # Emit the message to the specified device or broadcast it
     if target_device and target_device in device_socket_map:
-        # Emit to a specific device if a target is specified and it's not the server itself
         socket_id = device_socket_map[target_device]
         emit('broadcast_message', data, room=socket_id)
     else:
-        # Broadcast to all clients if no specific device is targeted
         emit('broadcast_message', data, broadcast=True)
+
 
 @socketio.on('change_server_color')
 def handle_change_server_color(data):

@@ -1145,6 +1145,7 @@ function createMessageElement(messageContent, className, existingTimestamp = nul
     return msg;
 }
 
+//function to send message
 function sendChatMessage() {
     console.log("sendChatMessage called");
 
@@ -1163,32 +1164,34 @@ function sendChatMessage() {
     const targetDevice = document.getElementById('deviceSelectChat').value;
     if (targetDevice === 'Select a device') {
         console.error('No device selected.');
-        return;
-    }
-
-    if (targetDevice === 'Select a device') {
-        console.error('No device selected.');
         displayWarning('Please select a device to send the message to.');
         return;
     }
 
     const serverName = "Server";
+    const messageClass = 'server-message'; // Assuming this message is always sent from the server
+
     socket.emit('chat_message_to_device', {
-        name: serverName,
-        message: messageContent,
-        target_device: targetDevice
-    });
+    sender_device: serverName,
+    message: messageContent,
+    target_device: targetDevice,
+    message_class: messageClass
+}, (response) => {
+    // Handle acknowledgement
+    console.log(response);
+});
 
     // Emit the 'stop typing' event right after sending the message
     socket.emit('server_stop_typing');
 
-    const msg = createMessageElement(`${serverName}: ${messageContent}`, 'server-message');
+    const msg = createMessageElement(`${serverName}: ${messageContent}`, messageClass);
     const chatContainer = document.getElementById('chat-container');
     chatContainer.appendChild(msg);
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     messageInput.innerText = ''; // Clears the input for the next message
 }
+
 
 
 // Function to display a warning message to the user
