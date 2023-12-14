@@ -28,12 +28,13 @@
 body {
     background-color: var(--secondary);
     color: var(--text);
-    padding: 20px;
 }
 .card {
     background-color: var(--primary);
     border-color: var(--primary);
 }
+
+
 .chat-container {
     display: flex;
     flex-direction: column;
@@ -330,6 +331,12 @@ body {
 }
 
 @media (max-width: 768px) {  /* Typical breakpoint for mobile devices */
+    .card-body {
+        padding: 5px; /* Reduced padding for mobile devices */
+    }
+}
+
+@media (max-width: 768px) {  /* Typical breakpoint for mobile devices */
     #message-input {
         font-size: 1.2rem;
         padding: 15px 20px;
@@ -345,7 +352,11 @@ body {
     <div class="container-fluid">
         <div class="row">
             <div class="col-12"> <!-- Change to col-12 for full width on all devices -->
-                <h2 class="text-center my-4">Device Interface - {{ device_name }}</h2> <!-- Centered heading and added margin -->
+                <h2 class="text-center my-1 d-md-block d-lg-block d-xl-block">
+                    <small class="d-block d-sm-block d-md-none">Device Interface - {{ device_name }}</small>
+                    <span class="d-none d-sm-none d-md-block">Device Interface - {{ device_name }}</span>
+                </h2>
+                 <!-- Centered heading and added margin -->
                 <!-- Audio and video elements for call handling -->
                 <audio id="remoteAudio" autoplay></audio>
 
