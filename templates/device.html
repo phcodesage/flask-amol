@@ -319,7 +319,15 @@ body {
     object-fit: cover; /* Maintain aspect ratio */
 }
 
+#audioPreview {
+    display: none; /* Initially hidden */
+    width: 100%; /* Ensuring it takes the full width of the modal body */
+    margin-top: 10px; /* Add some space above the audio element */
+}
 
+.modal-body {
+    overflow: hidden; /* To ensure contents do not overflow */
+}
 
 @media (max-width: 768px) {  /* Typical breakpoint for mobile devices */
     #message-input {
@@ -386,7 +394,7 @@ body {
                     <button id="changeServerColorBtn" class="btn btn-primary" onclick="openColorPicker()">Change Server Color</button>
 
                     <input type="file" id="audio-input" style="display:none;" accept="audio/*">
-                    <button id="toggleRecordButton" class="btn btn-primary" type="button">Start Recording</button>
+                    <button id="toggleRecordButton" class="btn btn-primary" type="button">Send Voice Message</button>
                 </div>
                 </div>
                 
@@ -410,6 +418,30 @@ body {
             </div>
         </div>
     </div>
+
+        <!-- Audio Recording Modal -->
+    <div class="modal fade" id="audioRecordingModal" tabindex="-1" aria-labelledby="audioRecordingModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="audioRecordingModalLabel">Audio Recording</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <button id="startRecording" class="btn btn-success">Start Recording</button>
+                    <button id="stopRecording" class="btn btn-danger" disabled>Stop Recording</button>
+                    <audio id="audioPreview" controls style="display: none;"></audio>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button id="sendRecording" class="btn btn-primary" disabled>Send Recording</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
     <!-- Call Modal -->
     <div class="modal fade" id="callModal" tabindex="-1" aria-labelledby="callModalLabel" aria-hidden="true">
@@ -482,6 +514,7 @@ body {
     const chatContainer = document.getElementById('chat-container');
     const messageInput = document.getElementById('message-input');
     const sendMessageButton = document.getElementById('send-message');
+    const recordButton = document.getElementById('toggleRecordButton');
     var deviceName = "{{ device_name }}";  // Received from Flask
     let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
     let typingInProgress = false;
@@ -492,6 +525,63 @@ body {
     let pressTimer;
     let typingTimeout;
     let localStream;
+    let audioRecorder;
+    let audioBlob;
+
+
+//send voice message function
+    document.addEventListener('DOMContentLoaded', function() {
+    const startRecordingBtn = document.getElementById('startRecording');
+    const stopRecordingBtn = document.getElementById('stopRecording');
+    const sendRecordingBtn = document.getElementById('sendRecording');
+    const audioPreview = document.getElementById('audioPreview');
+
+    startRecordingBtn.addEventListener('click', async () => {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioRecorder = new MediaRecorder(stream);
+        audioChunks = [];
+
+        audioRecorder.ondataavailable = event => audioChunks.push(event.data);
+        audioRecorder.onstop = () => {
+            audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+            audioPreview.src = URL.createObjectURL(audioBlob);
+            audioPreview.style.display = 'block';
+            sendRecordingBtn.disabled = false;
+        };
+
+        audioRecorder.start();
+        startRecordingBtn.disabled = true;
+        stopRecordingBtn.disabled = false;
+    });
+
+    stopRecordingBtn.addEventListener('click', () => {
+        audioRecorder.stop();
+        stopRecordingBtn.disabled = true;
+        startRecordingBtn.disabled = false;
+    });
+
+    sendRecordingBtn.addEventListener('click', () => {
+        const formData = new FormData();
+        formData.append('audio', audioBlob, 'recording.wav');
+        // Replace this URL with your server's upload endpoint
+        fetch('/upload_audio', { method: 'POST', body: formData })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+
+                // Use the createMessageElement function to append the file name to the chatbox
+                const message = 'Voice recording uploaded: recording.wav';
+                const msgElement = createMessageElement(message, 'device-message');
+                chatContainer.appendChild(msgElement);
+            })
+            .catch(error => console.error('Error:', error));
+
+        // Reset the modal elements
+        audioPreview.style.display = 'none';
+        sendRecordingBtn.disabled = true;
+        $('#audioRecordingModal').modal('hide');
+    });
+});
 
 // Highlight the chat container when a file is dragged over it
 chatContainer.addEventListener('dragover', function(e) {
@@ -1066,39 +1156,6 @@ socket.on('ice_candidate', async (data) => {
             console.error('Failed to add ice candidate:', error);
         }
     });
-
-document.addEventListener('DOMContentLoaded', function() {
-    const toggleRecordButton = document.getElementById('toggleRecordButton');
-    let isRecording = false;
-    let recorder;
-    let audioChunks = [];
-
-    toggleRecordButton.addEventListener('click', async function() {
-        if (isRecording) {
-            // Stop recording
-            recorder.stop();
-            toggleRecordButton.textContent = "Start Recording";
-            toggleRecordButton.className = 'btn btn-primary';
-            isRecording = false;
-        } else {
-            // Start recording
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            recorder = new MediaRecorder(stream);
-            audioChunks = [];
-            recorder.ondataavailable = event => audioChunks.push(event.data);
-            recorder.onstop = async () => {
-                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                const formData = new FormData();
-                formData.append('audio', audioBlob, 'recording.wav');
-                fetch('/upload_audio', { method: 'POST', body: formData });
-            };
-            recorder.start();
-            toggleRecordButton.textContent = "Stop Recording";
-            toggleRecordButton.className = 'btn btn-danger';
-            isRecording = true;
-        }
-    });
-});
 
 
 // Socket event listener for offers
@@ -1775,7 +1832,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     recorder.start();
 
                     // Change the button's appearance and text
-                    toggleRecordButton.textContent = "Stop Recording";
                     toggleRecordButton.classList.remove('btn-primary');
                     toggleRecordButton.classList.add('btn-danger');
 
@@ -1852,7 +1908,9 @@ window.onunload = window.onbeforeunload = () => {
         }
     };
 
-
+recordButton.addEventListener('click', () => {
+    $('#audioRecordingModal').modal('show');
+});
 
 </script>
 </body>
