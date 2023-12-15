@@ -1068,27 +1068,19 @@ document.getElementById('declineCall').addEventListener('click', handleDeclineCa
 
 
 function appendFileToChatbox(file) {
-    // Create a new message div
-    const messageDiv = document.createElement('div');
-    messageDiv.className = 'chat-message device-message';
-    messageDiv.style.opacity = '1';
+    // Construct the message content with the file name
+    const messageContent = `Upload successfully! ${file.name}`;
+    const className = 'device-message'; // Assuming this is the class for file upload messages
 
-    // Add timestamp
-    const timestampSpan = document.createElement('span');
-    timestampSpan.className = 'timestamp';
-    timestampSpan.style.display = 'inline';
-    timestampSpan.innerText = new Date().toLocaleString('en-US') + ' - ';
-    messageDiv.appendChild(timestampSpan);
+    // Use the createMessageElement function to create the message element
+    // with the current timestamp
+    const messageElement = createMessageElement(messageContent, className);
 
-    // Display the success message and the file name
-    const contentSpan = document.createElement('span');
-    contentSpan.innerText = `Upload successfully! ${file.name}`;
-    messageDiv.appendChild(contentSpan);
+    // Append the message element to the chat container
+    document.querySelector('.chat-container').appendChild(messageElement);
+    messageElement.style.opacity = 1; // Ensure the message is visible
+};
 
-    // Append the messageDiv to the chat container 
-    // (you may need to adjust this selector based on your HTML structure)
-    document.querySelector('.chat-container').appendChild(messageDiv);
-}
 
 function startEditMode(chatMessageElement) {
     // Attempt to bring the browser window to the foreground
