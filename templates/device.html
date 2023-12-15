@@ -799,7 +799,16 @@ function formatDateTime(dateTime) {
         timeZoneName: 'short'
     };
     return new Date(dateTime).toLocaleString('en-US', options);
+};
+
+function displayWarning(message) {
+    var warningElement = document.getElementById('alert-message'); // Assuming you have an element with id 'warning' for displaying warnings
+    if (warningElement) {
+        warningElement.innerText = message;
+        warningElement.style.display = 'block';
+    }
 }
+
 
 function initPeerConnection() { 
     var configuration = {
@@ -1210,6 +1219,27 @@ socket.on('ice_candidate', async (data) => {
             console.error('Failed to add ice candidate:', error);
         }
     });
+
+    socket.on('server_color_changed', function(data) {
+    var newColor = data.color;
+
+    if (newColor) {
+        // Create a new message element indicating the color change
+        var successMessage = `Successfully changed the color of Server to ${newColor}`;
+        var messageElement = createMessageElement(successMessage, 'device-message');
+
+        // Append the new message element to the chat container
+        var chatContainer = document.getElementById('chat-container');
+        chatContainer.appendChild(messageElement);
+        messageElement.style.opacity = 1; // Ensure the element is visible
+
+        // Scroll the chat container to the bottom to show the latest message
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    } else {
+        // Display an error message if color change was not successful
+        displayWarning('Error: Unable to change server color.');
+    }
+});
 
 
 // Socket event listener for offers
@@ -1745,24 +1775,21 @@ document.addEventListener("DOMContentLoaded", function() {
 });
 
 // Add event listener for when the DOM has fully loaded
+// Add event listener for when the DOM has fully loaded
 document.addEventListener('DOMContentLoaded', (event) => {
     // Function to emit the color change to the server
     var confirmColorBtn = document.getElementById('confirmColor');
     confirmColorBtn.addEventListener('click', function() {
         var chosenColor = document.getElementById('colorPicker').value;
+
         // Emit the color change event to the server
         socket.emit('change_server_color', { color: chosenColor });
+
         // Close the modal
         var colorPickerModal = document.getElementById('colorPickerModal');
         colorPickerModal.style.display = 'none';
     });
-
-    // Listen for the server_color_changed event to update the server message color
-    socket.on('server_color_changed', function(data) {
-        document.documentElement.style.setProperty('--primary', data.color);
-    });
 });
-
 
 
 

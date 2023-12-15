@@ -237,6 +237,9 @@ input[type="color"], select {
     
     border: 5px solid var(--link);
 }
+#deviceWarning {
+    display: none;
+}
     </style>
 
 </head>
@@ -402,6 +405,7 @@ input[type="color"], select {
     </div>
 </div>
 
+    <div id="jitsi-container"></div>
 
     <div class="modal-backdrop fade show"></div>
     {% endif %}
@@ -724,14 +728,6 @@ document.getElementById('message-input').addEventListener('blur', function() {
     }
 });
 
-function startServer() {
-    fetch('/start_server');
-}
-
-function stopServer() {
-    fetch('/stop_server');
-}
-6
 // Helper Functions
 function playNotificationSound() {
     var audioElement = document.getElementById('notificationSound');
