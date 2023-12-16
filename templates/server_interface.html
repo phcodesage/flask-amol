@@ -258,7 +258,7 @@ input[type="color"], select {
             <div class="col-lg-10">
                 <div class="form-group">
                     <select id="deviceSelectChat" class="form-control shadow-sm">
-                        <option value="Select a device">Select a device</option>
+                        <option value="Select a device" selected disabled>Select a device</option>
                         <!-- Options will be dynamically added here by JavaScript -->
                     </select>
                 </div>
@@ -309,7 +309,7 @@ input[type="color"], select {
                     <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav') }}" preload="auto"></audio>
     
                     <!-- Chat Section -->
-                    <h4 class="mt-4">Chat</h4>
+                    
                     <div class="card text-white mb-3">
                         <div class="card-header">Chat</div>
                         <div id="alert-message" class="alert alert-primary d-none" role="alert"></div>
@@ -1060,7 +1060,7 @@ socket.on('broadcast_message_to_server', function(data) {
     chatContainer.appendChild(msg);
 
     // Ensure the element is visible
-    msgElement.style.opacity = 1;
+    msg.style.opacity = 1;
 
     // Scroll the chat container to show the latest message
     scrollToBottom(); // Make sure this function is defined to scroll the chat box to the bottom

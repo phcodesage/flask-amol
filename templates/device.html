@@ -333,6 +333,51 @@ body {
     overflow: hidden; /* To ensure contents do not overflow */
 }
 
+
+/* Full-Screen Overlay */
+.full-screen-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 9999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* Progress Bar Container */
+.progress-bar-container {
+    text-align: center;
+    width: 80%;
+    max-width: 500px;
+}
+
+/* Progress Bar */
+.progress-bar {
+    width: 100%;
+    height: 30px;
+    background-color: var(--muted);
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background-color: var(--primary);
+    width: 0%; /* Initial state */
+    transition: width 0.5s ease;
+}
+
+/* File Name and Status Text */
+.file-name, .upload-status {
+    color: var(--text);
+    margin: 10px 0;
+}
+
+
 @media (max-width: 768px) {  /* Typical breakpoint for mobile devices */
     .card-body {
         padding: 5px; /* Reduced padding for mobile devices */
@@ -507,6 +552,16 @@ body {
       </div>
     </div>
   </div>
+    <!-- Full-Screen Overlay for File Upload Progress -->
+    <div class="full-screen-overlay" id="fileUploadOverlay" style="display: none;">
+        <div class="progress-bar-container">
+            <div class="file-name" id="fileNameDisplay"></div>
+            <div class="progress-bar">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+            <div class="upload-status" id="uploadStatusDisplay"></div>
+        </div>
+    </div>
 
     <!-- File Modal -->
     <div id="fileModal" class="modal">
@@ -667,19 +722,57 @@ messageInput.addEventListener('blur', function() {
 
 
 function uploadFile(file) {
+    showProgressBar(file.name); // Show the progress bar
+
     var formData = new FormData();
     formData.append('file', file);
-    fetch('/upload_file', {method: 'POST', body: formData})
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            appendFileToChatbox(file);
-        } else {
-            // Handle the failure case if needed
-            console.error("File upload failed:", data.message);
+
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/upload_file', true);
+
+    xhr.upload.onprogress = function(event) {
+        if (event.lengthComputable) {
+            var percentComplete = (event.loaded / event.total) * 100;
+            updateProgressBar(percentComplete);
         }
-    });
+    };
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            var response = JSON.parse(xhr.responseText);
+            if (response.success) {
+                updateProgressBar(100, true, 'Upload Complete!');
+            } else {
+                updateProgressBar(0, false, 'Upload failed: ' + response.message);
+            }
+        } else {
+            updateProgressBar(0, false, 'Server error: ' + xhr.status);
+        }
+    };
+
+    xhr.send(formData);
+};
+
+
+function showProgressBar(fileName) {
+    document.getElementById('fileUploadOverlay').style.display = 'flex';
+    document.getElementById('fileNameDisplay').textContent = fileName;
+    updateProgressBar(0);
 }
+
+function updateProgressBar(percent, complete = false, message = '') {
+    var progressBarFill = document.getElementById('progressBarFill');
+    var uploadStatusDisplay = document.getElementById('uploadStatusDisplay');
+
+    progressBarFill.style.width = percent + '%';
+    uploadStatusDisplay.textContent = complete ? message : 'Uploading... ' + Math.round(percent) + '%';
+
+    if (complete) {
+        setTimeout(() => {
+            document.getElementById('fileUploadOverlay').style.display = 'none';
+        }, 3000); // Hide after 3 seconds
+    }
+};
 
 function scrollToBottom() {
             const container = document.getElementById('chat-container');
@@ -1544,9 +1637,8 @@ socket.on('receive_file', function(data) {
 });
 
 document.getElementById('file-input').addEventListener('change', function() {
-    var file = this.files[0];
-    if(file) {
-        handleFileUpload(file);
+    if (this.files.length > 0) {
+        uploadFile(this.files[0]);
     }
 });
 
