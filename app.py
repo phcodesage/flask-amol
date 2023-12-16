@@ -18,7 +18,7 @@ from eventlet import wsgi
 import eventlet
 from eventlet.green import ssl
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask import request
+from flask import request, abort
 from flask_login import LoginManager, UserMixin, login_required, login_user, logout_user, current_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_bcrypt import Bcrypt
@@ -27,6 +27,7 @@ from flask import session  # Don't forget to import session
 from flask_migrate import Migrate
 from datetime import datetime
 
+ALLOWED_IPS = ['127.0.0.1', '182.18.238.241']
 
 TURN_SECRET = "!!Bird123"  # Your static-auth-secret from turnserver.conf
 TURN_SERVER = "phcodesage.tech"  # Your TURN server address
@@ -157,6 +158,10 @@ ALLOWED_EXTENSIONS = {
         'html', 'htm', 'xhtml', 'js', 'css', 'lua', 'py', 'java', 'rb', 'c', 'cpp', 'h', 'hpp', 'cs', 'sh', 'bat', 'ini', 'pl', 'go', 'swift', 'yml', 'yaml'
     }
 
+def is_allowed_ip():
+    client_ip = request.remote_addr
+    return client_ip in ALLOWED_IPS
+
 def update_connected_devices_list():
     global connected_devices
     connected_devices = [device.name for device in Device.query.filter_by(is_connected=True).all()]
@@ -242,6 +247,8 @@ def uploaded_file(filename):
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    if not is_allowed_ip():
+        abort(403)
     error = None
     if current_user.is_authenticated:
         return redirect(url_for('server_interface'))
@@ -291,6 +298,10 @@ def login():
 
 @app.route('/server-interface', methods=['GET'])
 def server_interface():
+
+    if not is_allowed_ip():
+            abort(403)  
+
     global connected_devices
     # Update the connected devices list each time this route is accessed
     update_connected_devices_list()
@@ -921,4 +932,4 @@ if __name__ == '__main__':
 
     # Deploy as an eventlet WSGI server
     eventlet.wsgi.server(eventlet.listen((local_ip, 5000)), app)
-    app.run(debug=True)
+    app.run(debug=True,host='127.0.0.1', port=5000)
