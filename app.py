@@ -296,7 +296,7 @@ def server_interface():
     update_connected_devices_list()
 
     # Proceed to get base_url and endpoint from tunnel_url
-    base_url = "https://" + "amol.flask-server.tech"
+    base_url = "https://" + "app.phcodesage.tech"
 
     current_app.logger.info('Server interface route called')
     success = session.pop('success', None)
@@ -401,12 +401,12 @@ def error_page():
 @app.route('/delete/<filename>', methods=['DELETE'])
 def delete_file(filename):
     file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    audio_file.save(file_path)
     if os.path.exists(file_path):
         os.remove(file_path)
         return jsonify(status='success', message='File deleted successfully'), 200
     else:
         return jsonify(status='fail', message='File not found'), 404
+
 
 @socketio.on('connect')
 def handle_connect():
