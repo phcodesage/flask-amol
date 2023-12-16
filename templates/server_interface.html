@@ -1053,7 +1053,7 @@ socket.on('broadcast_message_to_server', function(data) {
     const className = data.message_class || 'server-message';
     
     // Use the createMessageElement function to create the message element
-    const msg = createMessageElement(`${data.sender_device}: ${data.message}`, messageClass, data.timestamp);
+    const msg = createMessageElement(messageText, className, data.timestamp);
 
     // Get the chat container and append the new message element to it
     const chatContainer = document.getElementById('chat-container');
@@ -1146,16 +1146,30 @@ function sendChatMessage() {
     console.log("sendChatMessage called");
 
     const messageInput = document.getElementById('message-input');
-    if (!messageInput) {
-        console.error('The message input field was not found.');
-        return;
-    }
-
-    const messageContent = messageInput.innerText.trim();
+    const messageContent = messageInput.innerText.trim().replace(/\n/g, '');
     if (!messageContent) {
-        console.error('No message content.');
-        return; // Prevent sending empty messages
-    }
+        // Check if a warning already exists
+        let existingWarning = document.querySelector('.alert-warning');
+        if (existingWarning) {
+            existingWarning.remove(); // Remove the existing warning
+        }
+
+        // Display a Bootstrap warning if the textarea is empty
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'alert alert-warning mt-2';
+        warningDiv.innerText = 'Message content cannot be empty!';
+
+        // Insert the warning just after the messageInput parent element
+        messageInput.parentNode.insertAdjacentElement('afterend', warningDiv);
+
+        // Optional: Auto-hide the warning after a few seconds
+        setTimeout(() => {
+            warningDiv.remove();
+        }, 3000);
+
+        return; // Do not proceed with sending empty messages
+    };
+
 
     const targetDevice = document.getElementById('deviceSelectChat').value;
     if (targetDevice === 'Select a device') {

@@ -681,16 +681,15 @@ function uploadFile(file) {
     });
 }
 
-    function scrollToBottom() {
+function scrollToBottom() {
             const container = document.getElementById('chat-container');
             container.scrollTop = container.scrollHeight;
         }
 
-    //message function to server
-    function sendMessage() {
+//message function to server
+function sendMessage() {
     console.log("sendMessage called");
     // Reference to the message input
-    const messageInput = document.getElementById('message-input');
     const messageContent = messageInput.textContent.trim();
 
     if (!messageContent) {
@@ -1982,8 +1981,12 @@ window.onunload = window.onbeforeunload = () => {
     };
 
 recordButton.addEventListener('click', () => {
-    $('#audioRecordingModal').modal('show');
+    $('#audioRecordingModal').modal({
+        backdrop: 'static',
+        keyboard: false
+    });
 });
+
 
 </script>
 </body>
