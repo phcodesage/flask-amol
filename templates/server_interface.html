@@ -623,7 +623,7 @@ async function startCall() {
     } catch (error) {
         console.error('Failed to create offer:', error);
     }
-}
+};
 
 
 
@@ -664,9 +664,6 @@ function endCall() {
 
 document.getElementById('startCallButton').addEventListener('click', startCall);
 
-
-
-
 document.getElementById('endCallButton').addEventListener('click', endCall);
 document.addEventListener('DOMContentLoaded', function() {
     // Fetch elements after the DOM has loaded
@@ -700,6 +697,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
+    messageInput = document.getElementById('message-input');
     const shouldShowActions = localStorage.getItem('deviceActionsVisible') === 'true';
     if (shouldShowActions) {
         showDeviceActions();

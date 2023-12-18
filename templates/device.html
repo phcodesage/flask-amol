@@ -601,6 +601,7 @@ body {
     let localStream;
     let audioRecorder;
     let audioBlob;
+    let remoteOffer = null;
 
 
 //send voice message function
@@ -1049,10 +1050,10 @@ function formatTimestamp() {
 // Function to handle call answer
 async function handleAnswerCall() {
     try {
-        if (!peerConnection) {
-            console.error('PeerConnection not initialized');
-            return;
-        }
+        if (!peerConnection || !remoteOffer) {
+        console.error('PeerConnection not initialized or remote offer is missing');
+        return;
+    }
 
         console.log('Remote offer:', remoteOffer);
         if (!remoteOffer) {
@@ -1197,7 +1198,7 @@ function startEditMode(chatMessageElement) {
         // Remove the message from the chatbox
         chatMessageElement.remove();
     }
-}
+};
 
 function setCaretToEnd(element) {
     const range = document.createRange();
@@ -1340,6 +1341,7 @@ socket.on('offer', async (data) => {
 
     try {
         // Set the received offer as the remote description
+        const offerDescription = new RTCSessionDescription(data.offer);
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
 
         // Show the call modal and populate device selections
