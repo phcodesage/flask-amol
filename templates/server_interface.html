@@ -4,6 +4,8 @@
 <head>
     <!-- Popper JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <!--Jitsi Meet Api-->
+    <script src="https://localhost:8443/external_api.js"></script>
 
     <!-- jQuery library -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -246,6 +248,9 @@ input[type="color"], select {
 
 <body>
     <div class="container-fluid mt-5">
+        <div id="jitsi-container" style="height: 500px; width: 100%;"></div>
+        <button id="startVideoCall" class="btn btn-primary">Start Video Call</button>
+
         <div class="row">
             <div class="col-12">
         <!-- Connected Devices Header -->
@@ -289,20 +294,6 @@ input[type="color"], select {
                         <h4>Voice Call</h4>
                         <button id="startCallButton" class="btn btn-success">Start Call</button>
                         <button id="endCallButton" class="btn btn-danger" disabled>End Call</button>
-                        
-                        <!-- Video Elements Container -->
-                    <div class="container my-4" id="call-modal-div">
-                        <div class="row justify-content-center">
-                            <div class="col-md-6 text-center">
-                                <label for="localVideo" class="video-label" style="display: none;">Device Video</label>
-                                <video id="localVideo" autoplay muted class="video-element"></video>
-                            </div>
-                            <div class="col-md-6 text-center">
-                                <label for="remoteVideo" class="video-label" style="display: none;">Server Video</label>
-                                <video id="remoteVideo" autoplay playsinline class="video-element"></video>
-                            </div>
-                        </div>
-                    </div>
                         
                         <audio id="remoteAudio" autoplay></audio>
                     </div>
@@ -384,28 +375,29 @@ input[type="color"], select {
     <div id="deviceWarning" class="alert alert-warning">
     </div>
     <!-- Call Interface Modal -->
-<div class="modal fade" id="callInterfaceModal" tabindex="-1" role="dialog" aria-labelledby="callInterfaceModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="callInterfaceModalLabel">Call Interface</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body">
-                <h3 id="callDeviceName">Calling: { deviceName }</h3>
-                <audio id="remoteAudio" autoplay></audio>
-                <!-- Add microphone and speaker selection if needed -->
-            </div>
-            <div class="modal-footer">
-                <button id="endCallButton" class="btn btn-danger">End Call</button>
+    <div class="modal fade" id="callInterfaceModal" tabindex="-1" role="dialog" aria-labelledby="callInterfaceModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="callInterfaceModalLabel">Call Interface</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h3 id="callDeviceName">Calling: { deviceName }</h3>
+                    <audio id="remoteAudio" autoplay></audio>
+                    <!-- Add microphone and speaker selection if needed -->
+                </div>
+                <div class="modal-footer">
+                    <button id="endCallButton" class="btn btn-danger">End Call</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
 
-    <div id="jitsi-container"></div>
+    
+
 
     <div class="modal-backdrop fade show"></div>
     {% endif %}
@@ -625,6 +617,29 @@ async function startCall() {
     }
 };
 
+function startJitsiConference(roomName) {
+    const domain = "8x8.vc"; // Use your Jitsi domain if self-hosted
+    const options = {
+        roomName: roomName,
+        width: "100%",
+        height: 500,
+        parentNode: document.getElementById('jitsi-container'),
+        interfaceConfigOverwrite: {
+            filmStripOnly: false
+        },
+        configOverwrite: {}
+    };
+
+    const api = new JitsiMeetExternalAPI(domain, options);
+
+    // Additional event listeners and configuration as needed
+}
+
+document.getElementById('startVideoCall').addEventListener('click', function() {
+    const roomName = 'flask'; // Define how you generate or select room names
+    socket.emit('start_video_call', {room_name: roomName});
+    startJitsiConference(roomName);
+});
 
 
 // Error handling for socket events

@@ -27,7 +27,7 @@ from flask import session  # Don't forget to import session
 from flask_migrate import Migrate
 from datetime import datetime
 
-ALLOWED_IPS = ['127.0.0.1', '182.18.238.241']
+ALLOWED_IPS = ['127.0.0.1', '182.18.238.241', '182.18.238.149']
 
 TURN_SECRET = "!!Bird123"  # Your static-auth-secret from turnserver.conf
 TURN_SERVER = "phcodesage.tech"  # Your TURN server address
@@ -568,7 +568,10 @@ def handle_clear_chat():
     print("Clearing chat on client side")  # Debugging line
     emit('clear_chat', broadcast=True)
 
-
+@socketio.on('start_video_call')
+def start_video_call(data):
+    room_name = data.get('room_name', 'defaultRoom')  # Use a default room name if none provided
+    emit('initiate_video_call', {'room_name': room_name}, broadcast=True)
 
 @app.route('/send_file_to_device', methods=['POST'])
 def send_file_to_device():
