@@ -232,6 +232,16 @@ body {
     background-color: rgba(0,0,0,0.7); /* Black w/ opacity */
 }
 
+/* Filename styling */
+.file-name {
+    max-width: 90%; /* Adjust as needed for the container size */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: inline-block;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
 /* Download and reject buttons */
 #downloadLink, #rejectFile {
     margin-top: 10px;
@@ -240,7 +250,6 @@ body {
     border-radius: 5px;
     cursor: pointer;
     color: white;
-    background-color: var(--primary);
 }
 
 #rejectFile {
@@ -405,6 +414,16 @@ body {
 <body>
     <div class="container-fluid">
         <div class="row">
+                <!-- File Modal -->
+                <div id="fileModal" class="modal">
+                    <div class="modal-content">
+                        <span class="close">&times;</span>
+                        <p>Do you want to download the file: <span id="fileName" class="file-name"></span>?</p>
+                        <a id="downloadLink" href="#" class="btn btn-success" download>Accept</a>
+                        <button id="rejectFile" class="btn btn-danger">Reject</button>
+                    </div>
+                </div>
+                
             <div id="jaas-container" style="height: 100%;"></div>
 
 
@@ -572,15 +591,7 @@ body {
         </div>
     </div>
 
-    <!-- File Modal -->
-    <div id="fileModal" class="modal">
-        <div class="modal-content">
-            <span class="close">&times;</span>
-            <p>Do you want to download the file: <span id="fileName"></span>?</p>
-            <a id="downloadLink" href="#" download>Accept</a>
-            <button id="rejectFile">Reject</button>
-        </div>
-    </div>
+
   
 <!-- Audio element -->
 <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav', _external=True) }}" preload="auto" playsinline></audio>
@@ -1562,40 +1573,6 @@ socket.on('receive_file', function(data) {
         console.error('Potential malicious filename detected:', filename);
         return;
     }
-
-    // Accept Call Button
-    document.getElementById('acceptCall').addEventListener('click', async () => {
-    console.log('Accept call button clicked');
-    try {
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        console.log('Got user media:', localStream);
-        const localAudio = document.getElementById('localAudio');
-        localAudio.srcObject = localStream;
-        localAudio.muted = true;
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-        console.log('Added local stream tracks to peer connection');
-    } catch (error) {
-        console.error('Error accessing the microphone:', error);
-    }
-});
-
-
-    // End Call Button
-    document.getElementById('endCall').addEventListener('click', () => {
-    console.log('End call button clicked');
-    if (peerConnection) {
-        peerConnection.close();
-        console.log('Closed peer connection');
-        peerConnection = null;
-    }
-    
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        console.log('Stopped local stream tracks');
-        localStream = null;
-    }
-    
-});
 
     // Display the modal and filename
     document.getElementById('fileName').innerText = filename;
