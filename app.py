@@ -27,7 +27,7 @@ from flask import session  # Don't forget to import session
 from flask_migrate import Migrate
 from datetime import datetime
 
-ALLOWED_IPS = ['127.0.0.1', '182.18.238.241', '182.18.238.149']
+ALLOWED_IPS = ['127.0.0.1', '182.18.238.241', '182.18.238.149', '110.54.204.206']
 
 TURN_SECRET = "!!Bird123"  # Your static-auth-secret from turnserver.conf
 TURN_SERVER = "phcodesage.tech"  # Your TURN server address

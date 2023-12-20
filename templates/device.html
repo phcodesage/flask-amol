@@ -12,10 +12,6 @@
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.socket.io/3.1.3/socket.io.js"></script>
 
-    <!--Jitsi Meet Api-->
-    <script src="https://localhost:8443/external_api.js"></script>
-    <script src='https://8x8.vc/vpaas-magic-cookie-712cbcff9eaf4c78bb2e2fb43e3d48cb/external_api.js' async></script>
-
     <style>
 
 :root {
@@ -612,11 +608,6 @@ body {
     let remoteOffer = null;
     let jitsiApi = null;
 
-    document.addEventListener('DOMContentLoaded', function() {
-    socket.on('start_video_call', function(data) {
-        startJitsiConference(data.room_name);
-    });
-});
 //send voice message function
     document.addEventListener('DOMContentLoaded', function() {
     const startRecordingBtn = document.getElementById('startRecording');
@@ -771,24 +762,6 @@ function uploadFile(file) {
 
     xhr.send(formData);
 };
-
-function startJitsiConference(roomName) {
-    const domain = "8x8.vc"; // Use your local Jitsi server
-    const options = {
-        roomName: roomName,
-        width: '100%',
-        height: 500,
-        parentNode: document.getElementById('jitsi-container'),
-        interfaceConfigOverwrite: {
-            filmStripOnly: false,
-            SHOW_JITSI_WATERMARK: false,
-        },
-        configOverwrite: {}
-    };
-
-    jitsiApi = new JitsiMeetExternalAPI(domain, options); // jitsiApi is a global variable
-};
-
 
 function showProgressBar(fileName) {
     document.getElementById('fileUploadOverlay').style.display = 'flex';

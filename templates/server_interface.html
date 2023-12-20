@@ -4,9 +4,6 @@
 <head>
     <!-- Popper JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-    <!--Jitsi Meet Api-->
-    <script src="https://localhost:8443/external_api.js"></script>
-
     <!-- jQuery library -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
@@ -248,9 +245,6 @@ input[type="color"], select {
 
 <body>
     <div class="container-fluid mt-5">
-        <div id="jitsi-container" style="height: 500px; width: 100%;"></div>
-        <button id="startVideoCall" class="btn btn-primary">Start Video Call</button>
-
         <div class="row">
             <div class="col-12">
         <!-- Connected Devices Header -->
@@ -290,6 +284,7 @@ input[type="color"], select {
                         <button id="toggle-timestamps" class="btn btn-secondary mb-2 mb-md-0" type="button" style="background-color: green;">Toggle Timestamps</button>
                     </div>
                     <!-- Voice Call Section -->
+                    <!-- Voice Call Section -->
                     <div id="voiceCallSection" class="mt-3">
                         <h4>Voice Call</h4>
                         <button id="startCallButton" class="btn btn-success">Start Call</button>
@@ -297,6 +292,7 @@ input[type="color"], select {
                         
                         <audio id="remoteAudio" autoplay></audio>
                     </div>
+
                     <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav') }}" preload="auto"></audio>
     
                     <!-- Chat Section -->
@@ -396,7 +392,6 @@ input[type="color"], select {
         </div>
     </div>
 
-    
 
 
     <div class="modal-backdrop fade show"></div>
@@ -427,7 +422,7 @@ let warningElement = document.getElementById('deviceWarning');
 let typingTimeout;
 let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
 let localStream;
-let callWindow;
+let callWindow = null;
 const remoteAudio = document.getElementById('remoteAudio');
 const MAX_FILE_SIZE = 1024 * 1024 * 1024 * 1024; // 1 Terabyte
 const notificationAudio = document.getElementById('notificationSound');
@@ -578,70 +573,6 @@ function closeModal() {
 }
 
 
-//function to initialize a call to the device
-async function startCall() {
-    if (!peerConnection) {
-        await setupPeerConnection();
-    } // Initialize the peer connection first
-
-    const localVideo = document.getElementById('localVideo');
-    if (!warningElement) {
-        warningElement = { style: {}, textContent: '' }; // Dummy object to prevent errors
-    }
-
-    try {
-        const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
-        localStream.getTracks().forEach(track => {
-            console.log('Adding local track:', track);
-            peerConnection.addTrack(track, localStream);
-        });
-
-        localVideo.srcObject = localStream;
-    } catch (error) {
-        console.error('Failed to get local stream:', error);
-        warningElement.textContent = "No media devices found. Continuing without sending media.";
-        warningElement.style.display = "block";
-        return;
-    }
-
-    try {
-        const offer = await peerConnection.createOffer();
-        console.log('Offer created:', offer);
-        await peerConnection.setLocalDescription(offer);
-        console.log('Local description set with offer.');
-
-        socket.emit('offer', { 'offer': offer });
-        console.log('Offer sent:', offer);
-    } catch (error) {
-        console.error('Failed to create offer:', error);
-    }
-};
-
-function startJitsiConference(roomName) {
-    const domain = "8x8.vc"; // Use your Jitsi domain if self-hosted
-    const options = {
-        roomName: roomName,
-        width: "100%",
-        height: 500,
-        parentNode: document.getElementById('jitsi-container'),
-        interfaceConfigOverwrite: {
-            filmStripOnly: false
-        },
-        configOverwrite: {}
-    };
-
-    const api = new JitsiMeetExternalAPI(domain, options);
-
-    // Additional event listeners and configuration as needed
-}
-
-document.getElementById('startVideoCall').addEventListener('click', function() {
-    const roomName = 'flask'; // Define how you generate or select room names
-    socket.emit('start_video_call', {room_name: roomName});
-    startJitsiConference(roomName);
-});
-
-
 // Error handling for socket events
 socket.on('connect_error', (error) => {
     console.error('Socket connect_error:', error);
@@ -655,31 +586,19 @@ socket.on('error', (error) => {
     console.error('Socket error:', error);
 });
 
-// Error handling when ending a call
-function endCall() {
-    if (peerConnection) {
-        peerConnection.close();
-        // Handle errors when closing the peer connection
-        peerConnection.oniceconnectionstatechange = (event) => {
-            if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
-                console.error('ICE Connection state error during endCall:', peerConnection.iceConnectionState);
-            }
-        };
-        localStream.getTracks().forEach(track => track.stop());
-    }
-    if (callWindow) {
-        callWindow.close();
-    }
-    socket.emit('end_call', { deviceName: "{{ device_name }}" }, (ack) => {
-        if (ack !== 'OK') {
-            console.error('Error ending call:', ack);
-        }
+
+document.getElementById('startCallButton').addEventListener('click', function() {
+        callWindow = window.open('https://meet.phcodesage.tech/', '_blank');
+        document.getElementById('endCallButton').disabled = false;
     });
-}
 
-document.getElementById('startCallButton').addEventListener('click', startCall);
-
-document.getElementById('endCallButton').addEventListener('click', endCall);
+document.getElementById('endCallButton').addEventListener('click', function() {
+    if(callWindow) {
+        callWindow.close();
+        callWindow = null;
+    }
+    this.disabled = true;
+});
 document.addEventListener('DOMContentLoaded', function() {
     // Fetch elements after the DOM has loaded
     const deviceSelectChat = document.getElementById('deviceSelectChat');
@@ -712,7 +631,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 document.addEventListener('DOMContentLoaded', function() {
-    messageInput = document.getElementById('message-input');
     const shouldShowActions = localStorage.getItem('deviceActionsVisible') === 'true';
     if (shouldShowActions) {
         showDeviceActions();
@@ -1213,7 +1131,7 @@ function sendChatMessage() {
     chatContainer.scrollTop = chatContainer.scrollHeight;
 
     messageInput.innerText = ''; // Clears the input for the next message
-}
+};
 
 
 
