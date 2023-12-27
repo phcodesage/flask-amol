@@ -1,1372 +1,773 @@
-<!DOCTYPE html>
-<html lang="en">
+    <!DOCTYPE html>
+    <html lang="en">
 
-<head>
-    <!-- Popper JS -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
-    <!-- jQuery library -->
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <head>
+        <!-- Popper JS -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+        <!-- jQuery library -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 
-    <!-- jQuery UI -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
-        integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA=="
-        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <!-- google Material icons -->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Server Interface</title>
+        <!-- jQuery UI -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.12.1/jquery-ui.min.js"
+            integrity="sha512-uto9mlQzrs59VwILcLiRYeLKPPbS/bT71da/OEBYEwcdNUk8jYIy+D176RYoop1Da+f9mvkYrmj5MCLZWEtQuA=="
+            crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <!-- google Material icons -->
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Server Interface</title>
 
-    <!-- CSS -->
-    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+        <!-- CSS -->
+        <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+        <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
 
-    <!-- JS and Libraries -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <!-- JS and Libraries -->
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+        <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+        <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>  
 
-    
-    <style>
-:root {
-    --primary: #6f42c1;
-    --secondary: #121212;
-    --success: #198754;
-    --info: #0dcaf0;
-    --warning: #fd7e14;
-    --danger: #dc3545;
-    --link: #6f42c1;
-    --text: #ccc;
-    --muted: #1a1a1a;
-}
+        
+        <style>
+    :root {
+        --primary: #6f42c1;
+        --secondary: #121212;
+        --success: #198754;
+        --info: #0dcaf0;
+        --warning: #fd7e14;
+        --danger: #dc3545;
+        --link: #6f42c1;
+        --text: #ccc;
+        --muted: #1a1a1a;
+    }
 
-body {
-    background-color: var(--secondary);
-    color: var(--text);
-    padding: 20px;
+    body {
+        background-color: var(--secondary);
+        color: var(--text);
+        padding: 20px;
 
-}
+    }
 
-.form-group, .modal-content, #chatBox, .list-group-item {
-    background-color: var(--muted);
-    border-color: var(--text);
-}
+    .form-group, .modal-content, #chatBox, .list-group-item {
+        background-color: var(--muted);
+        border-color: var(--text);
+    }
 
-input[type="color"], select {
-    background-color: var(--muted);
-    color: var(--text);
-    border-color: var(--text);
-}
+    input[type="color"], select {
+        background-color: var(--muted);
+        color: var(--text);
+        border-color: var(--text);
+    }
 
-.btn {
-    border: 1px solid var(--info);
-    background-color: var(--muted);
-    color: var(--info);
-}
+    .btn {
+        border: 1px solid var(--info);
+        background-color: var(--muted);
+        color: var(--info);
+    }
 
-.btn:hover {
-    background-color: var(--info);
-    color: var(--muted);
-}
+    .btn:hover {
+        background-color: var(--info);
+        color: var(--muted);
+    }
 
-.chat-container {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    background-color: var(--muted);
-    color: var(--text);
-    height: 500px;
-    border: none;
-    overflow-y: auto;
-    margin-bottom: 10px;
-    padding: 10px;
-    border-radius: 5px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--link) var(--secondary);
-}
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        background-color: var(--muted);
+        color: var(--text);
+        height: 500px;
+        border: none;
+        overflow-y: auto;
+        margin-bottom: 10px;
+        padding: 10px;
+        border-radius: 5px;
+        scrollbar-width: thin;
+        scrollbar-color: var(--link) var(--secondary);
+    }
 
-.chat-container.dragging {
-    border: 3px dashed #aaa;
-    background-color: rgba(255, 255, 255, 0.5);
-}
-
-
-.shadow-sm {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.11);
-}
-
-/* From device styles */
-.card {
-    background-color: var(--primary);
-    border-color: var(--primary);
-}
-/* ... [keep the remaining styles from the device interface here] */
-
-/* Server styles continued */
-.chat-box {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 10px 20px;
-}
-
-.chat-box, #messages li {
-    background-color: var(--muted);
-}
-
-#live-message {
-    background-color: #198754!important;
-}
+    .chat-container.dragging {
+        border: 3px dashed #aaa;
+        background-color: rgba(255, 255, 255, 0.5);
+    }
 
 
-/* Styling for the scrollbar */
-.chat-box::-webkit-scrollbar {
-    width: 12px;
-}
+    .shadow-sm {
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.11);
+    }
 
-.chat-box::-webkit-scrollbar-track {
-    background: #262626;
-}
+    /* From device styles */
+    .card {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
+    /* ... [keep the remaining styles from the device interface here] */
 
-.chat-box::-webkit-scrollbar-thumb {
-    background-color: var(--info);
-    border-radius: 20px;
-}
+    /* Server styles continued */
+    .chat-box {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        padding: 10px 20px;
+    }
 
-.accent-red {
-    color: var(--danger);
-}
+    .chat-box, #messages li {
+        background-color: var(--muted);
+    }
 
-.accent-green {
-    color: var(--success);
-}
-
-.accent-purple {
-    color: var(--primary);
-}
-
-#send-message {
-    background-color: var(--primary);
-    border-color: var(--primary);
-}
-
-#clear-chat {
-    background-color: var(--danger);
-    border-color: var(--danger);
-}
-
-#message-input {
-    background-color: var(--muted);
-    border-color: var(--primary);
-    color: var(--text);
-    padding: 12px 15px;
-    height: auto;
-    min-height: 40px;
-    max-height: 160px;
-    overflow-y: auto;
-    border-radius: 10px;
-    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
-    transition: box-shadow 0.2s ease, border-color 0.2s ease;
-    white-space: pre-wrap;
-    word-wrap: break-word;
-}
-
-.server-message {
-    align-self: flex-end;
-    background-color: var(--primary);
-    color: var(--text);
-}
-
-.device-message {
-    align-self: flex-start;
-    background-color: var(--info);
-    color: var(--muted)!important;
-}
-
-.chat-container .chat-message {
-    margin-bottom: 10px;
-    color: var(--text);
-    padding: 10px;
-    max-width: 80%;
-    opacity: 1;
-    transition: opacity 0.5s ease-in-out;
-    border-radius: 10px;
-    position: relative;
-    padding-right: 30px;
-    cursor: pointer; /* Add pointer cursor on hover */
-}
+    #live-message {
+        background-color: #198754!important;
+    }
 
 
-.timestamp {
-    display: none; /* hidden by default */
-    font-size: 0.8rem;
-    color: var(--danger)!important;
-    margin-right: 10px;
-    align-self: center;
-}
+    /* Styling for the scrollbar */
+    .chat-box::-webkit-scrollbar {
+        width: 12px;
+    }
 
-.chat-message .clipboard-icon {
-    display: none;
-    position: absolute;
-    right: 10px;
-    top: 50%;
-    transform: translateY(-50%);
-    cursor: pointer;
-}
+    .chat-box::-webkit-scrollbar-track {
+        background: #262626;
+    }
 
-.chat-message:hover .clipboard-icon {
-    display: block;
-}
+    .chat-box::-webkit-scrollbar-thumb {
+        background-color: var(--info);
+        border-radius: 20px;
+    }
 
-.progress {
-    line-height: 40px!important;
-}
+    .accent-red {
+        color: var(--danger);
+    }
 
-.progress-bar {
-    background-color: var(--primary);
-    /* Other styles ... */
-    transition: width 0.5s ease-in-out; /* Add this line */
-}
+    .accent-green {
+        color: var(--success);
+    }
 
-/*Call elements*/
+    .accent-purple {
+        color: var(--primary);
+    }
 
-#remoteVideo, #localVideo {
-    
-    border: 5px solid var(--link);
-}
-#deviceWarning {
-    display: none;
-}
-    </style>
+    #send-message {
+        background-color: var(--primary);
+        border-color: var(--primary);
+    }
 
-</head>
+    #clear-chat {
+        background-color: var(--danger);
+        border-color: var(--danger);
+    }
 
-<body>
-    <div class="container-fluid mt-5">
-        <div class="row">
-            <div class="col-12">
-        <!-- Connected Devices Header -->
-        <div class="col-lg-10 text-center">
-            <h2 class="mb-4" id="devices" class="{{ device_type }}">Connected Devices: {{ devices_string }}</h2>
-        </div>
-    
-        <!-- Device Select Chat -->
-        <div class="row justify-content-center">
-            <div class="col-lg-10">
-                <div class="form-group">
-                    <select id="deviceSelectChat" class="form-control shadow-sm">
-                        <option value="Select a device" selected disabled>Select a device</option>
-                        <!-- Options will be dynamically added here by JavaScript -->
-                    </select>
+    #message-input {
+        background-color: var(--muted);
+        border-color: var(--primary);
+        color: var(--text);
+        padding: 12px 15px;
+        height: auto;
+        min-height: 40px;
+        max-height: 160px;
+        overflow-y: auto;
+        border-radius: 10px;
+        box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+        transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .server-message {
+        align-self: flex-end;
+        background-color: var(--primary);
+        color: var(--text);
+    }
+
+    .device-message {
+        align-self: flex-start;
+        background-color: var(--info);
+        color: var(--muted)!important;
+    }
+
+    .chat-container .chat-message {
+        margin-bottom: 10px;
+        color: var(--text);
+        padding: 10px;
+        max-width: 80%;
+        opacity: 1;
+        transition: opacity 0.5s ease-in-out;
+        border-radius: 10px;
+        position: relative;
+        padding-right: 30px;
+        cursor: pointer; /* Add pointer cursor on hover */
+    }
+
+
+    .timestamp {
+        display: none; /* hidden by default */
+        font-size: 0.8rem;
+        color: var(--danger)!important;
+        margin-right: 10px;
+        align-self: center;
+    }
+
+    .chat-message .clipboard-icon {
+        display: none;
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+    }
+
+    .chat-message:hover .clipboard-icon {
+        display: block;
+    }
+
+    .progress {
+        line-height: 40px!important;
+    }
+
+    .progress-bar {
+        background-color: var(--primary);
+        /* Other styles ... */
+        transition: width 0.5s ease-in-out; /* Add this line */
+    }
+
+    /*Call elements*/
+
+    #remoteVideo, #localVideo {
+        display: none;
+        border: 5px solid var(--link);
+    }
+    #deviceWarning {
+        display: none;
+    }
+        </style>
+
+    </head>
+
+    <body>
+        <div class="container-fluid mt-5">
+            <div class="row">
+                <div class="row col justify-content-center">
+                                    <!-- Video Call Interface -->
+            <video id="localVideo" autoplay muted></video> <!-- Local video stream -->
+            <video id="remoteVideo" autoplay></video> <!-- Remote video stream -->
                 </div>
+                <div class="col-12">
+            <!-- Connected Devices Header -->
+            <div class="col-lg-10 text-center">
+                <h2 class="mb-4" id="devices" class="{{ device_type }}">Connected Devices: {{ devices_string }}</h2>
             </div>
-        </div>
-    
-        <!-- Device Actions -->
-        <div id="deviceActions" class="mt-3">
+        
+            <!-- Device Select Chat -->
             <div class="row justify-content-center">
                 <div class="col-lg-10">
-    
-                    <!-- Server Actions Div -->
-                    <div id="serverActions">
-                        <!-- Notification Section -->
-                        <button id="sendNotificationBtn" onclick="sendNotification()" class="btn btn-warning">Send Notification</button>
-                        
-                        <!-- Background Color Change -->
-                        <button onclick="changeBackgroundColor()" class="btn btn-primary" id="colorPicker-btn">Change Color</button>
-                        
-                        <!-- File Sending Section -->
-                        <input type="file" id="file-input" style="display: none;">
-                        <button onclick="document.getElementById('file-input').click()" class="btn btn-primary bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">Send File</button>
-                        <button id="toggleRecordButton" class="btn btn-primary" type="button">Start Recording</button>    
-                        <button id="toggle-timestamps" class="btn btn-secondary mb-2 mb-md-0" type="button" style="background-color: green;">Toggle Timestamps</button>
+                    <div class="form-group">
+                        <select id="deviceSelectChat" class="form-control shadow-sm">
+                            <option value="Select a device" selected disabled>Select a device</option>
+                            <!-- Options will be dynamically added here by JavaScript -->
+                        </select>
                     </div>
-                    <!-- Voice Call Section -->
-                    <!-- Voice Call Section -->
-                    <div id="voiceCallSection" class="mt-3">
-                        <h4>Voice Call</h4>
-                        <button id="startCallButton" class="btn btn-success">Start Call</button>
-                        <button id="endCallButton" class="btn btn-danger" disabled>End Call</button>
-                        
-                        <audio id="remoteAudio" autoplay></audio>
-                    </div>
+                </div>
+            </div>
+        
+            <!-- Device Actions -->
+            <div id="deviceActions" class="mt-3">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+        
+                        <!-- Server Actions Div -->
+                        <div id="serverActions">
+                            <!-- Notification Section -->
+                            <button id="sendNotificationBtn" onclick="sendNotification()" class="btn btn-warning">Send Notification</button>
+                            
+                            <!-- Background Color Change -->
+                            <button onclick="changeBackgroundColor()" class="btn btn-primary" id="colorPicker-btn">Change Color</button>
+                            
+                            <!-- File Sending Section -->
+                            <input type="file" id="file-input" style="display: none;">
+                            <button onclick="document.getElementById('file-input').click()" class="btn btn-primary bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">Send File</button>
+                            <button id="toggleRecordButton" class="btn btn-primary" type="button">Start Recording</button>    
+                            <button id="toggle-timestamps" class="btn btn-secondary mb-2 mb-md-0" type="button" style="background-color: green;">Toggle Timestamps</button>
+                        </div>
+                        <!-- Voice Call Section -->
+                        <!-- Voice Call Section -->
+                        <div id="voiceCallSection" class="mt-3">
+                            <h4>Voice Call</h4>
+                            <button id="startCallButton" class="btn btn-success">Start Call</button>
+                            <button id="endCallButton" class="btn btn-danger" disabled>End Call</button>
+                            
+                            <audio id="remoteAudio" autoplay></audio>
+                        </div>
 
-                    <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav') }}" preload="auto"></audio>
-    
-                    <!-- Chat Section -->
-                    
-                    <div class="card text-white mb-3">
-                        <div class="card-header">Chat</div>
-                        <div id="alert-message" class="alert alert-primary d-none" role="alert"></div>
-                        <div class="card-body">
-                            <div id="chat-container" class="chat-container">
-                                <!-- Messages will be appended here by JavaScript -->
+                        <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav') }}" preload="auto"></audio>
+        
+                        <!-- Chat Section -->
+                        
+                        <div class="card text-white mb-3">
+                            <div class="card-header">Chat</div>
+                            <div id="alert-message" class="alert alert-primary d-none" role="alert"></div>
+                            <div class="card-body">
+                                <div id="chat-container" class="chat-container">
+                                    <!-- Messages will be appended here by JavaScript -->
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="input-group mb-3"> <!-- Use Bootstrap's input group for a better mobile experience -->
-                        <div id="message-input" contenteditable="true" class="form-control" placeholder="Type a message..." aria-label="Type a message" tabindex="0" style="color: rgb(102, 102, 102);"></div>
-                        <div class="input-group-append">
-                            <button id="send-message" class="btn btn-primary" type="button">Send</button>
-                            <button id="clear-chat" class="btn btn-secondary" type="button">Clear</button>
+                        <div class="input-group mb-3"> <!-- Use Bootstrap's input group for a better mobile experience -->
+                            <div id="message-input" contenteditable="true" class="form-control" placeholder="Type a message..." aria-label="Type a message" tabindex="0" style="color: rgb(102, 102, 102);"></div>
+                            <div class="input-group-append">
+                                <button id="send-message" class="btn btn-primary" type="button">Send</button>
+                                <button id="clear-chat" class="btn btn-secondary" type="button">Clear</button>
+                            </div>
                         </div>
+                        <!-- Remaining code... -->
+        
+                        <div class="progress mb-3" style="display: none;">
+                            <div class="progress-bar mb-3" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                        </div>
+                        
+                        
+                        <div id="successMessage" class="alert alert-success d-none">
+                            <p></p>
+                        </div>
+        
+                        <!-- Uploaded Files -->
+                        <h4 class="mt-4" style="margin: 0;">Uploaded Files</h4>
+                        <ul id="uploadedFiles" class="list-group mb-3 shadow-sm"></ul>
                     </div>
-                    <!-- Remaining code... -->
-    
-                    <div class="progress mb-3" style="display: none;">
-                        <div class="progress-bar mb-3" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                      </div>
-                      
-                      
-                    <div id="successMessage" class="alert alert-success d-none">
-                        <p></p>
+                </div>
+            </div>
+        
+            <div class="row justify-content-center m-5">
+                <div class="list-group">
+                    <div id="clipboardAlert" class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert" style="display:none;">
+                        Copied to clipboard!
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
                     </div>
-    
-                    <!-- Uploaded Files -->
-                    <h4 class="mt-4" style="margin: 0;">Uploaded Files</h4>
-                    <ul id="uploadedFiles" class="list-group mb-3 shadow-sm"></ul>
+                    <a href="#" class="list-group-item list-group-item-action shadow-sm" 
+                    onclick="handleCopyClick(event, '{{ base_url }}:{{ port }}{{ endpoint }}')">
+                        Device can connect on: {{ base_url }}{{ port }}{{ endpoint }}
+                    </a>
+                </div>
+            </div>
+        
+        </div>
+        
+        {% if success %}
+        <div class="modal fade show d-block" id="successModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-success text-white">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel">Success</h5>
+                        <button type="button" class="btn-close btn-close-white" aria-label="Close" onclick="closeModal()"></button>
+                    </div>
+                    <div class="modal-body">
+                        {{ success }}
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" onclick="closeModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+            </div>
+            </div>
+        </div>
+        <!-- Warning Message -->
+        <div id="deviceWarning" class="alert alert-warning">
+        </div>
+        <!-- Call Interface Modal -->
+        <div class="modal fade" id="callInterfaceModal" tabindex="-1" role="dialog" aria-labelledby="callInterfaceModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="callInterfaceModalLabel">Call Interface</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <h3 id="callDeviceName">Calling: { deviceName }</h3>
+                        <audio id="remoteAudio" autoplay></audio>
+                        <!-- Add microphone and speaker selection if needed -->
+                    </div>
+                    <div class="modal-footer">
+                        <button id="endCallButton" class="btn btn-danger">End Call</button>
+                    </div>
                 </div>
             </div>
         </div>
-    
-        <div class="row justify-content-center m-5">
-            <div class="list-group">
-                <div id="clipboardAlert" class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert" style="display:none;">
-                    Copied to clipboard!
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <a href="#" class="list-group-item list-group-item-action shadow-sm" 
-                   onclick="handleCopyClick(event, '{{ base_url }}:{{ port }}{{ endpoint }}')">
-                    Device can connect on: {{ base_url }}{{ port }}{{ endpoint }}
-                </a>
-            </div>
-        </div>
-    
-    </div>
-    
-    {% if success %}
-    <div class="modal fade show d-block" id="successModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true" role="dialog">
+
+
+
+        <div class="modal-backdrop fade show"></div>
+        {% endif %}
+        <!-- Color Picker Modal -->
+    <div class="modal fade" id="colorPickerModal" tabindex="-1" aria-labelledby="colorPickerModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-success text-white">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Success</h5>
-                    <button type="button" class="btn-close btn-close-white" aria-label="Close" onclick="closeModal()"></button>
-                </div>
-                <div class="modal-body">
-                    {{ success }}
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-light" onclick="closeModal()">Close</button>
-                </div>
+        <div class="modal-content">
+            <div class="modal-header">
+            <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            </div>
+            <div class="modal-body">
+            <input type="color" id="colorPicker" name="color" title="Choose your color">
+            </div>
+            <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary" id="confirmColor">Select Color</button>
             </div>
         </div>
         </div>
-        </div>
     </div>
-    <!-- Warning Message -->
-    <div id="deviceWarning" class="alert alert-warning">
-    </div>
-    <!-- Call Interface Modal -->
-    <div class="modal fade" id="callInterfaceModal" tabindex="-1" role="dialog" aria-labelledby="callInterfaceModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="callInterfaceModalLabel">Call Interface</h5>
-                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <h3 id="callDeviceName">Calling: { deviceName }</h3>
-                    <audio id="remoteAudio" autoplay></audio>
-                    <!-- Add microphone and speaker selection if needed -->
-                </div>
-                <div class="modal-footer">
-                    <button id="endCallButton" class="btn btn-danger">End Call</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-
-    <div class="modal-backdrop fade show"></div>
-    {% endif %}
-    <!-- Color Picker Modal -->
-<div class="modal fade" id="colorPickerModal" tabindex="-1" aria-labelledby="colorPickerModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <input type="color" id="colorPicker" name="color" title="Choose your color">
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="button" class="btn btn-primary" id="confirmColor">Select Color</button>
-        </div>
-      </div>
-    </div>
-  </div>
-<script>
-
-let warningElement = document.getElementById('deviceWarning');
-let typingTimeout;
-let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
-let localStream;
-let callWindow = null;
-const remoteAudio = document.getElementById('remoteAudio');
-const MAX_FILE_SIZE = 1024 * 1024 * 1024 * 1024; // 1 Terabyte
-const notificationAudio = document.getElementById('notificationSound');
-const messageInput = document.getElementById('message-input');
-const sendMessageButton = document.getElementById('send-message');
-const chatContainer = document.getElementById('chat-container');
-const deviceName = document.getElementById('deviceSelectChat').value;
-const socket = io.connect(location.origin);
-let peerConnection;
-let iceCandidateQueue = [];
-
-
-function updateDropdown(elementId, deviceList) {
-    const dropdown = document.getElementById(elementId);
-    if (!dropdown) {
-        console.error(`Dropdown element with ID '${elementId}' not found.`);
-        return;
-    }
-
-    dropdown.innerHTML = '<option value="Select a device">Select a device</option>';
-
-    deviceList.forEach(device => {
-        const option = document.createElement('option');
-        option.value = device;
-        option.innerText = device;
-        dropdown.appendChild(option);
-    });
-
-    const savedSelection = localStorage.getItem('selectedDevice');
-    if (savedSelection && deviceList.includes(savedSelection)) {
-        dropdown.value = savedSelection;
-    }
-
-    localStorage.setItem('connectedDevices', JSON.stringify(deviceList));
-}
-
-
-
-    // Bind the send button to the sendMessage function
-    if (sendMessageButton) {
-        sendMessageButton.addEventListener('click', sendChatMessage);
-    }
-
-    if (messageInput) {
-        messageInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter' || event.keyCode === 13) {
-                event.preventDefault(); // Prevent adding a newline in the textarea
-                sendChatMessage();
-            }
-        });
-    }
-  
-// Prevent default behavior (Prevent file from being opened)
-chatContainer.addEventListener('dragover', function(e) {
-    e.preventDefault();
-    chatContainer.classList.add('dragging');
-});
-
-// Remove the highlight when the file leaves the chat container
-chatContainer.addEventListener('dragleave', function(e) {
-    chatContainer.classList.remove('dragging');
-});
-
-
-
-// Event listener for drag and drop into the chat container
-chatContainer.addEventListener('drop', function(e) {
-    e.preventDefault();
-    chatContainer.classList.remove('dragging');
-
-    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-        let file = e.dataTransfer.items[0].getAsFile();
-        if (file) {
-            sendFileToDevice(file);
-        }
-    }
-});
-
-messageInput.addEventListener('input', function() {
-    this.style.height = 'auto'; // Reset height
-    this.style.height = (this.scrollHeight) + 'px'; // Adjust height based on scroll height
-
-    // Handle server typing indication
-    clearTimeout(typingTimeout); // Clear previous timeout if exists
-    
-    const currentText = this.textContent.trim();  // Get current text from the input
-
-    if (currentText) {
-        // Emit current text being typed by the server
-        socket.emit('server_typing', { message: currentText });
-    }
-
-    // After a 1-second delay of not typing, emit that the server stopped typing
-    typingTimeout = setTimeout(function() {
-        socket.emit('server_stop_typing', { message: 'Server stopped typing' });
-    }, 500); // 1-second delay. Adjust as needed.
-});
-    
-function showSuccessAlert() {
-    const alertContainer = document.querySelector('.card-header'); // Assuming the div is directly inside the card-header. Adjust the selector if needed.
-
-    // Create a Bootstrap success alert
-    const successDiv = document.createElement('div');
-    successDiv.className = 'alert alert-success mt-2';
-    successDiv.innerText = 'Text successfully copied to clipboard!';
-    alertContainer.appendChild(successDiv);
-
-    // Optional: Auto-hide the success alert after a few seconds
-    setTimeout(() => {
-        successDiv.remove();
-    }, 3000);
-}
-
-function closeModal() {
-        var modal = document.getElementById('successModal');
-        var backdrop = document.querySelector('.modal-backdrop');
-        modal.parentNode.removeChild(modal);
-        backdrop.parentNode.removeChild(backdrop);
-    }
-
-    // Toggle Timestamps
-    function toggleTimestamps() {
-        console.log('clicked the toggle timestamps')
-    showTimestamps = !showTimestamps;  // Toggle the showTimestamps state
-
-    const timestamps = document.querySelectorAll('.timestamp');
-    timestamps.forEach(ts => {
-        ts.style.display = showTimestamps ? 'inline' : 'none';  // Update the visibility of all timestamps
-    });
-
-    // Update the background color of the toggle button
-    document.getElementById('toggle-timestamps').style.backgroundColor = showTimestamps ? 'green' : 'gray';
-}
-
-    // Format the date and time
-    function formatDateTime(dateTime) {
-    const options = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-        timeZoneName: 'short'
-    };
-    return new Date(dateTime).toLocaleString('en-US', options);
-}
-
-
-// Error handling for socket events
-socket.on('connect_error', (error) => {
-    console.error('Socket connect_error:', error);
-});
-
-socket.on('connect_timeout', (timeout) => {
-    console.error('Socket connection timeout:', timeout);
-});
-
-socket.on('error', (error) => {
-    console.error('Socket error:', error);
-});
-
-
-document.getElementById('startCallButton').addEventListener('click', function() {
-        callWindow = window.open('https://meet.phcodesage.tech/', '_blank');
-        document.getElementById('endCallButton').disabled = false;
-    });
-
-document.getElementById('endCallButton').addEventListener('click', function() {
-    if(callWindow) {
-        callWindow.close();
-        callWindow = null;
-    }
-    this.disabled = true;
-});
-document.addEventListener('DOMContentLoaded', function() {
-    // Fetch elements after the DOM has loaded
-    const deviceSelectChat = document.getElementById('deviceSelectChat');
-    const serverFileInput = document.getElementById('serverFileInput');
-
-    // Restore the previously saved selection from local storage
-    const savedSelection = localStorage.getItem('selectedDevice');
-    if (deviceSelectChat && savedSelection) {
-        deviceSelectChat.value = savedSelection;
-    }
-
-    // Event listener for the file input change
-    if (serverFileInput) {
-        serverFileInput.addEventListener('change', updateLabelWithFileName);
-    }
-
-    // Event listener for the device dropdown change
-    if (deviceSelectChat) {
-        deviceSelectChat.addEventListener('change', function() {
-            const selectedDevice = this.value;
-            localStorage.setItem('selectedDevice', selectedDevice);
-
-            const actionsDiv = document.getElementById('deviceActions');
-            actionsDiv.style.display = (selectedDevice !== 'Select a device') ? 'block' : 'none';
-            if (selectedDevice !== "Select a device") {
-                socket.emit('device_selected', selectedDevice);
-            }
-        });
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const shouldShowActions = localStorage.getItem('deviceActionsVisible') === 'true';
-    if (shouldShowActions) {
-        showDeviceActions();
-    } else {
-        hideDeviceActions();
-    }
-});
-
-document.getElementById("toggle-timestamps").addEventListener("click", toggleTimestamps);
-
-document.getElementById('message-input').addEventListener('focus', function() {
-    if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
-        // Hide buttons when input receives focus
-        document.getElementById('toggle-timestamps').style.display = 'none';
-        document.getElementById('upload-file').style.display = 'none';
-        document.getElementById('send-notification').style.display = 'none';
-    }
-});
-
-document.getElementById('message-input').addEventListener('blur', function() {
-    if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
-        // Show buttons when input loses focus
-        document.getElementById('toggle-timestamps').style.display = '';
-        document.getElementById('upload-file').style.display = '';
-        document.getElementById('send-notification').style.display = '';
-    }
-});
-
-// Helper Functions
-function playNotificationSound() {
-    var audioElement = document.getElementById('notificationSound');
-    if (audioElement) {
-        audioElement.currentTime = 0; // Reset audio to the start
-        audioElement.play().catch(e => console.error("Error playing sound: ", e));
-    }
-}
-
-
-const savedDevices = JSON.parse(localStorage.getItem('connectedDevices') || '[]');
-
-document.addEventListener('DOMContentLoaded', function() {
-updateDropdown('deviceSelectChat', savedDevices);
-});
-
-function showDeviceActions() {
-    const deviceActions = document.getElementById('deviceActions');
-    deviceActions.style.display = 'block';
-    localStorage.setItem('deviceActionsVisible', 'true');
-}
-
-function hideDeviceActions() {
-    const deviceActions = document.getElementById('deviceActions');
-    deviceActions.style.display = 'none';
-    localStorage.setItem('deviceActionsVisible', 'false');
-}
-
-
-function updateLabelWithFileName(event) {
-    const fileInput = event.target;
-    const progressBarContainer = document.querySelector('.progressbar');
-
-    if (fileInput.files.length) {
-        const filename = fileInput.files[0].name;
-        const label = document.querySelector("label[for='serverFileInput']");
-        label.textContent = filename;
-
-        // Show the progress bar and reset progress & counter
-        progressBarContainer.style.display = "block";
-        $('.counter').text('0%');
-        $('.progressbar .progress').css('width', '0%');
-    } else {
-        // Hide the progress bar if no file is selected
-        progressBarContainer.style.display = "none";
-    }
-}
-
-function copyToClipboard(text) {
-    const textarea = document.createElement('textarea');
-    textarea.value = text;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    document.body.removeChild(textarea);
-
-    // After copying, display the success alert
-    showSuccessAlert();
-}
-
-    function handleCopyClick(event, text) {
-        event.preventDefault();
-        copyToClipboard(text);
-        showClipboardAlert();
-    }
-
-    function showClipboardAlert() {
-        const alertElement = document.getElementById("clipboardAlert");
-
-if (alertElement) {
-    alertElement.style.display = "block";
-
-    // Hide the alert after 3 seconds
-    setTimeout(function() {
-        alertElement.style.display = "none";
-    }, 3000);
-} else {
-    console.warn("Clipboard alert element not found!");
-}
-}
-
-function setupPeerConnection() {
-    try {
-        const iceConfiguration = {
-            iceServers: [
-                // Google's public STUN server
-                {
-                    urls: 'stun:stun.metered.ca:3478'
-                },
-                {
-                    urls: 'turn:a.relay.metered.ca:80?transport=tcp', // Your TURN server URL
-                    username: '3d82e681ed505cd66beb3a89', // Your TURN server username
-                    credential: 'm+37zxZe9EXlJjOo' // Your TURN server credential
-                }
-            ]
-        };
-
-        peerConnection = new RTCPeerConnection(iceConfiguration);
-        console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
-
-        // Rest of the peer connection setup...
-        peerConnection.onicecandidate = event => {
-            if (event.candidate) {
-                console.log('New ICE candidate:', event.candidate);
-                socket.emit('ice_candidate', { candidate: event.candidate });
-            }
-        };
-
-        peerConnection.ontrack = event => {
-            console.log('New track received:', event.track.kind);
-            if (event.streams && event.streams[0]) {
-                const stream = event.streams[0];
-                if (event.track.kind === 'audio') {
-                    document.getElementById('remoteAudio').srcObject = stream;
-                } else if (event.track.kind === 'video') {
-                    document.getElementById('remoteVideo').srcObject = stream;
-                }
-            }
-        };
-        peerConnection.oniceconnectionstatechange = event => {
-            console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
-            if (peerConnection.iceConnectionState === 'failed') {
-                console.error('ICE Connection Failed');
-            }
-        };
-        // Additional setup as needed
-        return peerConnection;
-
-
-    } catch (error) {
-        console.error('Failed to set up peer connection:', error);
-        return null;
-    }
-}
-
-
-
-
-
-// Handling the answer
-socket.on('answer', async data => {
-    try {
-        const remoteDesc = new RTCSessionDescription(data.answer);
-        await peerConnection.setRemoteDescription(remoteDesc);
-
-        // Process queued candidates
-        while (iceCandidateQueue.length) {
-            const candidate = iceCandidateQueue.shift();
-            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
-        }
-    } catch (e) {
-        console.error('Error setting remote description from answer:', e);
-    }
-});
-
-
-
-socket.on('ice_candidate', async data => {
-    try {
-        if (peerConnection.remoteDescription) {
-            // If remote description is set, add the candidate
-            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-        } else {
-            // Otherwise, queue the candidate
-            iceCandidateQueue.push(data.candidate);
-        }
-    } catch (e) {
-        console.error('Error adding received ice candidate:', e);
-    }
-});
-
-
-
-
-socket.on('connect', () => {
-    console.log('Connected to server'); 
-});
-
-
-socket.on('disconnect', () => {
-    console.log('Disconnected from server');
-});
-
-
-// Socket Event Handlers
-// Socket Event Handlers
-socket.on('update_device_list', function(connected_devices) {
-    console.log('Connected devices:', connected_devices);  // Debugging line
-
-    // Update h2 element
-    const h2Devices = document.getElementById('devices');
-    if (connected_devices.length === 0) {
-        h2Devices.textContent = "No devices connected!";
-    } else {
-        const deviceLabel = connected_devices.length > 1 ? 'Connected Devices' : 'Connected Device';
-        h2Devices.textContent = `${deviceLabel}: ${connected_devices.join(', ')}`;
-    }
-
-    // Update deviceSelectChat dropdown
-    const deviceSelect = document.getElementById('deviceSelectChat');
-    deviceSelect.innerHTML = '<option value="Select a device">Select a device</option>';
-    connected_devices.forEach(device => {
-        const option = document.createElement('option');
-        option.value = device;
-        option.textContent = device;
-        deviceSelect.appendChild(option);
-    });
-
-    // Restore the previously saved selection from local storage
-    const savedSelection = localStorage.getItem('selectedDevice');
-    if (savedSelection && connected_devices.includes(savedSelection)) {
-        deviceSelect.value = savedSelection;
-    }
-    updateDropdown('deviceSelectChat', connected_devices);
-});
-
-
-
-
-socket.on('file_uploaded', function(data) {
-    const filesUl = document.getElementById('uploadedFiles');
-    const li = document.createElement('li');
-    li.className = "list-group-item d-flex justify-content-between align-items-center";
-    
-    // Add filename with download link
-    const fileLink = document.createElement('a');
-    fileLink.href = `/download/${data.filename}`;
-    fileLink.setAttribute("download", "");
-    fileLink.textContent = data.filename;
-    li.appendChild(fileLink);
-
-    // Add download button
-    const downloadBtn = document.createElement('a');
-    downloadBtn.href = `/download/${data.filename}`;
-    downloadBtn.setAttribute("download", "");
-    downloadBtn.className = "btn btn-primary btn-sm";
-    downloadBtn.textContent = "Download";
-    li.appendChild(downloadBtn);
-
-    // Add delete button
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = "btn btn-danger btn-sm ml-2";
-    deleteBtn.textContent = "Delete";
-    deleteBtn.onclick = function() {
-        // Here, you would typically make an AJAX call to the server to delete the file
-        // Once the server responds that the file is deleted, remove the list item from the UI
-        fetch(`/delete/${data.filename}`, { method: 'DELETE' })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                li.remove();
-            } else {
-                console.error("Error deleting file:", data.message);
-            }
-        });
-    };
-    li.appendChild(deleteBtn);
-
-    filesUl.appendChild(li);
-});
-
-socket.on('server_notification', function(data) {
-    const sender = data.device;
-    const notificationMessage = data.notification || 'sent you a notification!';
-
-    // Play the notification sound
-    document.getElementById("notificationSound").play();
-
-    // Append the notification message to the chat box
-    const chatContainer = document.getElementById('chat-container');
-    const notificationElement = createMessageElement(`${sender}: ${notificationMessage}`, 'device-message');
-    
-    // Append the newly created notification element to the chat container
-    chatContainer.appendChild(notificationElement);
-    notificationElement.style.opacity = 1; // Make sure your CSS transitions can handle this
-
-    scrollToBottom(); // Scroll to the bottom of the chatbox
-});
-
-
-function sendNotification() {
-    console.log("sendNotificationButton pressed!");
-    const targetDevice = document.getElementById('deviceSelectChat').value;
-    const sender = "Server";  // This is the sender's name, in this case, "Server".
-
-    // Ensure that a valid device is selected
-    if (targetDevice !== 'Select a device' && targetDevice !== '') {
-        // Emit an event to the server to send the notification to the chosen device
-        socket.emit('send_notification_to_device', {
-            name: sender,
-            message: "Sent a notification!",
-            target_device: targetDevice
-        });
-
-        // Optionally append the notification to the chatbox as a server message
-        const messageContent = `${sender} Sent a notification to ${targetDevice}`;
-        createMessageElement(messageContent);
-
-        scrollToBottom(); // Scroll to the bottom of the chatbox
-
-        // Play the notification sound
-        playNotificationSound();
-    } else {
-        // Handle the case where no valid device is selected
-        console.error("Please select a valid device to send a notification.");
-    }
-}
-
-
-socket.on('broadcast_message_to_server', function(data) {
-    console.log('Received message:', data);
-
-    // Check if there's a special notification to play a sound
-    if (data.message === "Sent a notification!") {
-        notificationAudio.play(); // Play a notification sound if defined
-    }
-
-    // Prepare the sender's name and message content
-    const senderName = data.name.trim(); // Get the sender's name from the data object
-    const messageText = `${senderName}: ${data.message}`; // Create the message text
-
-    // Define class based on the sender
-    const className = data.message_class || 'server-message';
-    
-    // Use the createMessageElement function to create the message element
-    const msg = createMessageElement(messageText, className, data.timestamp);
-
-    // Get the chat container and append the new message element to it
-    const chatContainer = document.getElementById('chat-container');
-    chatContainer.appendChild(msg);
-
-    // Ensure the element is visible
-    msg.style.opacity = 1;
-
-    // Scroll the chat container to show the latest message
-    scrollToBottom(); // Make sure this function is defined to scroll the chat box to the bottom
-});
-
-
-
-
-
-// Event Handlers
-document.getElementById('deviceSelectChat').addEventListener('change', function() {
-    const selectedDevice = this.value;
-    localStorage.setItem('selectedDevice', selectedDevice);
-
-    const actionsDiv = document.getElementById('deviceActions');
-    actionsDiv.style.display = (selectedDevice !== 'Select a device') ? 'block' : 'none';
-    if (selectedDevice !== "Select a device") {
-        // Emit event to the server with the selected device
-        socket.emit('device_selected', selectedDevice);
-    }
-});
-
-function formatTimestamp() {
-    const options = {
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: true,
-        timeZoneName: 'short'
-    };
-    return new Date().toLocaleString('en-US', options);
-}
-
-function scrollToBottom() {
-        const container = document.getElementById('chat-container');
-        container.scrollTop = container.scrollHeight;
-    }
-
-function createMessageElement(messageContent, className, existingTimestamp = null) {
-    // Create the main message div
-    const msg = document.createElement('div');
-    msg.classList.add('chat-message', 'animate__fadeIn', 'animate__animated');
-
-    if (className) {
-        msg.classList.add(className);
-    }
-
-    // Create the clipboard icon span
-    const clipboardIcon = document.createElement('span');
-    clipboardIcon.classList.add('clipboard-icon');
-    clipboardIcon.setAttribute('title', 'Copy to Clipboard');
-    clipboardIcon.innerHTML = '📋';
-    clipboardIcon.addEventListener('click', function() {
-        const timestampText = msg.querySelector('.timestamp').textContent;
-        const messageText = msg.querySelector('span:not(.clipboard-icon):not(.timestamp)').textContent;
-        copyToClipboard(timestampText + messageText);
-    });
-    msg.appendChild(clipboardIcon);
-
-    // Create the timestamp span
-    const timestamp = document.createElement('span');
-    timestamp.classList.add('timestamp');
-    // If an existing timestamp is provided, use it, otherwise generate a new one
-    const timestampText = existingTimestamp ? existingTimestamp : formatTimestamp();
-    timestamp.innerHTML = timestampText + ' - ';
-    // The style.display can be set based on whether you want it shown or hidden by default
-    timestamp.style.display = 'none'; // Set this to 'none' if you want it hidden by default
-    msg.appendChild(timestamp);
-
-    // Create the text content span
-    const text = document.createElement('span');
-    text.innerHTML = messageContent;
-    msg.appendChild(text);
-
-    return msg;
-}
-
-//function to send message
-function sendChatMessage() {
-    console.log("sendChatMessage called");
-
+    <script>
+
+    let warningElement = document.getElementById('deviceWarning');
+    let typingTimeout;
+    let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
+    let localStream;
+    let callWindow = null;
+    const remoteAudio = document.getElementById('remoteAudio');
+    const MAX_FILE_SIZE = 1024 * 1024 * 1024 * 1024; // 1 Terabyte
+    const notificationAudio = document.getElementById('notificationSound');
     const messageInput = document.getElementById('message-input');
-    const messageContent = messageInput.innerText.trim().replace(/\n/g, '');
-    if (!messageContent) {
-        // Check if a warning already exists
-        let existingWarning = document.querySelector('.alert-warning');
-        if (existingWarning) {
-            existingWarning.remove(); // Remove the existing warning
-        }
-
-        // Display a Bootstrap warning if the textarea is empty
-        const warningDiv = document.createElement('div');
-        warningDiv.className = 'alert alert-warning mt-2';
-        warningDiv.innerText = 'Message content cannot be empty!';
-
-        // Insert the warning just after the messageInput parent element
-        messageInput.parentNode.insertAdjacentElement('afterend', warningDiv);
-
-        // Optional: Auto-hide the warning after a few seconds
-        setTimeout(() => {
-            warningDiv.remove();
-        }, 3000);
-
-        return; // Do not proceed with sending empty messages
-    };
-
-
-    const targetDevice = document.getElementById('deviceSelectChat').value;
-    if (targetDevice === 'Select a device') {
-        console.error('No device selected.');
-        displayWarning('Please select a device to send the message to.');
-        return;
-    }
-
-    const serverName = "Server";
-    const messageClass = 'server-message'; // Assuming this message is always sent from the server
-
-    socket.emit('chat_message_to_device', {
-    sender_device: serverName,
-    message: messageContent,
-    target_device: targetDevice,
-    message_class: messageClass
-}, (response) => {
-    // Handle acknowledgement
-    console.log(response);
-});
-
-    // Emit the 'stop typing' event right after sending the message
-    socket.emit('server_stop_typing');
-
-    const msg = createMessageElement(`${serverName}: ${messageContent}`, messageClass);
+    const sendMessageButton = document.getElementById('send-message');
     const chatContainer = document.getElementById('chat-container');
-    chatContainer.appendChild(msg);
-    chatContainer.scrollTop = chatContainer.scrollHeight;
+    const deviceName = document.getElementById('deviceSelectChat').value;
+    const socket = io.connect(location.origin);
+    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+    let iceCandidateQueue = [];
+    let localPeer;
+    let call;
+    let peerConnection;
 
-    messageInput.innerText = ''; // Clears the input for the next message
+    function initWebRTC() {
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+            localStream = stream;
+            document.getElementById('localVideo').srcObject = stream;
+            // ... rest of the success logic ...
+        })
+        .catch(error => {
+            console.error('MediaStream error:', error);
+            alert('Error accessing media devices. Please ensure camera and microphone are accessible.');
+        });
 };
 
 
+    function updateDropdown(elementId, deviceList) {
+        const dropdown = document.getElementById(elementId);
+        if (!dropdown) {
+            console.error(`Dropdown element with ID '${elementId}' not found.`);
+            return;
+        }
 
-// Function to display a warning message to the user
-function displayWarning(message) {
-    if (warningElement) {
-        warningElement.innerText = message;
-        warningElement.classList.remove('d-none');
-    } else {
-        console.warn('Warning element not found');
-        // Fallback to alert if no warning UI element is found
-        alert(message);
-    }
-}
+        dropdown.innerHTML = '<option value="Select a device">Select a device</option>';
 
-
-// Event listener for the Enter key in the contenteditable div
-messageInput.addEventListener('keydown', function(event) {
-    if (event.key === 'Enter' || event.keyCode === 13) {
-        event.preventDefault(); // Prevent default Enter key behavior
-        sendChatMessage(); // Call the sendChatMessage function
-    }
-});
-
-
-
-
-// Here's how you should bind the Enter key to send the message, after the DOM is fully loaded
-document.addEventListener('DOMContentLoaded', function() {
-    const messageInputElement = document.getElementById('message-input');
-    if (messageInputElement) {
-        messageInputElement.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-                sendChatMessage(); // Call sendChatMessage when Enter is pressed
-                event.preventDefault(); // Prevent form submission or any default action
-            }
+        deviceList.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device;
+            option.innerText = device;
+            dropdown.appendChild(option);
         });
+
+        const savedSelection = localStorage.getItem('selectedDevice');
+        if (savedSelection && deviceList.includes(savedSelection)) {
+            dropdown.value = savedSelection;
+        }
+
+        localStorage.setItem('connectedDevices', JSON.stringify(deviceList));
     }
-});
-
-// Open the color picker modal
-function openColorPickerModal() {
-  // Reset the color picker value or set to a default
-  document.getElementById('colorPicker').value = '#ffffff';
-  // Show the modal
-  $('#colorPickerModal').modal('show');
 
 
-  // When a color is confirmed, change the background color
-  document.getElementById('confirmColor').onclick = function() {
-    changeBackgroundColor(); // Call your function to change the color
-    $('#colorPickerModal').modal('hide'); // Hide the modal
-  };
-}
 
-function changeBackgroundColor() {
-    $('#colorPickerModal').modal({
-        backdrop: 'static', // Prevent closing when clicking outside
-        keyboard: false // Prevent closing with the escape key
-    });
+        // Bind the send button to the sendMessage function
+        if (sendMessageButton) {
+            sendMessageButton.addEventListener('click', sendChatMessage);
+        }
 
-    // Show the modal
-    $('#colorPickerModal').modal('show');
-
-    // When a color is selected, change the background color of the target device
-    $('#confirmColor').off().on('click', function() {
-        const targetDevice = document.getElementById('deviceSelectChat').value;
-        const chosenColor = document.getElementById('colorPicker').value;
-
-        if (targetDevice !== 'Select a device' && targetDevice !== 'Server') {
-            socket.emit('change_color', {
-                target_device: targetDevice,
-                color: chosenColor
+        if (messageInput) {
+            messageInput.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter' || event.keyCode === 13) {
+                    event.preventDefault(); // Prevent adding a newline in the textarea
+                    sendChatMessage();
+                }
             });
-
-            // Append message to chat box indicating the successful color change
-            appendMessageToChat("Server", `Successfully changed the background color of ${targetDevice} with the color of ${chosenColor}.`, 'server-message');
-
-            $('#colorPickerModal').modal('hide'); // Hide the modal once the color is selected
-        } 
-    });
-}
-
-
-
-
-// Function to send the file to the server
-function sendFileToDevice(file) {
-    // Check if the File APIs are supported in the browser
-    if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
-        alert('The File APIs are not fully supported in this browser.');
-        return;
-    }
-
-    const deviceName = document.getElementById('deviceSelectChat').value;
-    if (!deviceName || deviceName === "Select a device") {
-        alert("Select a device first!");
-        return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-    const xhr = new XMLHttpRequest();
-    xhr.open('POST', `/send_file_to_device?device=${deviceName}`, true);
-
-    xhr.upload.onprogress = function(event) {
-        if (event.lengthComputable) {
-            const percentComplete = (event.loaded / event.total) * 100;
-            const progressBar = document.querySelector('.progress-bar');
-            progressBar.style.width = percentComplete + '%';
-            progressBar.textContent = Math.round(percentComplete) + '%';
         }
-    };
+    
+    // Prevent default behavior (Prevent file from being opened)
+    chatContainer.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        chatContainer.classList.add('dragging');
+    });
 
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            const progressBar = document.querySelector('.progress-bar');
-            progressBar.style.width = '100%';
-            progressBar.textContent = 'Upload complete';
+    // Remove the highlight when the file leaves the chat container
+    chatContainer.addEventListener('dragleave', function(e) {
+        chatContainer.classList.remove('dragging');
+    });
 
-            setTimeout(() => {
-                document.querySelector('.progress').style.display = 'none';
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-            }, 2000);
 
-            // Append a message to the chatbox indicating the file has been sent
-            appendMessageToChat("Server", `File "${file.name}" sent to ${deviceName}.`, 'server-message');
+
+    // Event listener for drag and drop into the chat container
+    chatContainer.addEventListener('drop', function(e) {
+        e.preventDefault();
+        chatContainer.classList.remove('dragging');
+
+        if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+            let file = e.dataTransfer.items[0].getAsFile();
+            if (file) {
+                sendFileToDevice(file);
+            }
+        }
+    });
+
+    messageInput.addEventListener('input', function() {
+        this.style.height = 'auto'; // Reset height
+        this.style.height = (this.scrollHeight) + 'px'; // Adjust height based on scroll height
+
+        // Handle server typing indication
+        clearTimeout(typingTimeout); // Clear previous timeout if exists
+        
+        const currentText = this.textContent.trim();  // Get current text from the input
+
+        if (currentText) {
+            // Emit current text being typed by the server
+            socket.emit('server_typing', { message: currentText });
+        }
+
+        // After a 1-second delay of not typing, emit that the server stopped typing
+        typingTimeout = setTimeout(function() {
+            socket.emit('server_stop_typing', { message: 'Server stopped typing' });
+        }, 500); // 1-second delay. Adjust as needed.
+    });
+        
+    function showSuccessAlert() {
+        const alertContainer = document.querySelector('.card-header'); // Assuming the div is directly inside the card-header. Adjust the selector if needed.
+
+        // Create a Bootstrap success alert
+        const successDiv = document.createElement('div');
+        successDiv.className = 'alert alert-success mt-2';
+        successDiv.innerText = 'Text successfully copied to clipboard!';
+        alertContainer.appendChild(successDiv);
+
+        // Optional: Auto-hide the success alert after a few seconds
+        setTimeout(() => {
+            successDiv.remove();
+        }, 3000);
+    }
+
+    function closeModal() {
+            var modal = document.getElementById('successModal');
+            var backdrop = document.querySelector('.modal-backdrop');
+            modal.parentNode.removeChild(modal);
+            backdrop.parentNode.removeChild(backdrop);
+        }
+
+        // Toggle Timestamps
+        function toggleTimestamps() {
+            console.log('clicked the toggle timestamps')
+        showTimestamps = !showTimestamps;  // Toggle the showTimestamps state
+
+        const timestamps = document.querySelectorAll('.timestamp');
+        timestamps.forEach(ts => {
+            ts.style.display = showTimestamps ? 'inline' : 'none';  // Update the visibility of all timestamps
+        });
+
+        // Update the background color of the toggle button
+        document.getElementById('toggle-timestamps').style.backgroundColor = showTimestamps ? 'green' : 'gray';
+    }
+
+        // Format the date and time
+        function formatDateTime(dateTime) {
+        const options = {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+            timeZoneName: 'short'
+        };
+        return new Date(dateTime).toLocaleString('en-US', options);
+    }
+
+
+    // Error handling for socket events
+    socket.on('connect_error', (error) => {
+        console.error('Socket connect_error:', error);
+    });
+
+    socket.on('connect_timeout', (timeout) => {
+        console.error('Socket connection timeout:', timeout);
+    });
+
+    socket.on('error', (error) => {
+        console.error('Socket error:', error);
+    });
+
+
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // Fetch elements after the DOM has loaded
+        const deviceSelectChat = document.getElementById('deviceSelectChat');
+        const serverFileInput = document.getElementById('serverFileInput');
+
+        // Restore the previously saved selection from local storage
+        const savedSelection = localStorage.getItem('selectedDevice');
+        if (deviceSelectChat && savedSelection) {
+            deviceSelectChat.value = savedSelection;
+        }
+
+        // Event listener for the file input change
+        if (serverFileInput) {
+            serverFileInput.addEventListener('change', updateLabelWithFileName);
+        }
+
+        // Event listener for the device dropdown change
+        if (deviceSelectChat) {
+            deviceSelectChat.addEventListener('change', function() {
+                const selectedDevice = this.value;
+                localStorage.setItem('selectedDevice', selectedDevice);
+
+                const actionsDiv = document.getElementById('deviceActions');
+                actionsDiv.style.display = (selectedDevice !== 'Select a device') ? 'block' : 'none';
+                if (selectedDevice !== "Select a device") {
+                    socket.emit('device_selected', selectedDevice);
+                }
+            });
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const shouldShowActions = localStorage.getItem('deviceActionsVisible') === 'true';
+        if (shouldShowActions) {
+            showDeviceActions();
         } else {
-            console.error("Server returned an error:", xhr.responseText);
+            hideDeviceActions();
         }
-    };
+    });
 
-    xhr.onerror = function() {
-        console.error('Upload failed due to a network error.');
-    };
+    document.getElementById("toggle-timestamps").addEventListener("click", toggleTimestamps);
 
-    xhr.send(formData);
-    document.querySelector('.progress').style.display = 'block';
-}
+    document.getElementById('message-input').addEventListener('focus', function() {
+        if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
+            // Hide buttons when input receives focus
+            document.getElementById('toggle-timestamps').style.display = 'none';
+            document.getElementById('upload-file').style.display = 'none';
+            document.getElementById('send-notification').style.display = 'none';
+        }
+    });
 
-// Event listener for the file input change event
-document.getElementById('file-input').addEventListener('change', function(e) {
-    if (this.files.length > 0) {
-        const file = this.files[0];
-        sendFileToDevice(file);
+    document.getElementById('message-input').addEventListener('blur', function() {
+        if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
+            // Show buttons when input loses focus
+            document.getElementById('toggle-timestamps').style.display = '';
+            document.getElementById('upload-file').style.display = '';
+            document.getElementById('send-notification').style.display = '';
+        }
+    });
+
+async function startCall() {
+    if (!peerConnection) {
+        await setupPeerConnection();
+    } // Initialize the peer connection first
+
+    const localVideo = document.getElementById('localVideo');
+    let warningElement = document.getElementById('deviceWarning');
+    if (!warningElement) {
+        warningElement = { style: {}, textContent: '' }; // Dummy object to prevent errors
     }
-});
 
-
-// Function to add the message to chatbox as a server message
-function appendMessageToChat(sender, messageContent, className) {
-    const chatContainer = document.getElementById('chat-container');
-    const msg = createMessageElement(`${sender}: ${messageContent}`, className);
-    chatContainer.appendChild(msg);
-    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
-}
-
-
-function hideWarning() {
-    if (warningElement) {
-        warningElement.classList.add('d-none');
-    } else {
-        console.warn('Warning element not found');
-    }
-}
-
-function clearChat() {
-    $('#messages').empty();
-}
-
-function sendNotification() {
-    console.log("sendNotificationButton pressed!");
-    const targetDevice = document.getElementById('deviceSelectChat').value;
-    const sender = "Server"; // This is the sender's name, in this case, "Server".
-
-    // Ensure that a valid device is selected
-    if (targetDevice !== 'Select a device' && targetDevice !== '') {
-        // Emit an event to the server to send the notification to the chosen device
-        socket.emit('send_notification_to_device', {
-            name: sender,
-            message: "Sent a notification!",
-            target_device: targetDevice
+    try {
+        const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        localStream.getTracks().forEach(track => {
+            console.log('Adding local track:', track);
+            peerConnection.addTrack(track, localStream);
         });
 
-        // Create the message content string
-        const messageContent = `sent a notification to ${targetDevice}`;
+        localVideo.srcObject = localStream;
+        localVideo.style.display = 'block';
+    } catch (error) {
+        console.error('Failed to get local stream:', error);
+        warningElement.textContent = "No media devices found. Continuing without sending media.";
+        warningElement.style.display = "block";
+        return;
+    }
 
-        // Use the createMessageElement function to create the message element with the 'server-message' class
-        const msgElement = createMessageElement(messageContent, 'server-message');
+    try {
+        const offer = await peerConnection.createOffer();
+        console.log('Offer created:', offer);
+        await peerConnection.setLocalDescription(offer);
+        console.log('Local description set with offer.');
 
-        // Append the message element to the chatbox
-        const chatContainer = document.getElementById('chat-container');
-        chatContainer.appendChild(msgElement);
-        msgElement.style.opacity = 1; // Ensure the element is visible and triggers any transition animations
-
-        scrollToBottom(); // Scroll the chatbox to the new message
-    } else {
-        // Handle the case where no valid device is selected
-        console.error("Please select a valid device to send a notification.");
+        socket.emit('offer', { 'offer': offer });
+        console.log('Offer sent:', offer);
+    } catch (error) {
+        console.error('Failed to create offer:', error);
     }
 }
 
-
-//function to fetch messages from database
-
-function fetchMessages() {
-    fetch('/fetch_messages')
-    .then(response => response.json())
-    .then(data => {
-        const chatContainer = document.getElementById('chat-container');
-        data.forEach(message => {
-            // Apply 'server-message' class if the sender is 'server' (case-insensitive comparison)
-            const className = message.sender.toLowerCase() === 'server' ? 'server-message' : 'device-message';
-
-            // Prepend the sender's name to the message content
-            const fullMessage = `${message.sender.charAt(0).toUpperCase() + message.sender.slice(1)}: ${message.content}`;
-
-            // Create message element with the full message and the appropriate class
-            const messageElement = createMessageElement(
-                fullMessage,
-                className,
-                new Date(message.timestamp).toLocaleString()
-            );
-            chatContainer.appendChild(messageElement);
-        });
-        scrollToBottom(chatContainer);
-    })
-    .catch(error => {
-        console.error('Error fetching messages:', error);
+function endCall() {
+    if (peerConnection) {
+        peerConnection.close();
+        // Handle errors when closing the peer connection
+        peerConnection.oniceconnectionstatechange = (event) => {
+            if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
+                console.error('ICE Connection state error during endCall:', peerConnection.iceConnectionState);
+            }
+        };
+        localStream.getTracks().forEach(track => track.stop());
+    }
+    if (callWindow) {
+        callWindow.close();
+    }
+    socket.emit('end_call', { deviceName: "{{ device_name }}" }, (ack) => {
+        if (ack !== 'OK') {
+            console.error('Error ending call:', ack);
+        }
     });
 }
 
+document.getElementById('startCallButton').addEventListener('click', startCall);
 
-    window.updateLabelWithFileName = function(event) {
+
+
+
+document.getElementById('endCallButton').addEventListener('click', endCall);
+
+    // Helper Functions
+    function playNotificationSound() {
+        var audioElement = document.getElementById('notificationSound');
+        if (audioElement) {
+            audioElement.currentTime = 0; // Reset audio to the start
+            audioElement.play().catch(e => console.error("Error playing sound: ", e));
+        }
+    }
+
+
+    const savedDevices = JSON.parse(localStorage.getItem('connectedDevices') || '[]');
+
+    document.addEventListener('DOMContentLoaded', function() {
+    updateDropdown('deviceSelectChat', savedDevices);
+    });
+
+    function showDeviceActions() {
+        const deviceActions = document.getElementById('deviceActions');
+        deviceActions.style.display = 'block';
+        localStorage.setItem('deviceActionsVisible', 'true');
+    }
+
+    function hideDeviceActions() {
+        const deviceActions = document.getElementById('deviceActions');
+        deviceActions.style.display = 'none';
+        localStorage.setItem('deviceActionsVisible', 'false');
+    }
+
+
+    function updateLabelWithFileName(event) {
         const fileInput = event.target;
         const progressBarContainer = document.querySelector('.progressbar');
 
@@ -1375,219 +776,901 @@ function fetchMessages() {
             const label = document.querySelector("label[for='serverFileInput']");
             label.textContent = filename;
 
-            // Show the progress bar and initialize the counter
+            // Show the progress bar and reset progress & counter
             progressBarContainer.style.display = "block";
-            counterInit(0, 100);  // this is for demo, you should replace this with actual progress
+            $('.counter').text('0%');
+            $('.progressbar .progress').css('width', '0%');
         } else {
             // Hide the progress bar if no file is selected
             progressBarContainer.style.display = "none";
         }
     }
 
+    function copyToClipboard(text) {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+
+        // After copying, display the success alert
+        showSuccessAlert();
+    }
+
+        function handleCopyClick(event, text) {
+            event.preventDefault();
+            copyToClipboard(text);
+            showClipboardAlert();
+        }
+
+        function showClipboardAlert() {
+            const alertElement = document.getElementById("clipboardAlert");
+
+    if (alertElement) {
+        alertElement.style.display = "block";
+
+        // Hide the alert after 3 seconds
+        setTimeout(function() {
+            alertElement.style.display = "none";
+        }, 3000);
+    } else {
+        console.warn("Clipboard alert element not found!");
+    }
+    }
+
+    function setupPeerConnection() {
+        try {
+            const iceConfiguration = {
+                iceServers: [
+                    // Google's public STUN server
+                    {
+                        urls: 'stun:stun.metered.ca:3478'
+                    }
+                ]
+            };
+
+            peerConnection = new RTCPeerConnection(iceConfiguration);
+            console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
+
+            // Rest of the peer connection setup...
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    console.log('New ICE candidate:', event.candidate);
+                    socket.emit('ice_candidate', { candidate: event.candidate });
+                }
+            };
+
+            peerConnection.ontrack = event => {
+                console.log('New track received:', event.track.kind);
+                if (event.streams && event.streams[0]) {
+                    const stream = event.streams[0];
+                    if (event.track.kind === 'audio') {
+                        document.getElementById('remoteAudio').srcObject = stream;
+                    } else if (event.track.kind === 'video') {
+                        document.getElementById('remoteVideo').srcObject = stream;
+                        document.getElementById('remoteVideo').style.display = 'block';
+                    }
+                }
+            };
+            peerConnection.oniceconnectionstatechange = event => {
+                console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
+                if (peerConnection.iceConnectionState === 'failed') {
+                    console.error('ICE Connection Failed');
+                }
+            };
+            // Additional setup as needed
+            return peerConnection;
 
 
-document.addEventListener("DOMContentLoaded", function() {
-    const clipboardIcons = document.querySelectorAll('.clipboard-icon');
+        } catch (error) {
+            console.error('Failed to set up peer connection:', error);
+            return null;
+        }
+    }
 
-    clipboardIcons.forEach(icon => {
-        icon.addEventListener('click', function() {
-            const messageText = this.nextElementSibling.nextElementSibling.innerText;
 
-            // Create a textarea element to use for copying
-            const textarea = document.createElement('textarea');
-            textarea.value = messageText;
-            document.body.appendChild(textarea);
 
-            // Select the text and copy it
-            textarea.select();
-            document.execCommand('copy');
 
-            // Clean up by removing the textarea
-            document.body.removeChild(textarea);
-            
-            // Optional: Show a notification or feedback to the user
-            alert('Message copied to clipboard!');
+
+    // Handling the answer
+    socket.on('answer', async data => {
+        try {
+            const remoteDesc = new RTCSessionDescription(data.answer);
+            await peerConnection.setRemoteDescription(remoteDesc);
+
+            // Process queued candidates
+            while (iceCandidateQueue.length) {
+                const candidate = iceCandidateQueue.shift();
+                await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            }
+        } catch (e) {
+            console.error('Error setting remote description from answer:', e);
+        }
+    });
+
+
+
+    socket.on('ice_candidate', async data => {
+        try {
+            if (peerConnection.remoteDescription) {
+                // If remote description is set, add the candidate
+                await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            } else {
+                // Otherwise, queue the candidate
+                iceCandidateQueue.push(data.candidate);
+            }
+        } catch (e) {
+            console.error('Error adding received ice candidate:', e);
+        }
+    });
+
+    socket.on('video-answer', (data) => {
+        const remoteDesc = new RTCSessionDescription(data.answer);
+        peerConnection.setRemoteDescription(remoteDesc);
+    });
+
+
+    socket.on('new-remote-ice-candidate', (data) => {
+        const candidate = new RTCIceCandidate(data.candidate);
+        peerConnection.addIceCandidate(candidate);
+    });
+
+    socket.on('connect', () => {
+        console.log('Connected to server'); 
+    });
+
+
+    socket.on('disconnect', () => {
+        console.log('Disconnected from server');
+    });
+
+
+    // Socket Event Handlers
+    // Socket Event Handlers
+    socket.on('update_device_list', function(connected_devices) {
+        console.log('Connected devices:', connected_devices);  // Debugging line
+
+        // Update h2 element
+        const h2Devices = document.getElementById('devices');
+        if (connected_devices.length === 0) {
+            h2Devices.textContent = "No devices connected!";
+        } else {
+            const deviceLabel = connected_devices.length > 1 ? 'Connected Devices' : 'Connected Device';
+            h2Devices.textContent = `${deviceLabel}: ${connected_devices.join(', ')}`;
+        }
+
+        // Update deviceSelectChat dropdown
+        const deviceSelect = document.getElementById('deviceSelectChat');
+        deviceSelect.innerHTML = '<option value="Select a device">Select a device</option>';
+        connected_devices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device;
+            option.textContent = device;
+            deviceSelect.appendChild(option);
+        });
+
+        // Restore the previously saved selection from local storage
+        const savedSelection = localStorage.getItem('selectedDevice');
+        if (savedSelection && connected_devices.includes(savedSelection)) {
+            deviceSelect.value = savedSelection;
+        }
+        updateDropdown('deviceSelectChat', connected_devices);
+    });
+
+
+
+
+    socket.on('file_uploaded', function(data) {
+        const filesUl = document.getElementById('uploadedFiles');
+        const li = document.createElement('li');
+        li.className = "list-group-item d-flex justify-content-between align-items-center";
+        
+        // Add filename with download link
+        const fileLink = document.createElement('a');
+        fileLink.href = `/download/${data.filename}`;
+        fileLink.setAttribute("download", "");
+        fileLink.textContent = data.filename;
+        li.appendChild(fileLink);
+
+        // Add download button
+        const downloadBtn = document.createElement('a');
+        downloadBtn.href = `/download/${data.filename}`;
+        downloadBtn.setAttribute("download", "");
+        downloadBtn.className = "btn btn-primary btn-sm";
+        downloadBtn.textContent = "Download";
+        li.appendChild(downloadBtn);
+
+        // Add delete button
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = "btn btn-danger btn-sm ml-2";
+        deleteBtn.textContent = "Delete";
+        deleteBtn.onclick = function() {
+            // Here, you would typically make an AJAX call to the server to delete the file
+            // Once the server responds that the file is deleted, remove the list item from the UI
+            fetch(`/delete/${data.filename}`, { method: 'DELETE' })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    li.remove();
+                } else {
+                    console.error("Error deleting file:", data.message);
+                }
+            });
+        };
+        li.appendChild(deleteBtn);
+
+        filesUl.appendChild(li);
+    });
+
+    socket.on('server_notification', function(data) {
+        const sender = data.device;
+        const notificationMessage = data.notification || 'sent you a notification!';
+
+        // Play the notification sound
+        document.getElementById("notificationSound").play();
+
+        // Append the notification message to the chat box
+        const chatContainer = document.getElementById('chat-container');
+        const notificationElement = createMessageElement(`${sender}: ${notificationMessage}`, 'device-message');
+        
+        // Append the newly created notification element to the chat container
+        chatContainer.appendChild(notificationElement);
+        notificationElement.style.opacity = 1; // Make sure your CSS transitions can handle this
+
+        scrollToBottom(); // Scroll to the bottom of the chatbox
+    });
+
+
+    function sendNotification() {
+        console.log("sendNotificationButton pressed!");
+        const targetDevice = document.getElementById('deviceSelectChat').value;
+        const sender = "Server";  // This is the sender's name, in this case, "Server".
+
+        // Ensure that a valid device is selected
+        if (targetDevice !== 'Select a device' && targetDevice !== '') {
+            // Emit an event to the server to send the notification to the chosen device
+            socket.emit('send_notification_to_device', {
+                name: sender,
+                message: "Sent a notification!",
+                target_device: targetDevice
+            });
+
+            // Optionally append the notification to the chatbox as a server message
+            const messageContent = `${sender} Sent a notification to ${targetDevice}`;
+            createMessageElement(messageContent);
+
+            scrollToBottom(); // Scroll to the bottom of the chatbox
+
+            // Play the notification sound
+            playNotificationSound();
+        } else {
+            // Handle the case where no valid device is selected
+            console.error("Please select a valid device to send a notification.");
+        }
+    }
+
+
+    socket.on('broadcast_message_to_server', function(data) {
+        console.log('Received message:', data);
+
+        // Check if there's a special notification to play a sound
+        if (data.message === "Sent a notification!") {
+            notificationAudio.play(); // Play a notification sound if defined
+        }
+
+        // Prepare the sender's name and message content
+        const senderName = data.name.trim(); // Get the sender's name from the data object
+        const messageText = `${senderName}: ${data.message}`; // Create the message text
+
+        // Define class based on the sender
+        const className = data.message_class || 'server-message';
+        
+        // Use the createMessageElement function to create the message element
+        const msg = createMessageElement(messageText, className, data.timestamp);
+
+        // Get the chat container and append the new message element to it
+        const chatContainer = document.getElementById('chat-container');
+        chatContainer.appendChild(msg);
+
+        // Ensure the element is visible
+        msg.style.opacity = 1;
+
+        // Scroll the chat container to show the latest message
+        scrollToBottom(); // Make sure this function is defined to scroll the chat box to the bottom
+    });
+
+
+
+
+
+    // Event Handlers
+    document.getElementById('deviceSelectChat').addEventListener('change', function() {
+        const selectedDevice = this.value;
+        localStorage.setItem('selectedDevice', selectedDevice);
+
+        const actionsDiv = document.getElementById('deviceActions');
+        actionsDiv.style.display = (selectedDevice !== 'Select a device') ? 'block' : 'none';
+        if (selectedDevice !== "Select a device") {
+            // Emit event to the server with the selected device
+            socket.emit('device_selected', selectedDevice);
+        }
+    });
+
+    function formatTimestamp() {
+        const options = {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true,
+            timeZoneName: 'short'
+        };
+        return new Date().toLocaleString('en-US', options);
+    }
+
+    function scrollToBottom() {
+            const container = document.getElementById('chat-container');
+            container.scrollTop = container.scrollHeight;
+        }
+
+    function createMessageElement(messageContent, className, existingTimestamp = null) {
+        // Create the main message div
+        const msg = document.createElement('div');
+        msg.classList.add('chat-message', 'animate__fadeIn', 'animate__animated');
+
+        if (className) {
+            msg.classList.add(className);
+        }
+
+        // Create the clipboard icon span
+        const clipboardIcon = document.createElement('span');
+        clipboardIcon.classList.add('clipboard-icon');
+        clipboardIcon.setAttribute('title', 'Copy to Clipboard');
+        clipboardIcon.innerHTML = '📋';
+        clipboardIcon.addEventListener('click', function() {
+            const timestampText = msg.querySelector('.timestamp').textContent;
+            const messageText = msg.querySelector('span:not(.clipboard-icon):not(.timestamp)').textContent;
+            copyToClipboard(timestampText + messageText);
+        });
+        msg.appendChild(clipboardIcon);
+
+        // Create the timestamp span
+        const timestamp = document.createElement('span');
+        timestamp.classList.add('timestamp');
+        // If an existing timestamp is provided, use it, otherwise generate a new one
+        const timestampText = existingTimestamp ? existingTimestamp : formatTimestamp();
+        timestamp.innerHTML = timestampText + ' - ';
+        // The style.display can be set based on whether you want it shown or hidden by default
+        timestamp.style.display = 'none'; // Set this to 'none' if you want it hidden by default
+        msg.appendChild(timestamp);
+
+        // Create the text content span
+        const text = document.createElement('span');
+        text.innerHTML = messageContent;
+        msg.appendChild(text);
+
+        return msg;
+    }
+
+    //function to send message
+    function sendChatMessage() {
+        console.log("sendChatMessage called");
+
+        const messageInput = document.getElementById('message-input');
+        const messageContent = messageInput.innerText.trim().replace(/\n/g, '');
+        if (!messageContent) {
+            // Check if a warning already exists
+            let existingWarning = document.querySelector('.alert-warning');
+            if (existingWarning) {
+                existingWarning.remove(); // Remove the existing warning
+            }
+
+            // Display a Bootstrap warning if the textarea is empty
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'alert alert-warning mt-2';
+            warningDiv.innerText = 'Message content cannot be empty!';
+
+            // Insert the warning just after the messageInput parent element
+            messageInput.parentNode.insertAdjacentElement('afterend', warningDiv);
+
+            // Optional: Auto-hide the warning after a few seconds
+            setTimeout(() => {
+                warningDiv.remove();
+            }, 3000);
+
+            return; // Do not proceed with sending empty messages
+        };
+
+
+        const targetDevice = document.getElementById('deviceSelectChat').value;
+        if (targetDevice === 'Select a device') {
+            console.error('No device selected.');
+            displayWarning('Please select a device to send the message to.');
+            return;
+        }
+
+        const serverName = "Server";
+        const messageClass = 'server-message'; // Assuming this message is always sent from the server
+
+        socket.emit('chat_message_to_device', {
+        sender_device: serverName,
+        message: messageContent,
+        target_device: targetDevice,
+        message_class: messageClass
+    }, (response) => {
+        // Handle acknowledgement
+        console.log(response);
+    });
+
+        // Emit the 'stop typing' event right after sending the message
+        socket.emit('server_stop_typing');
+
+        const msg = createMessageElement(`${serverName}: ${messageContent}`, messageClass);
+        const chatContainer = document.getElementById('chat-container');
+        chatContainer.appendChild(msg);
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+
+        messageInput.innerText = ''; // Clears the input for the next message
+    };
+
+
+
+    // Function to display a warning message to the user
+    function displayWarning(message) {
+        if (warningElement) {
+            warningElement.innerText = message;
+            warningElement.classList.remove('d-none');
+        } else {
+            console.warn('Warning element not found');
+            // Fallback to alert if no warning UI element is found
+            alert(message);
+        }
+    }
+
+
+    // Event listener for the Enter key in the contenteditable div
+    messageInput.addEventListener('keydown', function(event) {
+        if (event.key === 'Enter' || event.keyCode === 13) {
+            event.preventDefault(); // Prevent default Enter key behavior
+            sendChatMessage(); // Call the sendChatMessage function
+        }
+    });
+
+
+
+
+    // Here's how you should bind the Enter key to send the message, after the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        const messageInputElement = document.getElementById('message-input');
+        if (messageInputElement) {
+            messageInputElement.addEventListener('keydown', function(event) {
+                if (event.key === 'Enter') {
+                    sendChatMessage(); // Call sendChatMessage when Enter is pressed
+                    event.preventDefault(); // Prevent form submission or any default action
+                }
+            });
+        }
+    });
+
+    // Open the color picker modal
+    function openColorPickerModal() {
+    // Reset the color picker value or set to a default
+    document.getElementById('colorPicker').value = '#ffffff';
+    // Show the modal
+    $('#colorPickerModal').modal('show');
+
+
+    // When a color is confirmed, change the background color
+    document.getElementById('confirmColor').onclick = function() {
+        changeBackgroundColor(); // Call your function to change the color
+        $('#colorPickerModal').modal('hide'); // Hide the modal
+    };
+    }
+
+    function changeBackgroundColor() {
+        $('#colorPickerModal').modal({
+            backdrop: 'static', // Prevent closing when clicking outside
+            keyboard: false // Prevent closing with the escape key
+        });
+
+        // Show the modal
+        $('#colorPickerModal').modal('show');
+
+        // When a color is selected, change the background color of the target device
+        $('#confirmColor').off().on('click', function() {
+            const targetDevice = document.getElementById('deviceSelectChat').value;
+            const chosenColor = document.getElementById('colorPicker').value;
+
+            if (targetDevice !== 'Select a device' && targetDevice !== 'Server') {
+                socket.emit('change_color', {
+                    target_device: targetDevice,
+                    color: chosenColor
+                });
+
+                // Append message to chat box indicating the successful color change
+                appendMessageToChat("Server", `Successfully changed the background color of ${targetDevice} with the color of ${chosenColor}.`, 'server-message');
+
+                $('#colorPickerModal').modal('hide'); // Hide the modal once the color is selected
+            } 
+        });
+    }
+
+
+
+
+    // Function to send the file to the server
+    function sendFileToDevice(file) {
+        // Check if the File APIs are supported in the browser
+        if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
+            alert('The File APIs are not fully supported in this browser.');
+            return;
+        }
+
+        const deviceName = document.getElementById('deviceSelectChat').value;
+        if (!deviceName || deviceName === "Select a device") {
+            alert("Select a device first!");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('file', file);
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', `/send_file_to_device?device=${deviceName}`, true);
+
+        xhr.upload.onprogress = function(event) {
+            if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                const progressBar = document.querySelector('.progress-bar');
+                progressBar.style.width = percentComplete + '%';
+                progressBar.textContent = Math.round(percentComplete) + '%';
+            }
+        };
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                const progressBar = document.querySelector('.progress-bar');
+                progressBar.style.width = '100%';
+                progressBar.textContent = 'Upload complete';
+
+                setTimeout(() => {
+                    document.querySelector('.progress').style.display = 'none';
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '0%';
+                }, 2000);
+
+                // Append a message to the chatbox indicating the file has been sent
+                appendMessageToChat("Server", `File "${file.name}" sent to ${deviceName}.`, 'server-message');
+            } else {
+                console.error("Server returned an error:", xhr.responseText);
+            }
+        };
+
+        xhr.onerror = function() {
+            console.error('Upload failed due to a network error.');
+        };
+
+        xhr.send(formData);
+        document.querySelector('.progress').style.display = 'block';
+    };
+
+    // Event listener for the file input change event
+    document.getElementById('file-input').addEventListener('change', function(e) {
+        if (this.files.length > 0) {
+            const file = this.files[0];
+            sendFileToDevice(file);
+        }
+    });
+
+
+    // Function to add the message to chatbox as a server message
+    function appendMessageToChat(sender, messageContent, className) {
+        const chatContainer = document.getElementById('chat-container');
+        const msg = createMessageElement(`${sender}: ${messageContent}`, className);
+        chatContainer.appendChild(msg);
+        chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
+    }
+
+
+    function hideWarning() {
+        if (warningElement) {
+            warningElement.classList.add('d-none');
+        } else {
+            console.warn('Warning element not found');
+        }
+    }
+
+    function clearChat() {
+        $('#messages').empty();
+    }
+
+    function sendNotification() {
+        console.log("sendNotificationButton pressed!");
+        const targetDevice = document.getElementById('deviceSelectChat').value;
+        const sender = "Server"; // This is the sender's name, in this case, "Server".
+
+        // Ensure that a valid device is selected
+        if (targetDevice !== 'Select a device' && targetDevice !== '') {
+            // Emit an event to the server to send the notification to the chosen device
+            socket.emit('send_notification_to_device', {
+                name: sender,
+                message: "Sent a notification!",
+                target_device: targetDevice
+            });
+
+            // Create the message content string
+            const messageContent = `sent a notification to ${targetDevice}`;
+
+            // Use the createMessageElement function to create the message element with the 'server-message' class
+            const msgElement = createMessageElement(messageContent, 'server-message');
+
+            // Append the message element to the chatbox
+            const chatContainer = document.getElementById('chat-container');
+            chatContainer.appendChild(msgElement);
+            msgElement.style.opacity = 1; // Ensure the element is visible and triggers any transition animations
+
+            scrollToBottom(); // Scroll the chatbox to the new message
+        } else {
+            // Handle the case where no valid device is selected
+            console.error("Please select a valid device to send a notification.");
+        }
+    }
+
+
+    //function to fetch messages from database
+
+    function fetchMessages() {
+        fetch('/fetch_messages')
+        .then(response => response.json())
+        .then(data => {
+            const chatContainer = document.getElementById('chat-container');
+            data.forEach(message => {
+                // Apply 'server-message' class if the sender is 'server' (case-insensitive comparison)
+                const className = message.sender.toLowerCase() === 'server' ? 'server-message' : 'device-message';
+
+                // Prepend the sender's name to the message content
+                const fullMessage = `${message.sender.charAt(0).toUpperCase() + message.sender.slice(1)}: ${message.content}`;
+
+                // Create message element with the full message and the appropriate class
+                const messageElement = createMessageElement(
+                    fullMessage,
+                    className,
+                    new Date(message.timestamp).toLocaleString()
+                );
+                chatContainer.appendChild(messageElement);
+            });
+            scrollToBottom(chatContainer);
+        })
+        .catch(error => {
+            console.error('Error fetching messages:', error);
+        });
+    }
+
+
+        window.updateLabelWithFileName = function(event) {
+            const fileInput = event.target;
+            const progressBarContainer = document.querySelector('.progressbar');
+
+            if (fileInput.files.length) {
+                const filename = fileInput.files[0].name;
+                const label = document.querySelector("label[for='serverFileInput']");
+                label.textContent = filename;
+
+                // Show the progress bar and initialize the counter
+                progressBarContainer.style.display = "block";
+                counterInit(0, 100);  // this is for demo, you should replace this with actual progress
+            } else {
+                // Hide the progress bar if no file is selected
+                progressBarContainer.style.display = "none";
+            }
+        }
+
+
+
+    document.addEventListener("DOMContentLoaded", function() {
+        const clipboardIcons = document.querySelectorAll('.clipboard-icon');
+
+        clipboardIcons.forEach(icon => {
+            icon.addEventListener('click', function() {
+                const messageText = this.nextElementSibling.nextElementSibling.innerText;
+
+                // Create a textarea element to use for copying
+                const textarea = document.createElement('textarea');
+                textarea.value = messageText;
+                document.body.appendChild(textarea);
+
+                // Select the text and copy it
+                textarea.select();
+                document.execCommand('copy');
+
+                // Clean up by removing the textarea
+                document.body.removeChild(textarea);
+                
+                // Optional: Show a notification or feedback to the user
+                alert('Message copied to clipboard!');
+            });
         });
     });
-});
 
-document.addEventListener('DOMContentLoaded', (event) => {
-    fetchMessages();
-});
+    document.addEventListener('DOMContentLoaded', (event) => {
+        fetchMessages();
+    });
 
-document.getElementById('colorPicker-btn').addEventListener('click', openColorPickerModal);
+    document.getElementById('colorPicker-btn').addEventListener('click', openColorPickerModal);
 
-document.getElementById('file-input').addEventListener('change', function() {
-    if (this.files.length > 0) {
-        const file = this.files[0];
-        sendFileToDevice(file);
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    const toggleRecordButton = document.getElementById('toggleRecordButton');
-    let isRecording = false;
-    let recorder;
-    let audioChunks = [];
-
-    toggleRecordButton.addEventListener('click', async function() {
-        if (isRecording) {
-            // Stop the recording
-            if (recorder) {
-                recorder.stop();
-            }
-
-            // Change the button's appearance and text
-            toggleRecordButton.textContent = "Start Recording";
-            toggleRecordButton.classList.remove('btn-danger');
-            toggleRecordButton.classList.add('btn-primary');
-            isRecording = false;
-        } else {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-                if (stream) {
-                    recorder = new MediaRecorder(stream);
-
-                    recorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
-
-                    recorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        const formData = new FormData();
-                        const deviceName = document.getElementById('deviceSelectChat').value; // Device selector
-
-                        // Check if a device is selected
-                        if (!deviceName || deviceName === "Select a device") {
-                            alert("Please select a device to send the recording.");
-                            return;
-                        }
-
-                        formData.append('audio', audioBlob, 'recording-audio.wav');
-
-                        // Send the audio file to the server
-                        fetch(`/send_audio_to_device?device=${encodeURIComponent(deviceName)}`, {
-                            method: 'POST',
-                            body: formData
-                        }).then(response => response.json())
-                          .then(data => {
-                              console.log(data.message); // Log success or failure message
-                              
-                              // Append the recording to the server's chatbox as a server message
-                              const audioUrl = URL.createObjectURL(audioBlob);
-                              const audioElement = document.createElement('audio');
-                              audioElement.controls = true;
-                              audioElement.src = audioUrl;
-
-                              const msg = createMessageElement('Server: Voice Message', 'server-message');
-                              msg.appendChild(audioElement);
-                              document.getElementById('chat-container').appendChild(msg);
-                              msg.style.opacity = 1;
-                              scrollToBottom();
-                          }).catch(error => {
-                              console.error("Error sending audio:", error);
-                          });
-                    };
-
-                    audioChunks = [];
-                    recorder.start();
-
-                    // Change the button's appearance and text
-                    toggleRecordButton.textContent = "Stop Recording";
-                    toggleRecordButton.classList.remove('btn-primary');
-                    toggleRecordButton.classList.add('btn-danger');
-
-                    isRecording = true;
-                }
-            } catch (error) {
-                console.error("Error accessing the microphone:", error);
-            }
+    document.getElementById('file-input').addEventListener('change', function() {
+        if (this.files.length > 0) {
+            const file = this.files[0];
+            sendFileToDevice(file);
         }
     });
-});
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const toggleRecordButton = document.getElementById('toggleRecordButton');
+        let isRecording = false;
+        let recorder;
+        let audioChunks = [];
+
+        toggleRecordButton.addEventListener('click', async function() {
+            if (isRecording) {
+                // Stop the recording
+                if (recorder) {
+                    recorder.stop();
+                }
+
+                // Change the button's appearance and text
+                toggleRecordButton.textContent = "Start Recording";
+                toggleRecordButton.classList.remove('btn-danger');
+                toggleRecordButton.classList.add('btn-primary');
+                isRecording = false;
+            } else {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                    if (stream) {
+                        recorder = new MediaRecorder(stream);
+
+                        recorder.ondataavailable = event => {
+                            audioChunks.push(event.data);
+                        };
+
+                        recorder.onstop = () => {
+                            const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                            const formData = new FormData();
+                            const deviceName = document.getElementById('deviceSelectChat').value; // Device selector
+
+                            // Check if a device is selected
+                            if (!deviceName || deviceName === "Select a device") {
+                                alert("Please select a device to send the recording.");
+                                return;
+                            }
+
+                            formData.append('audio', audioBlob, 'recording-audio.wav');
+
+                            // Send the audio file to the server
+                            fetch(`/send_audio_to_device?device=${encodeURIComponent(deviceName)}`, {
+                                method: 'POST',
+                                body: formData
+                            }).then(response => response.json())
+                            .then(data => {
+                                console.log(data.message); // Log success or failure message
+                                
+                                // Append the recording to the server's chatbox as a server message
+                                const audioUrl = URL.createObjectURL(audioBlob);
+                                const audioElement = document.createElement('audio');
+                                audioElement.controls = true;
+                                audioElement.src = audioUrl;
+
+                                const msg = createMessageElement('Server: Voice Message', 'server-message');
+                                msg.appendChild(audioElement);
+                                document.getElementById('chat-container').appendChild(msg);
+                                msg.style.opacity = 1;
+                                scrollToBottom();
+                            }).catch(error => {
+                                console.error("Error sending audio:", error);
+                            });
+                        };
+
+                        audioChunks = [];
+                        recorder.start();
+
+                        // Change the button's appearance and text
+                        toggleRecordButton.textContent = "Stop Recording";
+                        toggleRecordButton.classList.remove('btn-primary');
+                        toggleRecordButton.classList.add('btn-danger');
+
+                        isRecording = true;
+                    }
+                } catch (error) {
+                    console.error("Error accessing the microphone:", error);
+                }
+            }
+        });
+    });
 
 
 
-socket.on('server_color_changed', function(data) {
-    // Update the background color of the body
-    document.body.style.backgroundColor = data.color;
-});
+    socket.on('server_color_changed', function(data) {
+        // Update the background color of the body
+        document.body.style.backgroundColor = data.color;
+    });
 
-socket.on('new_audio_message', function(data) {
-    console.log('New audio message received:', data);
-    const chatContainer = document.getElementById('chat-container');
+    socket.on('new_audio_message', function(data) {
+        console.log('New audio message received:', data);
+        const chatContainer = document.getElementById('chat-container');
 
-    // Create the audio message container
-    const audioMsgContainer = document.createElement('div');
-    audioMsgContainer.classList.add('chat-message', 'device-message');
+        // Create the audio message container
+        const audioMsgContainer = document.createElement('div');
+        audioMsgContainer.classList.add('chat-message', 'device-message');
 
-    // Create a label for the audio message
-    const audioLabel = document.createElement('div');
-    audioLabel.textContent = 'Voice Message:';
-    audioMsgContainer.appendChild(audioLabel);
+        // Create a label for the audio message
+        const audioLabel = document.createElement('div');
+        audioLabel.textContent = 'Voice Message:';
+        audioMsgContainer.appendChild(audioLabel);
 
-    // Create the audio element
-    const audioElement = document.createElement('audio');
-    audioElement.src = data.url; // Make sure this URL is accessible from the server interface
-    audioElement.controls = true;
-    audioElement.style.width = '100%'; // Make the audio player fit its container
+        // Create the audio element
+        const audioElement = document.createElement('audio');
+        audioElement.src = data.url; // Make sure this URL is accessible from the server interface
+        audioElement.controls = true;
+        audioElement.style.width = '100%'; // Make the audio player fit its container
 
-    // Append the audio element to the message container
-    audioMsgContainer.appendChild(audioElement);
+        // Append the audio element to the message container
+        audioMsgContainer.appendChild(audioElement);
 
-    // Append the complete message container to the chat box
-    chatContainer.appendChild(audioMsgContainer);
+        // Append the complete message container to the chat box
+        chatContainer.appendChild(audioMsgContainer);
 
-    // Scroll to the latest message
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-});
+        // Scroll to the latest message
+        chatContainer.scrollTop = chatContainer.scrollHeight;
+    });
 
 
 
-socket.on('client_typing', function(data) {
-    console.log('Client is typing:', data.message); // Check if this logs correctly
+    socket.on('client_typing', function(data) {
+        console.log('Client is typing:', data.message); // Check if this logs correctly
 
-    const chatContainer = document.getElementById('chat-container');
-    if (!chatContainer) {
-        console.error("chat-container not found"); // Check if chatContainer is found
-        return;
-    }
-
-    let liveMessageElement = document.getElementById('live-message');
-
-    // Create the live typing message if it doesn't exist
-    if (!liveMessageElement) {
-        liveMessageElement = createMessageElement(`${data.sender || deviceName}: ${data.message}`, 'device-message');
-        liveMessageElement.id = 'live-message';
-        chatContainer.appendChild(liveMessageElement);
-    } else {
-        // Update the text of the live typing message if it already exists
-        const textSpan = liveMessageElement.querySelector('span:not(.clipboard-icon):not(.timestamp)');
-        if (textSpan) {
-            textSpan.innerHTML = `${data.sender || deviceName}: ${data.message}`;
-        } else {
-            console.error("textSpan not found inside liveMessageElement"); // If textSpan isn't found
+        const chatContainer = document.getElementById('chat-container');
+        if (!chatContainer) {
+            console.error("chat-container not found"); // Check if chatContainer is found
+            return;
         }
-    }
 
-    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom of the chat container
-});
+        let liveMessageElement = document.getElementById('live-message');
 
-socket.on('client_stop_typing', function() {
-    console.log('Client stopped typing.'); // Check if this logs correctly
+        // Create the live typing message if it doesn't exist
+        if (!liveMessageElement) {
+            liveMessageElement = createMessageElement(`${data.sender || deviceName}: ${data.message}`, 'device-message');
+            liveMessageElement.id = 'live-message';
+            chatContainer.appendChild(liveMessageElement);
+        } else {
+            // Update the text of the live typing message if it already exists
+            const textSpan = liveMessageElement.querySelector('span:not(.clipboard-icon):not(.timestamp)');
+            if (textSpan) {
+                textSpan.innerHTML = `${data.sender || deviceName}: ${data.message}`;
+            } else {
+                console.error("textSpan not found inside liveMessageElement"); // If textSpan isn't found
+            }
+        }
 
-    const liveMessageElement = document.getElementById('live-message');
-    if (liveMessageElement) {
-        liveMessageElement.remove(); // Remove the live typing message element
-    } else {
-        console.error("live-message not found on stop typing"); // If liveMessageElement isn't found
-    }
-});
+        chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom of the chat container
+    });
+
+    socket.on('client_stop_typing', function() {
+        console.log('Client stopped typing.'); // Check if this logs correctly
+
+        const liveMessageElement = document.getElementById('live-message');
+        if (liveMessageElement) {
+            liveMessageElement.remove(); // Remove the live typing message element
+        } else {
+            console.error("live-message not found on stop typing"); // If liveMessageElement isn't found
+        }
+    });
 
 
 
-</script>
+    </script>
 
-</body>
-</html>
+    </body>
+    </html>

@@ -11,7 +11,6 @@
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.socket.io/3.1.3/socket.io.js"></script>
-
     <style>
 
 :root {
@@ -426,6 +425,11 @@ body {
 <body>
     <div class="container-fluid">
         <div class="row">
+        <div class="row col justify-content-center">
+                        <!-- Video Call Interface -->
+        <video id="localVideo" autoplay muted></video> <!-- Local video stream -->
+        <video id="remoteVideo" autoplay></video> <!-- Remote video stream -->
+        </div>
                 <!-- File Modal -->
                 <div id="fileModal" class="modal">
                     <div class="modal-content">
@@ -443,24 +447,6 @@ body {
                     <small class="d-block d-sm-block d-md-none">Device Interface - {{ device_name }}</small>
                     <span class="d-none d-sm-none d-md-block">Device Interface - {{ device_name }}</span>
                 </h2>
-                 <!-- Centered heading and added margin -->
-                <!-- Audio and video elements for call handling -->
-                <audio id="remoteAudio" autoplay></audio>
-
-                
-                <!-- Video Elements Container -->
-                <div class="container my-4" id="call-modal-div">
-                    <div class="row justify-content-center">
-                        <div class="col-md-6 text-center">
-                            <label for="localVideo" class="video-label" style="display: none;">Device Video</label>
-                            <video id="localVideo" autoplay muted class="video-element"></video>
-                        </div>
-                        <div class="col-md-6 text-center">
-                            <label for="remoteVideo" class="video-label" style="display: none;">Server Video</label>
-                            <video id="remoteVideo" autoplay playsinline class="video-element"></video>
-                        </div>
-                    </div>
-                </div>
 
                 <div class="card text-white mb-3">
                     <div class="card-header">Chat</div>
@@ -627,8 +613,8 @@ body {
     let localStream;
     let audioRecorder;
     let audioBlob;
-    let remoteOffer = null;
-    let jitsiApi = null;
+    let remoteOffer;
+    let peerConnection;
 
 //send voice message function
     document.addEventListener('DOMContentLoaded', function() {
@@ -933,41 +919,6 @@ function displayWarning(message) {
 }
 
 
-function initPeerConnection() { 
-    var configuration = {
-        iceServers : [
-                    {
-            urls: "stun:stun.metered.ca:3478"
-        },
-        {
-            urls: "turn:turn.metered.ca:3478",
-            username: "3d82e681ed505cd66beb3a89",
-            credential: "m+37zxZe9EXlJjOo"
-        }
-            ]
-};
-    peerConnection = new RTCPeerConnection(configuration);
-
-    // Handle ICE candidates
-    peerConnection.onicecandidate = event => {
-        if (event.candidate) {
-            socket.emit('ice_candidate', { candidate: event.candidate });
-        }
-    };
-
-    // Handle tracks received from the remote peer
-    peerConnection.ontrack = event => {
-        if (event.streams && event.streams[0]) {
-            if (event.track.kind === 'audio') {
-                remoteAudio.srcObject = event.streams[0];
-            } else if (event.track.kind === 'video') {
-                document.getElementById('remoteVideo').srcObject = event.streams[0];
-            }
-        }
-    };
-
-    // Additional setup as needed...
-}
 
 function triggerCopy(element) {
     // Get the parent element of the clipboard icon which contains the full message
@@ -1072,41 +1023,6 @@ function formatTimestamp() {
     return new Date().toLocaleString('en-US', options);
 }
 
-// Function to handle call answer
-async function handleAnswerCall() {
-    try {
-        if (!peerConnection || !remoteOffer) {
-        console.error('PeerConnection not initialized or remote offer is missing');
-        return;
-    }
-
-        console.log('Remote offer:', remoteOffer);
-        if (!remoteOffer) {
-            console.error('No remote offer received');
-            return;
-        }
-
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(remoteOffer));
-        console.log('Remote description set successfully');
-
-        console.log('PeerConnection signaling state after setting remote description:', peerConnection.signalingState);
-        if (peerConnection.signalingState !== "have-remote-offer") {
-            console.error(`Cannot create answer in state: ${peerConnection.signalingState}`);
-            return;
-        }
-
-        const answer = await peerConnection.createAnswer();
-        console.log('Answer created:', answer);
-
-        await peerConnection.setLocalDescription(answer);
-        console.log('Local description set successfully with answer');
-
-        // Additional logic for sending the answer back...
-    } catch (error) {
-        console.error('Error in handleAnswerCall:', error);
-    }
-};
-
 
 async function populateDeviceSelection() {
     const audioSourceSelect = document.getElementById('audioSourceSelect');
@@ -1185,8 +1101,7 @@ function handleDeclineCall() {
     $('#callModal').modal('hide');
 }
 
-// Event listeners for answer and decline buttons
-document.getElementById('answerCall').addEventListener('click', handleAnswerCall);
+
 document.getElementById('declineCall').addEventListener('click', handleDeclineCall);
 
 
@@ -1250,47 +1165,6 @@ function handleFileUpload(file) {
     });
 }
 
-async function setupPeerConnection() {
-    // Use your Coturn credentials directly
-    const turnCredentials = {
-        'urls': 'turn:flask-server.tech:3478', // replace with your Coturn server address
-        'username': 'admin', // replace with your Coturn username
-        'credential': '!!Bird123' // replace with your Coturn password
-    };
-
-    let iceServers = [{'urls': 'stun:stun.l.google.com:19302'}];
-    if (turnCredentials) {
-        iceServers.push({
-            'urls': turnCredentials.urls,
-            'username': turnCredentials.username,
-            'credential': turnCredentials.credential
-        });
-    }
-
-    const configuration = { 'iceServers': iceServers };
-    peerConnection = new RTCPeerConnection(configuration);
-
-    peerConnection.onicecandidate = event => {
-        if (event.candidate) {
-            socket.emit('ice_candidate', { candidate: event.candidate });
-        }
-    };
-
-    peerConnection.ontrack = (event) => {
-        if (event.streams && event.streams[0]) {
-            if (event.track.kind === 'audio') {
-                document.getElementById('remoteAudio').srcObject = event.streams[0];
-            } else if (event.track.kind === 'video') {
-                document.getElementById('remoteVideo').srcObject = event.streams[0];
-            }
-        }
-    };
-
-    // Add additional setup as needed
-}
-
-
-
 
 document.addEventListener('dblclick', function(e) {
     console.log('double click function called')
@@ -1298,6 +1172,7 @@ document.addEventListener('dblclick', function(e) {
         startEditMode(e.target);
     }
 });
+
     socket.on('connect', function() {
         console.log('Connected to server');
     });
@@ -1355,6 +1230,55 @@ socket.on('ice_candidate', async (data) => {
     }
 });
 
+function setupPeerConnection() {
+        try {
+            const iceConfiguration = {
+                iceServers: [
+                    // Google's public STUN server
+                    {
+                        urls: 'stun:stun.metered.ca:3478'
+                    }
+                ]
+            };
+
+            peerConnection = new RTCPeerConnection(iceConfiguration);
+            console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
+
+            // Rest of the peer connection setup...
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    console.log('New ICE candidate:', event.candidate);
+                    socket.emit('ice_candidate', { candidate: event.candidate });
+                }
+            };
+
+            peerConnection.ontrack = event => {
+                console.log('New track received:', event.track.kind);
+                if (event.streams && event.streams[0]) {
+                    const stream = event.streams[0];
+                    if (event.track.kind === 'audio') {
+                        document.getElementById('remoteAudio').srcObject = stream;
+                    } else if (event.track.kind === 'video') {
+                        document.getElementById('remoteVideo').srcObject = stream;
+                        document.getElementById('remoteVideo').style.display = 'block';
+                    }
+                }
+            };
+            peerConnection.oniceconnectionstatechange = event => {
+                console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
+                if (peerConnection.iceConnectionState === 'failed') {
+                    console.error('ICE Connection Failed');
+                }
+            };
+            // Additional setup as needed
+            return peerConnection;
+
+
+        } catch (error) {
+            console.error('Failed to set up peer connection:', error);
+            return null;
+        }
+    }
 
 // Socket event listener for offers
 socket.on('offer', async (data) => {
@@ -1365,7 +1289,6 @@ socket.on('offer', async (data) => {
 
     try {
         // Set the received offer as the remote description
-        const offerDescription = new RTCSessionDescription(data.offer);
         await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
 
         // Show the call modal and populate device selections
@@ -1388,7 +1311,7 @@ socket.on('offer', async (data) => {
                 const localVideo = document.getElementById('localVideo');
                 localVideo.srcObject = localStream;
                 localVideo.style.display = 'block'; // Make the local video visible
-
+                
                 // Create an answer to send to the caller
                 const answer = await peerConnection.createAnswer();
                 await peerConnection.setLocalDescription(answer);
@@ -1414,10 +1337,6 @@ socket.on('offer', async (data) => {
     }
 });
 
-
-
-// Call this function to initialize the peer connection
-setupPeerConnection();
 
 socket.on('server_typing', function(data) {
     console.log('Server is typing:', data.message); // Check if this logs correctly
@@ -1639,42 +1558,6 @@ document.getElementById('file-input').addEventListener('change', function() {
     }
 });
 
-async function initializeMedia() {
-    try {
-        // Check if localStream is already initialized
-        if (localStream) {
-            // Remove any existing tracks from the peer connection
-            peerConnection.getSenders().forEach(sender => {
-                peerConnection.removeTrack(sender);
-            });
-        }
-
-        const constraints = { audio: true, video: true };
-        localStream = await navigator.mediaDevices.getUserMedia(constraints);
-
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
-    } catch (error) {
-        console.error("Error in getting media stream:", error);
-    }
-}
-
-
-// Call initializeMedia and then access localStream
-initializeMedia(() => {
-    if (localStream) {
-        localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
-    } else {
-        console.error("localStream is not initialized");
-    }
-});
-
-
-function addTracksToPeerConnection(stream) {
-    stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-}
-
 
 
 async function fillAudioDeviceSelection() {
@@ -1701,55 +1584,6 @@ async function setSpeaker(deviceId) {
         console.error('Error setting audio output device:', error);
     }
 }
-
-async function handleCallReception(offer) {;nmjbvcxz
-    console.log("Handling call reception with offer:", offer);
-
-    // Initialize a new RTCPeerConnection
-    peerConnection = new RTCPeerConnection(null);
-
-    try {
-        // Request access to the local media (audio)
-        localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
-        
-        // Add each track from the local stream to the peer connection
-        localStream.getTracks().forEach(track => {
-            peerConnection.addTrack(track, localStream);
-        });
-
-        // Handle remote track
-        peerConnection.ontrack = (event) => {
-    if (event.streams && event.streams[0]) {
-        const remoteVideo = document.getElementById('remoteVideo');
-        if (remoteVideo) {
-            remoteVideo.srcObject = event.streams[0];
-        } else {
-            console.error('Remote video element not found');
-        }
-    }
-};
-
-
-        // Handle ICE candidates
-        peerConnection.onicecandidate = (event) => {
-            if (event.candidate) {
-                socket.emit('ice_candidate', { candidate: event.candidate, recipient: 'Server' });
-            }
-        };
-
-        // Set the remote description and create/send an answer
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
-        const answer = await peerConnection.createAnswer();
-        await peerConnection.setLocalDescription(answer);
-
-        // Send the answer back to the server
-        socket.emit('answer_call', { answer, deviceName: "{{ device_name }}" });
-    } catch (error) {
-        console.error("Error in handleCallReception:", error);
-    }
-}
-
-
 
 document.getElementById('send-notification').addEventListener('click', function() {
     console.log('clicked the send_notification button!');
@@ -1922,7 +1756,7 @@ document.addEventListener('DOMContentLoaded', (event) => {
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    initializeMedia();
+    
     const toggleRecordButton = document.getElementById('toggleRecordButton');
     let isRecording = false;
     let recorder;
@@ -2053,22 +1887,26 @@ document.addEventListener('mouseup', function() {
     messages.forEach(msg => msg.classList.remove('enlarging'));
 });
 
-peerConnection.onicecandidate = event => {
-    if (event.candidate) {
-        socket.emit('ice_candidate', { candidate: event.candidate, peer: 'ServerInterfaceName' });
-    }
-};
 
 // Gracefully close the peer connection on window unload/close
 window.onunload = window.onbeforeunload = () => {
-        if (peerConnection) {
-            peerConnection.close();
-        }
-        if (socket) {
-            socket.close();
-        }
-    };
+    if (peerConnection) {
+        peerConnection.close();
+    }
 
+    // Check if the socket is connected before closing
+    if (socket && socket.connected) {
+        socket.close();
+    }
+};
+
+function emitIfSocketConnected(event, data) {
+    if (socket && socket.connected) {
+        socket.emit(event, data);
+    } else {
+        console.error('Socket is not connected. Cannot emit:', event);
+    }
+}
 recordButton.addEventListener('click', () => {
     $('#audioRecordingModal').modal({
         backdrop: 'static',
