@@ -1231,54 +1231,64 @@ socket.on('ice_candidate', async (data) => {
 });
 
 function setupPeerConnection() {
-        try {
-            const iceConfiguration = {
-                iceServers: [
-                    // Google's public STUN server
-                    {
-                        urls: 'stun:stun.metered.ca:3478'
-                    }
-                ]
-            };
-
-            peerConnection = new RTCPeerConnection(iceConfiguration);
-            console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
-
-            // Rest of the peer connection setup...
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    console.log('New ICE candidate:', event.candidate);
-                    socket.emit('ice_candidate', { candidate: event.candidate });
+    try {
+        const iceConfiguration = {
+            iceServers: [
+                // Google's public STUN server
+                {
+                    urls: 'stun:stun.metered.ca:3478'
+                },
+                // TURN server
+                {
+                    urls: 'turn:call.phcodesage.tech:3478', // Replace with your TURN server address
+                    username: 'admin',         // Replace with your TURN server username
+                    credential: 'password'     // Replace with your TURN server credential
                 }
-            };
+            ]
+        };
 
-            peerConnection.ontrack = event => {
-                console.log('New track received:', event.track.kind);
-                if (event.streams && event.streams[0]) {
-                    const stream = event.streams[0];
-                    if (event.track.kind === 'audio') {
-                        document.getElementById('remoteAudio').srcObject = stream;
-                    } else if (event.track.kind === 'video') {
-                        document.getElementById('remoteVideo').srcObject = stream;
-                        document.getElementById('remoteVideo').style.display = 'block';
-                    }
+        peerConnection = new RTCPeerConnection(iceConfiguration);
+        console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
+
+        // Handling ICE candidates
+        peerConnection.onicecandidate = event => {
+            if (event.candidate) {
+                console.log('New ICE candidate:', event.candidate);
+                socket.emit('ice_candidate', { candidate: event.candidate });
+            }
+        };
+
+        // Handling track received
+        peerConnection.ontrack = event => {
+            console.log('New track received:', event.track.kind);
+            if (event.streams && event.streams[0]) {
+                const stream = event.streams[0];
+                if (event.track.kind === 'audio') {
+                    document.getElementById('remoteAudio').srcObject = stream;
+                } else if (event.track.kind === 'video') {
+                    document.getElementById('remoteVideo').srcObject = stream;
+                    document.getElementById('remoteVideo').style.display = 'block';
                 }
-            };
-            peerConnection.oniceconnectionstatechange = event => {
-                console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
-                if (peerConnection.iceConnectionState === 'failed') {
-                    console.error('ICE Connection Failed');
-                }
-            };
-            // Additional setup as needed
-            return peerConnection;
+            }
+        };
 
+        // Monitoring ICE connection state changes
+        peerConnection.oniceconnectionstatechange = event => {
+            console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
+            if (peerConnection.iceConnectionState === 'failed') {
+                console.error('ICE Connection Failed');
+            }
+        };
 
-        } catch (error) {
-            console.error('Failed to set up peer connection:', error);
-            return null;
-        }
+        // Additional setup as needed...
+        return peerConnection;
+
+    } catch (error) {
+        console.error('Failed to set up peer connection:', error);
+        return null;
     }
+};
+
 
 // Socket event listener for offers
 socket.on('offer', async (data) => {
