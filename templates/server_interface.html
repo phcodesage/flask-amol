@@ -669,19 +669,20 @@
         }
     });
 
-async function startCall() {
+    async function startCall() {
     if (!peerConnection) {
         await setupPeerConnection();
-    } // Initialize the peer connection first
+    }
 
     const localVideo = document.getElementById('localVideo');
     let warningElement = document.getElementById('deviceWarning');
     if (!warningElement) {
-        warningElement = { style: {}, textContent: '' }; // Dummy object to prevent errors
+        warningElement = { style: {}, textContent: '' }; // Fallback object
     }
 
     try {
-        const localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+        const constraints = { audio: true, video: true };
+        const localStream = await navigator.mediaDevices.getUserMedia(constraints);
         localStream.getTracks().forEach(track => {
             console.log('Adding local track:', track);
             peerConnection.addTrack(track, localStream);
@@ -698,16 +699,13 @@ async function startCall() {
 
     try {
         const offer = await peerConnection.createOffer();
-        console.log('Offer created:', offer);
         await peerConnection.setLocalDescription(offer);
-        console.log('Local description set with offer.');
-
         socket.emit('offer', { 'offer': offer });
-        console.log('Offer sent:', offer);
     } catch (error) {
         console.error('Failed to create offer:', error);
     }
-}
+};
+
 
 function endCall() {
     if (peerConnection) {
@@ -821,13 +819,13 @@ document.getElementById('endCallButton').addEventListener('click', endCall);
             iceServers: [
                 // Google's public STUN server
                 {
-                    urls: 'stun:stun.metered.ca:3478'
+                    urls: 'STUN:freeturn.net:3478'
                 },
                 // TURN server
                 {
-                    urls: 'turn:call.phcodesage.tech:3478', // Replace with your TURN server address
-                    username: 'admin',         // Replace with your TURN server username
-                    credential: 'password'     // Replace with your TURN server credential
+                    urls: 'TURNS:freeturn.net:5349', // Replace with your TURN server address
+                    username: 'free',         // Replace with your TURN server username
+                    credential: 'free'     // Replace with your TURN server credential
                 }
             ]
         };

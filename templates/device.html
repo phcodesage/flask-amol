@@ -1032,18 +1032,23 @@ async function populateDeviceSelection() {
     audioSourceSelect.innerHTML = '';
     videoSourceSelect.innerHTML = '';
 
-    const devices = await navigator.mediaDevices.enumerateDevices();
-    devices.forEach(device => {
-        const option = document.createElement('option');
-        option.value = device.deviceId;
-        option.text = device.label;
+    
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        devices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `Device ${device.deviceId.substr(0, 8)}...`; // Fallback label if device.label is empty
 
-        if (device.kind === 'audioinput') {
-            audioSourceSelect.appendChild(option);
-        } else if (device.kind === 'videoinput') {
-            videoSourceSelect.appendChild(option);
-        }
-    });
+            if (device.kind === 'audioinput') {
+                audioSourceSelect.appendChild(option);
+            } else if (device.kind === 'videoinput') {
+                videoSourceSelect.appendChild(option);
+            }
+        });
+    } catch (error) {
+        console.error('Error accessing media devices:', error);
+    }
 }
 
 async function getMediaStream() {
@@ -1236,13 +1241,13 @@ function setupPeerConnection() {
             iceServers: [
                 // Google's public STUN server
                 {
-                    urls: 'stun:stun.metered.ca:3478'
+                    urls: 'STUN:freeturn.net:3478'
                 },
                 // TURN server
                 {
-                    urls: 'turn:call.phcodesage.tech:3478', // Replace with your TURN server address
-                    username: 'admin',         // Replace with your TURN server username
-                    credential: 'password'     // Replace with your TURN server credential
+                    urls: 'TURNS:freeturn.net:5349', // Replace with your TURN server address
+                    username: 'free',         // Replace with your TURN server username
+                    credential: 'free'     // Replace with your TURN server credential
                 }
             ]
         };
@@ -1310,29 +1315,28 @@ socket.on('offer', async (data) => {
 
         // Define the behavior when the 'Answer Call' button is clicked
         document.getElementById('answerCall').onclick = async () => {
-            try {
-                // Request access to local media (audio and video)
-                localStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true });
+    try {
+        // Attempt to get the local media stream
+        localStream = await getMediaStream();
 
-                // Add tracks from the local stream to the peer connection
-                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+        if (localStream) {
+            // If a stream is available, add its tracks to the connection
+            localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+            const localVideo = document.getElementById('localVideo');
+            localVideo.srcObject = localStream;
+            localVideo.style.display = 'block';
+        }
 
-                // Set the local video stream to be displayed in the UI
-                const localVideo = document.getElementById('localVideo');
-                localVideo.srcObject = localStream;
-                localVideo.style.display = 'block'; // Make the local video visible
-                
-                // Create an answer to send to the caller
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                socket.emit('answer', { 'answer': answer });
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit('answer', { 'answer': answer });
 
-                // Close the modal after answering
-                $('#callModal').modal('hide');
-            } catch (error) {
-                console.error('Error accessing media devices:', error);
-            }
-        };
+        // Close the modal after answering
+        $('#callModal').modal('hide');
+    } catch (error) {
+        console.error('Error during call answer:', error);
+    }
+};
 
         // Define the behavior when the 'Decline Call' button is clicked
         document.getElementById('declineCall').onclick = () => {
