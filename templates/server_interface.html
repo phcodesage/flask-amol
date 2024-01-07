@@ -708,25 +708,26 @@
 
 
 function endCall() {
+    // Close the peer connection if it exists
     if (peerConnection) {
-        peerConnection.close();
-        // Handle errors when closing the peer connection
-        peerConnection.oniceconnectionstatechange = (event) => {
-            if (peerConnection.iceConnectionState === 'failed' || peerConnection.iceConnectionState === 'disconnected') {
-                console.error('ICE Connection state error during endCall:', peerConnection.iceConnectionState);
-            }
-        };
+        peerConnection.getTracks().forEach(track => track.stop()); // Stop all tracks
+        peerConnection.close(); // Close the peer connection
+        peerConnection = null; // Set the peerConnection to null
+    }
+
+    // Stop all tracks on the local stream
+    if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
     }
-    if (callWindow) {
-        callWindow.close();
-    }
-    socket.emit('end_call', { deviceName: "{{ device_name }}" }, (ack) => {
-        if (ack !== 'OK') {
-            console.error('Error ending call:', ack);
-        }
-    });
-}
+
+    // Emit an event to inform the client that the call has ended
+    socket.emit('end_call', { message: 'Call ended by server' });
+
+    // Update UI if necessary
+    document.getElementById('endCallButton').disabled = true;
+    // Additional UI updates can be made here
+};
+
 
 document.getElementById('startCallButton').addEventListener('click', startCall);
 
