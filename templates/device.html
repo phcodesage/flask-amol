@@ -405,8 +405,12 @@ body {
 
 .video-audio-controls {
     display: flex;
-    justify-content: space-around;
-    margin: 10px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.video-audio-controls .btn {
+    margin: 0 5px;
 }
 
 .video-audio-controls button,
@@ -570,6 +574,12 @@ body {
         </div>
     </div>
 
+    <!-- Video & Audio Controls-->
+    <div class="video-audio-controls">
+        <button id="toggleVideoButton" class="btn btn-primary">Toggle Video</button>
+        <button id="toggleAudioButton" class="btn btn-primary">Toggle Audio</button>
+    </div>
+    
         <!-- Color Picker Modal -->
 <div class="modal" id="colorPickerModal" tabindex="-1" aria-labelledby="colorPickerModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -614,8 +624,8 @@ body {
     const messageInput = document.getElementById('message-input');
     const sendMessageButton = document.getElementById('send-message');
     const recordButton = document.getElementById('toggleRecordButton');
-    const toggleVideoButton = document.getElementById('toggleVideo');
-    const toggleAudioButton = document.getElementById('toggleAudio');
+    const toggleVideoButton = document.getElementById('toggleVideoButton');
+    const toggleAudioButton = document.getElementById('toggleAudioButton');
     const cameraSelection = document.getElementById('cameraSelection');
     const endCallButton = document.getElementById('endCallButton');
     var deviceName = "{{ device_name }}";  // Received from Flask
@@ -699,7 +709,25 @@ chatContainer.addEventListener('dragleave', function() {
     chatContainer.classList.remove('dragging');
 });
 
+toggleVideoButton.addEventListener('click', function() {
+    if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            this.textContent = videoTrack.enabled ? 'Turn Off Video' : 'Turn On Video';
+        }
+    }
+});
 
+toggleAudioButton.addEventListener('click', function() {
+    if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            this.textContent = audioTrack.enabled ? 'Mute' : 'Unmute';
+        }
+    }
+});
 
 // Handle the file drop
 chatContainer.addEventListener('drop', function(e) {
