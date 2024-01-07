@@ -403,6 +403,16 @@ body {
     margin: 10px 0;
 }
 
+.video-audio-controls {
+    display: flex;
+    justify-content: space-around;
+    margin: 10px;
+}
+
+.video-audio-controls button,
+.video-audio-controls select {
+    padding: 5px 10px;
+}
 
 @media (max-width: 768px) {  /* Typical breakpoint for mobile devices */
     .card-body {
@@ -426,6 +436,8 @@ body {
     <div class="container-fluid">
         <div class="row">
         <div class="row col justify-content-center">
+                    <!-- Add this inside your existing structure where appropriate -->
+        
                         <!-- Video Call Interface -->
         <video id="localVideo" autoplay muted></video> <!-- Local video stream -->
         <video id="remoteVideo" autoplay></video> <!-- Remote video stream -->
@@ -552,6 +564,7 @@ body {
                 <div class="modal-footer">
                     <button type="button" class="btn btn-success" id="answerCall">Answer Call</button>
                     <button type="button" class="btn btn-danger" id="declineCall">Decline Call</button>
+                    <button type="button" class="btn btn-danger" id="endCallButton">End Call</button>
                 </div>
             </div>
         </div>
@@ -601,6 +614,10 @@ body {
     const messageInput = document.getElementById('message-input');
     const sendMessageButton = document.getElementById('send-message');
     const recordButton = document.getElementById('toggleRecordButton');
+    const toggleVideoButton = document.getElementById('toggleVideo');
+    const toggleAudioButton = document.getElementById('toggleAudio');
+    const cameraSelection = document.getElementById('cameraSelection');
+    const endCallButton = document.getElementById('endCallButton');
     var deviceName = "{{ device_name }}";  // Received from Flask
     let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
     let typingInProgress = false;
@@ -616,7 +633,7 @@ body {
     let remoteOffer;
     let peerConnection;
 
-//send voice message function
+
     document.addEventListener('DOMContentLoaded', function() {
     const startRecordingBtn = document.getElementById('startRecording');
     const stopRecordingBtn = document.getElementById('stopRecording');
@@ -737,6 +754,27 @@ messageInput.addEventListener('blur', function() {
         this.style.color = '#666'; // adjust to your placeholder color
     }
 });
+
+function endCall() {
+    // Close the peer connection if it exists
+    if (peerConnection) {
+        peerConnection.getTracks().forEach(track => track.stop()); // Stop all tracks
+        peerConnection.close(); // Close the peer connection
+        peerConnection = null; // Set the peerConnection to null
+    }
+
+    // Stop all tracks on the local stream
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+
+    // Emit an event to inform the client that the call has ended
+    socket.emit('end_call', { message: 'Call ended by server' });
+
+    // Update UI if necessary
+    document.getElementById('endCallButton').disabled = true;
+    // Additional UI updates can be made here
+};
 
 
 function uploadFile(file) {
@@ -1032,13 +1070,12 @@ async function populateDeviceSelection() {
     audioSourceSelect.innerHTML = '';
     videoSourceSelect.innerHTML = '';
 
-    
     try {
         const devices = await navigator.mediaDevices.enumerateDevices();
         devices.forEach(device => {
             const option = document.createElement('option');
             option.value = device.deviceId;
-            option.text = device.label || `Device ${device.deviceId.substr(0, 8)}...`; // Fallback label if device.label is empty
+            option.text = device.label || `Device ${device.deviceId.substr(0, 8)}...`;
 
             if (device.kind === 'audioinput') {
                 audioSourceSelect.appendChild(option);
@@ -1049,7 +1086,7 @@ async function populateDeviceSelection() {
     } catch (error) {
         console.error('Error accessing media devices:', error);
     }
-}
+};
 
 async function getMediaStream() {
     const audioSource = document.getElementById('audioSourceSelect').value;
@@ -1108,6 +1145,7 @@ function handleDeclineCall() {
 
 
 document.getElementById('declineCall').addEventListener('click', handleDeclineCall);
+document.getElementById('endCallButton').addEventListener('click', endCall);
 
 
 function appendFileToChatbox(file) {
@@ -1177,6 +1215,14 @@ document.addEventListener('dblclick', function(e) {
         startEditMode(e.target);
     }
 });
+    socket.on('end_call', function() {
+        if (clientPeerConnection) {
+            clientPeerConnection.close();
+            clientPeerConnection = null;
+        }
+
+        // Additional client-side cleanup like hiding video elements or UI updates
+    });
 
     socket.on('connect', function() {
         console.log('Connected to server');
@@ -1265,17 +1311,18 @@ function setupPeerConnection() {
 
         // Handling track received
         peerConnection.ontrack = event => {
-            console.log('New track received:', event.track.kind);
-            if (event.streams && event.streams[0]) {
-                const stream = event.streams[0];
-                if (event.track.kind === 'audio') {
-                    document.getElementById('remoteAudio').srcObject = stream;
-                } else if (event.track.kind === 'video') {
-                    document.getElementById('remoteVideo').srcObject = stream;
-                    document.getElementById('remoteVideo').style.display = 'block';
-                }
-            }
-        };
+    console.log('New track received:', event.track.kind);
+    if (event.streams && event.streams[0]) {
+        const stream = event.streams[0];
+        if (event.track.kind === 'audio') {
+            document.getElementById('remoteAudio').srcObject = stream;
+        } else if (event.track.kind === 'video') {
+            const remoteVideo = document.getElementById('remoteVideo');
+            remoteVideo.srcObject = stream;
+            remoteVideo.style.display = 'block';
+        }
+    }
+};
 
         // Monitoring ICE connection state changes
         peerConnection.oniceconnectionstatechange = event => {
