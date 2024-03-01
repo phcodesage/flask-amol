@@ -36,9 +36,9 @@ else
     echo "requirements.txt file not found"
 fi
 
-# Optional: Kill processes running on port 5000 to free it up
-# Be cautious with using sudo; it might not be necessary or safe in all environments
-# sudo lsof -ti:5000 | xargs sudo kill -9
+# Kill processes running on port 5000 to free it up
+echo "Attempting to kill processes running on port 5000..."
+sudo lsof -ti:5000 | sudo xargs kill -9
 
 # Initialize, migrate, and upgrade the database
 # Note: Ensure that your Flask application is configured to use Flask-Migrate correctly for these commands to work

@@ -298,14 +298,21 @@ fill: #2B641E;
         </div>
     </div>
 
-        <div class="flex flex-wrap">
-            <div class="w-full">
-                <!-- Connected Devices Header -->
-                <div class="max-w-screen-lg mx-auto text-center">
-                    <h2 id="devices" class="mb-4 text-xl font-semibold">Connected Devices:  {{ devices_string }} </h2>
+    <div class="flex flex-wrap bg-gray-900 text-white">
+        <div class="w-full">
+            <!-- Connected Devices Header -->
+            <div class="max-w-screen-lg mx-auto text-center">
+                <h2 id="devices" class="mb-4 text-2xl font-bold text-gray-100">Connected Devices:</h2>
+                <!-- Place where the dynamic list will be rendered -->
+                <div class="mt-4 bg-gray-800 p-5 rounded-lg shadow-md">
+                    <ul id="deviceList" class="list-disc list-inside text-gray-300">
+                        <!-- Dynamic device list items will be inserted here -->
+                    </ul>
                 </div>
             </div>
         </div>
+    </div>
+    
 
     <!-- Web Calling UI -->
     <div id="webCallingUI" class="hidden fixed inset-0 bg-gray-800 border border-gray-200 rounded-lg shadow z-50">
@@ -636,7 +643,10 @@ fill: #2B641E;
 
   
 <script>
-const socket = io();
+const socket = io('https://test.flask-server.tech', {
+    path: '/socket.io',  // Ensure this path is correct; it's the default for Flask-SocketIO // If you need to pass query parameters
+});
+
 let warningElement = document.getElementById('deviceWarning');
 let typingTimeout;
 let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
@@ -1424,7 +1434,7 @@ socket.on('new-remote-ice-candidate', (data) => {
 });
 
 socket.on('connect', () => {
-    console.log('Connected to server'); 
+    console.log('Connected to the server'); 
 });
 
 
@@ -1432,16 +1442,6 @@ socket.on('disconnect', () => {
     console.log('Disconnected from server');
 });
 
-
-
-// Socket Event Handlers
-socket.on('update_device_list', function(data) {
-// The data object should already contain the connected_devices key with an array as the value.
-// No need to parse it as it's not a string.
-const connected_devices = data.connected_devices;
-console.log('Connected devices:', connected_devices);
-updateDropdown('deviceSelectChat', connected_devices);
-});
 
 
 
@@ -2235,7 +2235,7 @@ async function updateDeviceList() {
         .catch(function(err) {
             console.error('Could not list devices: ', err);
         });
-}
+};
 
 // Function to monitor microphone volume
 async function monitorMicrophoneVolume(micId) {
@@ -2729,18 +2729,35 @@ function updateDropdown(elementId, deviceList) {
             });
         };
 
-document.addEventListener('DOMContentLoaded', function() {
-        // Assuming 'socket' is already connected elsewhere in your script
-        socket.on('update_device_list', function(data) {
-            console.log('Received updated device list:', data.connected_devices);
-            updateDropdown('deviceSelectChat', data.connected_devices);
-        });
-
-
-
-        // Optionally, trigger an initial update if you have initial data
-        socket.emit('request_device_list'); // Make sure to handle this event on the server to send the current device list
+        document.addEventListener('DOMContentLoaded', function() {
+    // Assuming 'socket' is already connected elsewhere in your script
+    socket.on('update_device_list', function(data) {
+        console.log('Received updated device list:', data.connected_devices);
+        updateDropdown('deviceSelectChat', data.connected_devices);
+        updateDeviceList(data.connected_devices); // Function to update the device list UI
     });
+
+    // Function to update the device list UI
+    function updateDeviceList(devices) {
+        const deviceList = document.getElementById('deviceList');
+        if (!deviceList) return; // Exit if the deviceList element does not exist
+        deviceList.innerHTML = '';  // Clear existing list
+        devices.forEach(function(device) {
+            const listItem = document.createElement('li');
+            listItem.textContent = device;
+            deviceList.appendChild(listItem);
+        });
+    }
+
+    // Trigger an initial request for the device list
+    socket.emit('request_device_list');
+
+    // Request an updated device list every second
+    setInterval(function() {
+        socket.emit('request_device_list');
+    }, 2000); // 1000 milliseconds = 1 second
+});
+
 
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>

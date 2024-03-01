@@ -19,6 +19,7 @@ import hmac
 import hashlib
 import base64
 import requests
+import atexit
 from eventlet import wsgi
 
 from eventlet.green import ssl
@@ -32,6 +33,8 @@ from dotenv import load_dotenv
 from flask import session  # Don't forget to import session
 from flask_migrate import Migrate
 from datetime import datetime
+from threading import Lock
+
 
 interface_accessed = False
 initial_user_ip = None
@@ -39,7 +42,8 @@ initial_user_ip = None
 TURN_SECRET = "!!Bird123"  # Your static-auth-secret from turnserver.conf
 TURN_SERVER = "meet.flask-server.tech"  # Your TURN server address
 TURN_PORT = "3480"  # Your TURN server port
-
+thread_lock = Lock()
+thread = None 
 
 
 # Load environment variables from .env file
@@ -79,6 +83,9 @@ rooms_sid = {}
 names_sid = {}
 
 
+admin_username = os.getenv('USERNAME', 'admin')  # Default to 'admin' if not set
+admin_password = os.getenv('PASSWORD', '!!Bird123')
+
 
 def get_public_ip_address():
     try:
@@ -89,8 +96,14 @@ def get_public_ip_address():
         return None
 
 public_ip = get_public_ip_address()
-
 ALLOWED_IPS = {public_ip} if public_ip else set()
+
+if public_ip:
+    ALLOWED_IPS.add(public_ip)
+else:
+    app.logger.error('Public IP address could not be fetched; ALLOWED_IPS is empty.')
+
+
 
 def is_allowed_ip():
     client_ip = request.remote_addr
@@ -180,7 +193,7 @@ class Message(db.Model):
 
 
 CORS(app)
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode='eventlet')
+socketio = SocketIO(app, cors_allowed_origins="*", logger=True, async_mode='eventlet')
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
 
 # Initialize SQLAlchemy
@@ -236,9 +249,10 @@ def is_allowed_ip():
 
 def add_admin_user():
     with app.app_context():  # Use the Flask app context
-        admin_username = 'admin'
-        admin_password = 'admin'
+        admin_username = os.getenv('USERNAME', 'admin')  # Default to 'admin' if not set
+        admin_password = os.getenv('PASSWORD', '!!Bird123')  # Default to '!!Bird123' if not set
         hashed_password = bcrypt.generate_password_hash(admin_password).decode('utf-8')
+        
         existing_user = User.query.filter_by(username=admin_username).first()
         if not existing_user:
             new_user = User(username=admin_username, password=hashed_password)
@@ -247,6 +261,7 @@ def add_admin_user():
             print("Admin user added to the database.")
         else:
             print("Admin user already exists.")
+
 
 
 
@@ -359,49 +374,50 @@ def login():
 
 @app.route('/server-interface', methods=['GET'])
 def server_interface():
-    global initial_user_ip
+    global initial_user_ip  # Use a global variable to track the first IP
 
-    client_ip = request.remote_addr
+    client_ip = request.remote_addr  # Get the client's IP address
 
     if not is_allowed_ip():
-        abort(403)  # Forbidden access
+        abort(403)  # If the IP is not in the allowed list, forbid access
     
-    # Check if the interface has been accessed by another IP
+    # If the interface has already been accessed and the current IP is different from the first one, forbid access
     if initial_user_ip is not None and client_ip != initial_user_ip:
-        abort(403)  # Forbidden access
+        abort(403)
     
-    # If it's the first access, store the IP
+    # If it's the first time the interface is being accessed, store the client's IP
     if initial_user_ip is None:
         initial_user_ip = client_ip
 
-    # Proceed with your function as before
-    # Use device_socket_map to identify connected devices
+    # Your existing logic for handling a valid access
     connected_device_names = [name for name, socket_id in device_socket_map.items()]
-
-    # Proceed to get base_url and endpoint from tunnel_url
     base_url = "https://" + "meet.flask-server.tech"
     current_app.logger.info('Server interface route called')
 
-    success = session.pop('success', None)
+    success = session.pop('success', None)  # Retrieve and clear any 'success' message stored in the session
+
     if current_user.is_authenticated:
         current_app.logger.info('User is authenticated')
     else:
         current_app.logger.info('User is not authenticated')
 
     try:
-        ip_address = get_server_ip()
+        ip_address = get_server_ip()  # Function to get the server's IP address(es)
     except Exception as e:
         ip_address = "Error obtaining IP address"
         app.logger.error(f"Error obtaining IP address: {e}")
 
     endpoint = "/device"
-
-    # Generate a string representation of connected devices
     devices_string = ", ".join(connected_device_names) if connected_device_names else "No devices connected"
     
+    # Render the server interface page with the necessary data
     return render_template('server_interface.html', base_url=base_url, success=success, devices_string=devices_string, devices=connected_device_names, ip_addresses=[ip_address], endpoint=endpoint)
 
 
+
+
+from flask import flash, redirect, render_template, request, session, url_for
+from flask_socketio import emit
 
 @app.route('/register_device', methods=['GET', 'POST'])
 def register_device():
@@ -418,14 +434,12 @@ def register_device():
             # Check if the device is already registered
             existing_device = Device.query.filter_by(name=device_name).first()
             if existing_device:
-                flash('Device already registered. Redirecting to the device dashboard.', 'info')
+                flash('Device already registered.', 'info')
                 session['device_name'] = device_name
-                # Set the existing device as connected in the database
-                existing_device.is_connected = True
+                existing_device.is_connected = True  # Mark as connected
                 db.session.commit()
-                # Additionally, mark the device as connected in the device_socket_map
-                # Note: Assign a dummy socket ID or an actual one if available from WebSocket connection
-                device_socket_map[device_name] = 'dummy_socket_id'  # Replace 'dummy_socket_id' as necessary
+
+                # Redirect to the /device route with the device name as a query parameter
                 return redirect(url_for('device', device_name=device_name))
 
             # Register new device and mark as connected
@@ -433,10 +447,11 @@ def register_device():
             db.session.add(new_device)
             db.session.commit()
             session['device_name'] = device_name
-            # Also update the in-memory mapping to reflect the device as connected
-            device_socket_map[device_name] = 'dummy_socket_id'  # Again, replace 'dummy_socket_id' as needed
 
-            flash('Device registered successfully. Redirecting to your device dashboard.', 'success')
+            # Emit an update to all clients about the new device
+            emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
+
+            flash('Device registered successfully.', 'success')
             return redirect(url_for('device', device_name=device_name))
         else:
             return render_template('register_device.html')
@@ -444,6 +459,7 @@ def register_device():
         app.logger.error(f"Error: {e}")
         flash('Internal server error.', 'danger')
         return render_template('register_device.html')
+
 
 
 
@@ -513,36 +529,47 @@ def delete_file(filename):
     else:
         return jsonify(status='fail', message='File not found'), 404
 
+def background_device_update():
+    """Background task that sends the list of connected devices every X seconds."""
+    while True:
+        socketio.sleep(30)  # Adjust time as needed
+        # Emit the list of connected devices to all clients
+        socketio.emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
+
 
 
 @socketio.on('connect')
 def handle_connect():
-    # Access query parameters directly from request.args
+    global thread
+    with thread_lock:
+        if thread is None:
+            # Start the background task if it's not already running
+            thread = socketio.start_background_task(background_device_update)
+
     device_name = request.args.get('device_name')
     if device_name:
         # Update both mappings
         device_socket_map[device_name] = request.sid
-        device_sid_map[request.sid] = device_name  # Reverse mapping
-        print(f"Device {device_name} connected with SID {request.sid}.")
+        device_sid_map[request.sid] = device_name
+        # Notify all clients about the updated device list
         emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
+
 
 @socketio.on('disconnect')
 def handle_disconnect():
     disconnected_sid = request.sid
-    # Use the reverse mapping to get the device name
-    device_name = device_sid_map.get(disconnected_sid)
+    device_name = device_sid_map.pop(disconnected_sid, None)
     if device_name:
-        # Update both mappings
+        # Remove the device from the map and update the database
         del device_socket_map[device_name]
-        del device_sid_map[disconnected_sid]  # Reverse mapping
-        print(f"Device {device_name} removed from device_socket_map.")
-        # Database and emit updates remain the same
+        # Update the device status in the database
         device = Device.query.filter_by(name=device_name).first()
         if device:
             device.is_connected = False
             db.session.commit()
-            print(f"Device {device_name} disconnected and updated in database.")
+        # Notify all clients about the updated device list
         emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
+
 
 
 @socketio.on('request_device_list')
@@ -1030,17 +1057,27 @@ def handle_end_call(data):
     # Broadcast the endCall event to all clients except the sender
     emit('endCall', data, broadcast=True, include_self=False)
 
+    # Function to clear allowed IPs
+def clear_allowed_ips():
+    ALLOWED_IPS.clear()
+    app.logger.info("ALLOWED_IPS cleared")
+
+atexit.register(clear_allowed_ips)
+
 if __name__ == '__main__':
     with app.app_context():    
         db.create_all()
-        add_admin_user()
+        add_admin_user()  # Ensure this doesn't log sensitive information.
         users = User.query.all()
-        # Print all users
+        # Safely print user details without exposing sensitive information.
         for user in users:
-            print(f'User ID: {user.id}, Username: {user.username}, Password: {user.password}')
-        app.debug = True  # Enable debug mode
-        local_ip = '0.0.0.0'                  
+            print(f'User ID: {user.id}, Username: {user.username}')
+
+        # Set debug mode based on environment (or keep it False in production).
+        app.debug = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']
+
+        # Log allowed IPs if necessary for your application's logic.
         logger.info(f'Allowed IPs: {ALLOWED_IPS}')
-        # Deploy as an eventlet WSGI server
-        eventlet.wsgi.server(eventlet.listen((local_ip, 5500)), app)         
-    socketio.run(app, host='0.0.0.0', port=5000)
+
+        # Start the Flask-SocketIO server.
+        socketio.run(app, host='0.0.0.0', port=8000)
