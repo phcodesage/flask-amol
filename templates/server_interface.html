@@ -1,0 +1,2748 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Device Interface</title>
+
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{url_for('static',filename='dist/css/output.css')}}">
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- JS and Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>  
+
+    
+    <style>
+:root {
+    --primary: #6f42c1;
+    --secondary: #121212;
+    --success: #198754;
+    --info: #0dcaf0;
+    --warning: #fd7e14;
+    --danger: #dc3545;
+    --link: #6f42c1;
+    --text: #ccc;
+    --muted: #1a1a1a;
+}
+
+body {
+    background-color: var(--secondary);
+    color: var(--text);
+    padding: 20px;
+
+}
+
+.form-group, .modal-content, #chatBox, .list-group-item {
+    background-color: var(--muted);
+    border-color: var(--text);
+}
+
+input[type="color"], select {
+    background-color: var(--muted);
+    color: var(--text);
+    border-color: var(--text);
+}
+
+.btn {
+    border: 1px solid var(--info);
+    background-color: var(--muted);
+    color: var(--info);
+}
+
+.btn:hover {
+    background-color: var(--info);
+    color: var(--muted);
+}
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    background-color: var(--muted);
+    color: var(--text);
+    height: 500px;
+    border: none;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    padding: 10px;
+    border-radius: 5px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--link) var(--secondary);
+}
+
+.chat-container.dragging {
+    border: 3px dashed #aaa;
+    background-color: rgba(255, 255, 255, 0.5);
+}
+
+
+.shadow-sm {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.11);
+}
+
+/* From device styles */
+.card {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+/* ... [keep the remaining styles from the device interface here] */
+
+/* Server styles continued */
+.chat-box {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 10px 20px;
+}
+
+.chat-box, #messages li {
+    background-color: var(--muted);
+}
+
+#live-message {
+    background-color: #198754!important;
+}
+
+
+/* Styling for the scrollbar */
+.chat-box::-webkit-scrollbar {
+    width: 12px;
+}
+
+.chat-box::-webkit-scrollbar-track {
+    background: #262626;
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+    background-color: var(--info);
+    border-radius: 20px;
+}
+
+.accent-red {
+    color: var(--danger);
+}
+
+.accent-green {
+    color: var(--success);
+}
+
+.accent-purple {
+    color: var(--primary);
+}
+
+#send-message {
+    background-color: var(--primary);
+    border-color: var(--primary);
+}
+
+#clear-chat {
+    background-color: var(--danger);
+    border-color: var(--danger);
+}
+
+#message-input {
+    background-color: var(--muted);
+    border-color: var(--primary);
+    color: var(--text);
+    padding: 12px 15px;
+    height: auto;
+    min-height: 40px;
+    max-height: 160px;
+    overflow-y: auto;
+    border-radius: 10px;
+    box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.server-message {
+    align-self: flex-end;
+    background-color: var(--primary);
+    color: var(--text);
+}
+
+.device-message {
+    align-self: flex-start;
+    background-color: var(--info);
+    color: var(--muted)!important;
+}
+
+.chat-container .chat-message {
+    margin-bottom: 10px;
+    color: var(--text);
+    padding: 10px;
+    max-width: 80%;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+    border-radius: 10px;
+    position: relative;
+    padding-right: 30px;
+    cursor: pointer; /* Add pointer cursor on hover */
+}
+
+
+.timestamp {
+    display: none; /* hidden by default */
+    font-size: 0.8rem;
+    color: var(--danger)!important;
+    margin-right: 10px;
+    align-self: center;
+}
+
+.chat-message .clipboard-icon {
+    display: none;
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+}
+
+.chat-message:hover .clipboard-icon {
+    display: block;
+}
+
+.progress {
+    line-height: 40px!important;
+}
+
+.progress-bar {
+    background-color: var(--primary);
+    /* Other styles ... */
+    transition: width 0.5s ease-in-out; /* Add this line */
+}
+
+/*Call elements*/
+
+#remoteVideo, #localVideo {
+    display: none;
+    border: 5px solid var(--link);
+}
+#deviceWarning {
+    display: none;
+}
+
+.success {
+font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+width: 320px;
+padding: 12px;
+display: flex;
+flex-direction: row;
+align-items: center;
+justify-content: start;
+background: #EDFBD8;
+border-radius: 8px;
+border: 1px solid #84D65A;
+box-shadow: 0px 0px 5px -3px #111;
+}
+
+.success__icon {
+width: 20px;
+height: 20px;
+transform: translateY(-2px);
+margin-right: 8px;
+}
+
+.success__icon path {
+fill: #84D65A;
+}
+
+.success__title {
+font-weight: 500;
+font-size: 14px;
+color: #2B641E;
+}
+
+.success__close {
+width: 20px;
+height: 20px;
+cursor: pointer;
+margin-left: auto;
+}
+
+.success__close path {
+fill: #2B641E;
+}
+    </style>
+
+</head>
+
+<body>
+    <div class="mx-auto mt-5 max-w-full">
+    <!-- This example requires Tailwind CSS and Flowbite. Place the script tag before your closing </body> tag. -->
+    <div id="callEndedModal" data-modal-target="callEndedModal" tabindex="-1" class="hidden fixed inset-0 z-50 overflow-y-auto overflow-x-hidden h-modal md:h-full justify-center items-center flex bg-black bg-opacity-50 backdrop-blur-[2px] animate-fadeIn">
+        <div class="relative p-4 w-full max-w-md h-full md:h-auto animate-scaleUp">
+            <div class="relative bg-gray-800 bg-opacity-95 rounded-lg shadow dark:bg-gray-700 border border-gray-600">
+                <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-600 hover:text-white rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800" data-modal-toggle="callEndedModal">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>  
+                </button>
+                <div class="p-6 text-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-4 w-14 h-14 text-gray-400 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <!-- SVG content for call-ended icon -->
+                    </svg>
+                    <h3 class="mb-5 text-lg font-normal text-gray-400 dark:text-gray-200">The user ended the call</h3>
+                    <button data-modal-toggle="callEndedModal" type="button" class="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <div class="flex flex-wrap">
+            <div class="w-full">
+                <!-- Connected Devices Header -->
+                <div class="max-w-screen-lg mx-auto text-center">
+                    <h2 id="devices" class="mb-4 text-xl font-semibold">Connected Devices:  {{ devices_string }} </h2>
+                </div>
+            </div>
+        </div>
+
+    <!-- Web Calling UI -->
+    <div id="webCallingUI" class="hidden fixed inset-0 bg-gray-800 border border-gray-200 rounded-lg shadow z-50">
+
+
+        <!-- Remote Video Area -->
+        <div class="absolute inset-0 flex justify-center pb-3 md:pb-20 lg:pb-24">
+            <video id="remoteVideo" class="w-full h-auto max-h-[calc(100%-4rem)] md:max-h-[calc(100%-5rem)] lg:max-h-[calc(100%-6rem)] object-cover border-4 border-violet-600" autoplay></video> <!-- Added border classes -->
+        </div>
+        <!-- Local Video (Top Right) -->
+        <div class="absolute top-4 right-4 w-full max-w-xs" id="resizableVideoContainer"> <!-- Adjust max-width as needed -->
+            <video id="localVideo" class="w-full aspect-video rounded-lg object-cover border-4 border-violet-600" autoplay muted></video> <!-- Uses aspect-video for 16:9 aspect ratio -->
+            <!-- Resizing handle (optional if you want resizing functionality) -->
+            <div id="dragHandle" class="absolute bottom-0 right-0 bg-violet-600 cursor-se-resize p-2"></div>
+        </div>
+        
+                    <!-- Reconnecting Overlay as a Modal -->
+        <div id="reconnectingOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center hidden">
+            <div class="modal-content bg-gray-800 shadow-lg rounded-lg p-4 max-w-sm mx-auto">
+                <div class="modal-header border-b border-gray-700 mb-2">
+                    <h5 class="modal-title text-white text-lg font-medium">Reconnecting...</h5>
+                </div>
+                <div class="modal-body flex justify-center items-center">
+                    <div role="status">
+                        <svg aria-hidden="true" class="w-16 h-16 text-blue-500 animate-spin" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+                            <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+                        </svg>
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- Call Action Buttons -->
+        <div class="absolute bottom-0 left-0 right-0 p-3 flex justify-center gap-4 bg-gray-700">
+            <!-- Mute Button -->
+            
+            <div class="bg-gray-900 rounded-full flex items-center justify-center">
+                <button id="micToggleIcon" class="inline-flex items-center justify-center bg-violet-600 text-white font-bold rounded-full p-3">
+                    <svg class="w-[27px] h-[27px] text-gray-800 dark:text-white"  viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M19 10V12C19 15.866 15.866 19 12 19M5 10V12C5 15.866 8.13401 19 12 19M12 19V22M8 22H16M15 6H13M15 10H13M12 15C10.3431 15 9 13.6569 9 12V5C9 3.34315 10.3431 2 12 2C13.6569 2 15 3.34315 15 5V12C15 13.6569 13.6569 15 12 15Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                </button>
+                <button id="dropdownAudioSettings" data-dropdown-toggle="audioDropdownMenu" data-dropdown-placement="top" class="text-white font-bold p-3">
+                    <svg class="w-[19px] h-[19px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 8">
+                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7 7.674 1.3a.91.91 0 0 0-1.348 0L1 7"/>
+                      </svg>
+                </button>
+                <!-- Dropdown Menu for Audio Settings -->
+                <div id="audioDropdownMenu" class="hidden absolute bottom-full mb-4 left-1/2 transform -translate-x-1/2 bg-gray-800 divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700 w-96">
+                    <ul class="py-2 text-sm text-white">
+                        <!-- Microphone Settings -->
+                        <li class="px-4 py-2 font-bold text-xl">Audio Settings</li>
+                        <li class="px-4 py-2 font-bold">Microphone</li>
+                        <li class="px-4 py-2 font-bold">
+                            <select id="microphoneSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-1/3 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                <!-- Microphone options will be populated here -->
+                            </select>
+                        </li>
+                        <li class="px-4 py-2 font-bold">Speaker</li>
+                            <div class="px-4 py-2 w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                                <div id="micVolume" class="bg-violet-600 h-2.5 rounded-full" style="width: 0%"></div>
+                            </div>
+                        </li>
+        
+                        <!-- Speaker Settings -->
+                        <li class="px-4 py-2 font-bold">
+                            <select id="speakerSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                            <!-- Speaker options will be populated here -->
+                        </select></li>
+                       
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Select Camera Button -->
+            <div class="bg-gray-900 rounded-full flex">
+            <button id="videoToggleIcon" class="inline-flex items-center justify-center bg-violet-600 text-white font-bold rounded-full p-3">
+                <svg width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M16 10L18.5768 8.45392C19.3699 7.97803 19.7665 7.74009 20.0928 7.77051C20.3773 7.79703 20.6369 7.944 20.806 8.17433C21 8.43848 21 8.90095 21 9.8259V14.1741C21 15.099 21 15.5615 20.806 15.8257C20.6369 16.056 20.3773 16.203 20.0928 16.2295C19.7665 16.2599 19.3699 16.022 18.5768 15.5461L16 14M6.2 18H12.8C13.9201 18 14.4802 18 14.908 17.782C15.2843 17.5903 15.5903 17.2843 15.782 16.908C16 16.4802 16 15.9201 16 14.8V9.2C16 8.0799 16 7.51984 15.782 7.09202C15.5903 6.71569 15.2843 6.40973 14.908 6.21799C14.4802 6 13.9201 6 12.8 6H6.2C5.0799 6 4.51984 6 4.09202 6.21799C3.71569 6.40973 3.40973 6.71569 3.21799 7.09202C3 7.51984 3 8.07989 3 9.2V14.8C3 15.9201 3 16.4802 3.21799 16.908C3.40973 17.2843 3.71569 17.5903 4.09202 17.782C4.51984 18 5.07989 18 6.2 18Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>           
+                  
+            </button>
+            <button class="text-white font-bold p-3" data-dropdown-toggle="cameraDropdownMenu" data-dropdown-placement="top">
+                <svg class="w-[19px] h-[19px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 8">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7 7.674 1.3a.91.91 0 0 0-1.348 0L1 7"/>
+                  </svg>
+            </button>
+            <!-- Dropdown Menu for Video Settings -->
+            <div id="cameraDropdownMenu" class="hidden absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 bg-gray-800 divide-y divide-gray-100 rounded-lg shadow w-96 h-56 dark:bg-gray-700">
+                <ul class="py-2 text-sm text-white">
+                    <li class="px-4 py-2 font-bold text-xl">Video Settings</li>
+                    <li class="px-4 py-2 font-bold">Camera</li>
+                    <li class="px-4 py-2 font-bold">
+                        <select id="cameraSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"></select>
+                    </li>
+                </ul>
+            </div>        
+            </div>
+    
+            <!-- Toggle Chat Button -->
+            
+            <button class="inline-flex items-center justify-center bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-full p-3" type="button">
+                <svg class="w-[22px] h-[22px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 18" fill="currentColor">
+                    <path d="M18 4H16V9C16 10.0609 15.5786 11.0783 14.8284 11.8284C14.0783 12.5786 13.0609 13 12 13H9L6.846 14.615C7.17993 14.8628 7.58418 14.9977 8 15H11.667L15.4 17.8C15.5731 17.9298 15.7836 18 16 18C16.2652 18 16.5196 17.8946 16.7071 17.7071C16.8946 17.5196 17 17.2652 17 17V15H18C18.5304 15 19.0391 14.7893 19.4142 14.4142C19.7893 14.0391 20 13.5304 20 13V6C20 5.46957 19.7893 4.96086 19.4142 4.58579C19.0391 4.21071 18.5304 4 18 4Z" fill="currentColor"/>
+                    <path d="M12 0H2C1.46957 0 0.960859 0.210714 0.585786 0.585786C0.210714 0.960859 0 1.46957 0 2V9C0 9.53043 0.210714 10.0391 0.585786 10.4142C0.960859 10.7893 1.46957 11 2 11H3V13C3 13.1857 3.05171 13.3678 3.14935 13.5257C3.24698 13.6837 3.38668 13.8114 3.55279 13.8944C3.71889 13.9775 3.90484 14.0126 4.08981 13.996C4.27477 13.9793 4.45143 13.9114 4.6 13.8L8.333 11H12C12.5304 11 13.0391 10.7893 13.4142 10.4142C13.7893 10.0391 14 9.53043 14 9V2C14 1.46957 13.7893 0.960859 13.4142 0.585786C13.0391 0.210714 12.5304 0 12 0Z" fill="currentColor"/>
+                    </svg>
+            </button>
+    
+            <!-- End Call Button -->
+            <button class="inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold rounded-full p-3" type="button" id="endCallButton">
+                <svg class="w-[22px] h-[22px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 19 18">
+                    <path d="M18 13.446a3.02 3.02 0 0 0-.946-1.985l-1.4-1.4a3.054 3.054 0 0 0-4.218 0l-.7.7a.983.983 0 0 1-1.39 0l-2.1-2.1a.983.983 0 0 1 0-1.389l.7-.7a2.98 2.98 0 0 0 0-4.217l-1.4-1.4a2.824 2.824 0 0 0-4.218 0c-3.619 3.619-3 8.229 1.752 12.979C6.785 16.639 9.45 18 11.912 18a7.175 7.175 0 0 0 5.139-2.325A2.9 2.9 0 0 0 18 13.446Z"/>
+                    </svg>
+            </button>
+    </div>
+    
+    </div>
+     
+
+        <!-- Device Select Chat -->
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="flex justify-center align-center">
+                    <select id="deviceSelectChat" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                        <option value="Select a device" selected disabled>Select a device</option>
+                        <!-- Options will be dynamically added here by JavaScript -->
+                    </select>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- Device Actions -->
+        <div id="deviceActions" class="mt-3">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+    
+                    <!-- Server Actions Div -->
+                    <div id="serverActions">
+                        <!-- Notification Section -->
+                        <button id="sendNotificationBtn" onclick="sendNotification()" class="btn btn-warning">Send Notification</button>
+                        
+                        <!-- Background Color Change -->
+                        <button onclick="changeBackgroundColor()" class="btn btn-primary" id="colorPicker-btn">Change Color</button>
+                        
+                        <!-- File Sending Section -->
+                        <input type="file" id="file-input" style="display: none;">
+                        <button onclick="document.getElementById('file-input').click()" class="btn btn-primary bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">Send File</button>
+                        <button id="toggleRecordButton" class="btn btn-primary" type="button">Start Recording</button>    
+                        <button id="toggle-timestamps" class="btn btn-secondary mb-2 mb-md-0" type="button" style="background-color: green;">Toggle Timestamps</button>
+                    </div>
+                    <!-- Voice Call Section -->
+                    <div id="voiceCallSection" class="mt-3 flex items-center">
+                        <!-- Trigger for Call Setup Modal -->
+                        <button id="openCallSetup" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 focus:outline-none focus:shadow-outline" type="button">
+                            Start a Call
+                        </button>
+                        <button id="openCallSetup" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 focus:outline-none focus:shadow-outline" type="button" id="shareScreenButton">
+                            Share Screen
+                        </button>
+                        <button id="endCallButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-4 focus:outline-none focus:shadow-outline" type="button" disabled>
+                            End Call
+                        </button>
+                        
+                        <audio id="remoteAudio" autoplay></audio>
+                    </div>
+                    
+
+                    <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav') }}" preload="auto"></audio>
+    
+                    <!-- Chat Section -->
+                    
+                    <div class="card text-white mb-3">
+                        <div class="card-header">Chat</div>
+                        <div id="alert-message" class="alert alert-primary d-none" role="alert"></div>
+                        <div class="card-body">
+                            <div id="chat-container" class="chat-container">
+                                <!-- Messages will be appended here by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3"> <!-- Use Bootstrap's input group for a better mobile experience -->
+                        <div id="message-input" contenteditable="true" class="form-control" placeholder="Type a message..." aria-label="Type a message" tabindex="0" style="color: rgb(102, 102, 102);"></div>
+                        <div class="input-group-append">
+                            <button id="send-message" class="btn btn-primary" type="button">Send</button>
+                            <button id="clear-chat" class="btn btn-secondary" type="button">Clear</button>
+                        </div>
+                    </div>
+                    <!-- Remaining code... -->
+    
+                    <div class="progress mb-3" style="display: none;">
+                        <div class="progress-bar mb-3" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                    
+                    
+                    <div id="successMessage" class="alert alert-success d-none">
+                        <p></p>
+                    </div>
+    
+                    <!-- Uploaded Files -->
+                    <h4 class="mt-4" style="margin: 0;">Uploaded Files</h4>
+                    <ul id="uploadedFiles" class="list-group mb-3 shadow-sm"></ul>
+                </div>
+            </div>
+            <!-- Color Picker Modal -->
+        <div class="modal fade" id="colorPickerModal" tabindex="-1" aria-labelledby="colorPickerModalLabel" aria-hidden="true" style="display: none;">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content" style="background-color: #333; color: #fff;">
+                    <div class="modal-header" style="border-color: #444;">
+                        <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #aaa;">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" style="background-color: #222;">
+                        <input type="color" id="colorPicker" name="color" title="Choose your color">
+                    </div>
+                    <div class="modal-footer" style="border-color: #444;">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-primary" id="confirmColor">Select Color</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        </div>
+    
+        <div class="flex justify-center m-5">
+            <div class="list-group">
+                <div id="clipboardAlert" class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert" style="display:none;">
+                    Copied to clipboard!
+                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <a href="#" class="list-group-item list-group-item-action shadow-sm" 
+                onclick="handleCopyClick(event, '{{ base_url }}:{{ port }}{{ endpoint }}')">
+                    Device can connect on: {{ base_url }}{{ port }}{{ endpoint }}
+                </a>
+            </div>
+        </div>
+    
+    </div>
+    
+    {% if success %}
+    <div class="success container-fluid">
+        <div class="success__icon">
+        <svg fill="none" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path clip-rule="evenodd" d="m12 1c-6.075 0-11 4.925-11 11s4.925 11 11 11 11-4.925 11-11-4.925-11-11-11zm4.768 9.14c.0878-.1004.1546-.21726.1966-.34383.0419-.12657.0581-.26026.0477-.39319-.0105-.13293-.0475-.26242-.1087-.38085-.0613-.11844-.1456-.22342-.2481-.30879-.1024-.08536-.2209-.14938-.3484-.18828s-.2616-.0519-.3942-.03823c-.1327.01366-.2612.05372-.3782.1178-.1169.06409-.2198.15091-.3027.25537l-4.3 5.159-2.225-2.226c-.1886-.1822-.4412-.283-.7034-.2807s-.51301.1075-.69842.2929-.29058.4362-.29285.6984c-.00228.2622.09851.5148.28067.7034l3 3c.0983.0982.2159.1748.3454.2251.1295.0502.2681.0729.4069.0665.1387-.0063.2747-.0414.3991-.1032.1244-.0617.2347-.1487.3236-.2554z" fill="#393a37" fill-rule="evenodd"></path></svg>
+        </div>
+        <div class="success__title">Login Successfull! Welcome</div>
+        <div class="success__close" onclick="document.querySelector('.success').style.display='none'">
+            <svg height="20" viewBox="0 0 20 20" width="20" xmlns="http://www.w3.org/2000/svg"><path d="m15.8333 5.34166-1.175-1.175-4.6583 4.65834-4.65833-4.65834-1.175 1.175 4.65833 4.65834-4.65833 4.6583 1.175 1.175 4.65833-4.6583 4.6583 4.6583 1.175-1.175-4.6583-4.6583z" fill="#393a37"></path></svg></div>
+    </div>
+
+        </div>
+    </div>
+    <!-- Warning Message -->
+    <div id="deviceWarning" class="alert alert-warning">
+    </div>
+    <!-- Call Interface Modal -->
+    <div class="modal fade" id="callInterfaceModal" tabindex="-1" role="dialog" aria-labelledby="callInterfaceModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="callInterfaceModalLabel">Call Interface</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <h3 id="callDeviceName">Calling: { deviceName }</h3>
+                    <audio id="remoteAudio" autoplay></audio>
+                    <!-- Add microphone and speaker selection if needed -->
+                </div>
+                <div class="modal-footer">
+                    <button id="endCallButton" class="btn btn-danger">End Call</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+    {% endif %}
+
+
+
+
+
+<!-- Tailwind Call Setup Modal with Dark Theme and Blur Background -->
+<div id="callSetupModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+      <!-- Apply blur effect and dark background opacity -->
+      <div class="fixed inset-0 bg-gray-900 bg-opacity-80 backdrop-blur-sm transition-opacity" aria-hidden="true"></div>
+
+      <!-- This element is to trick the browser into centering the modal contents. -->
+      <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+      <!-- Modal content with dark theme -->
+      <div class="inline-block align-bottom bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+        <div class="bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+          <div class="sm:flex sm:items-start">
+            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+              <h3 class="text-lg leading-6 font-medium text-white" id="modal-title">
+                Please select your microphone and camera.
+              </h3>
+              <div class="mt-2">
+                <div class="mt-4">
+                  <label for="audioSourceSelect" class="block text-sm font-medium text-gray-300">Microphone:</label>
+                  <select id="audioSourceSelect" class="mt-1 block w-full py-2 px-3 border border-gray-600 bg-gray-700 text-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></select>
+                </div>
+                <div class="mt-4">
+                  <label for="videoSourceSelect" class="block text-sm font-medium text-gray-300">Camera:</label>
+                  <select id="videoSourceSelect" class="mt-1 block w-full py-2 px-3 border border-gray-600 bg-gray-700 text-white rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"></select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="bg-gray-700 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+          <button type="button" id="startCallButton" onclick="startCall()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
+            Start Call
+          </button>
+          <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-base font-medium text-gray-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="toggleModalVisibility('callSetupModal')">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+<script>
+const socket = io();
+let warningElement = document.getElementById('deviceWarning');
+let typingTimeout;
+let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
+let localStream;
+let callWindow = null;
+const remoteAudio = document.getElementById('remoteAudio');
+const MAX_FILE_SIZE = 1024 * 1024 * 1024 * 1024; // 1 Terabyte
+const notificationAudio = document.getElementById('notificationSound');
+const messageInput = document.getElementById('message-input');
+const sendMessageButton = document.getElementById('send-message');
+const chatContainer = document.getElementById('chat-container');
+const deviceName = document.getElementById('deviceSelectChat').value;
+
+
+let iceCandidateQueue = [];
+let localPeer;
+let call;
+let peerConnection;
+let selectedDevice = null;
+    const recordButton = document.getElementById('toggleRecordButton');
+    const toggleVideoButton = document.getElementById('toggleVideoButton');
+    const toggleAudioButton = document.getElementById('toggleAudioButton');
+    const cameraSelection = document.getElementById('cameraSelection');
+    const endCallButton = document.getElementById('endCallButton');
+    const callModal = document.getElementById('callModal');// Initially set to false, meaning timestamps are hidden
+    let typingInProgress = false;
+    let initialHeight = window.innerHeight;
+    let isRecording = false;
+    let recorder;
+    let audioChunks = [];
+    let pressTimer;
+    let audioRecorder;
+    let audioBlob;
+    let remoteOffer;
+
+    let isMicOn = true; 
+    let isVideoOn = true;
+    let videoStream = null;
+
+window.onload = function() {
+    // Check if the success message exists
+    var successMessage = document.querySelector('.success');
+    if (successMessage) {
+        // Set a timeout to hide the success message after 3 seconds (3000 milliseconds)
+        setTimeout(function() {
+            successMessage.style.display = 'none';
+        }, 3000);
+    }
+};
+
+async function updateMediaStream() {
+    const audioSource = isMicOn ? document.getElementById('microphoneSelect').value : null;
+    const videoSource = isVideoOn ? document.getElementById('cameraSelect').value : null;
+    
+    // Check if both audio and video are intentionally turned off
+    if (!isMicOn && !isVideoOn) {
+        console.warn("Both audio and video are disabled. Cannot update stream.");
+        return; // Early return to avoid getUserMedia call with both disabled
+    }
+
+    const constraints = {
+        audio: isMicOn ? { deviceId: audioSource ? { exact: audioSource } : undefined } : false,
+        video: isVideoOn ? { deviceId: videoSource ? { exact: videoSource } : undefined } : false
+    };
+
+    try {
+        // Stop the current tracks before getting new ones if stream exists
+        if (localStream) {
+            localStream.getTracks().forEach(track => track.stop());
+        }
+
+        // Get new media stream based on the current selections
+        localStream = await navigator.mediaDevices.getUserMedia(constraints);
+
+        // Replace the tracks in the peer connection if it exists
+        if (peerConnection) {
+            const senders = peerConnection.getSenders();
+            senders.forEach(sender => {
+                if (sender.track.kind === 'audio' && localStream.getAudioTracks().length > 0) {
+                    sender.replaceTrack(localStream.getAudioTracks()[0]);
+                } else if (sender.track.kind === 'video' && localStream.getVideoTracks().length > 0) {
+                    sender.replaceTrack(localStream.getVideoTracks()[0]);
+                }
+            });
+        }
+
+        // Optional: Update local video display if video is enabled
+        if (constraints.video) {
+            document.getElementById('localVideo').srcObject = localStream;
+        }
+    } catch (error) {
+        console.error('Error updating media stream:', error);
+        throw error; // Propagate the error for further handling
+    }
+};
+
+
+if (peerConnection) {
+    const audioTrack = localStream.getAudioTracks()[0];
+    const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
+    if (sender && audioTrack) {
+        sender.replaceTrack(audioTrack);
+    }
+}
+
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Request permission from the user to access media devices with specific constraints for Full HD video
+    navigator.mediaDevices.getUserMedia({ 
+        audio: true, // Request audio without specific constraints, assuming default device and settings
+        video: {
+            width: { ideal: 1920 }, // Request Full HD video
+            height: { ideal: 1080 }
+        }
+    })
+    .then(stream => {
+        // The user has granted permission to access the media devices
+        
+        // Handle the stream, for example by attaching it to a video element
+        const videoElement = document.getElementById('localVideo');
+        if (videoElement) {
+            videoElement.srcObject = stream;
+        }
+
+        // You can now call enumerateDevices() to populate device selection dropdowns
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+            // Enumerate devices and populate the dropdowns
+            navigator.mediaDevices.enumerateDevices().then(devices => {
+                const audioSelect = document.getElementById('audioSourceSelect');
+                const videoSelect = document.getElementById('videoSourceSelect');
+
+                devices.forEach(device => {
+                    let option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `${device.kind}: ${device.deviceId}`;
+                    if (device.kind === 'audioinput') {
+                        audioSelect.appendChild(option);
+                    } else if (device.kind === 'videoinput') {
+                        videoSelect.appendChild(option);
+                    }
+                });
+            });
+        }
+    })
+    .catch(error => {
+        // Handle the error if the user denies permission or if there are no media devices
+        console.error('Error accessing media devices.', error);
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    // Listen for click events on elements with the data-modal-toggle attribute
+    document.querySelectorAll('[data-modal-toggle]').forEach(trigger => {
+        trigger.addEventListener('click', () => {
+            const modalId = trigger.getAttribute('data-modal-toggle');
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                // Toggle the modal visibility
+                modal.classList.toggle('hidden');
+            }
+        });
+    });
+});
+
+document.getElementById('deviceSelectChat').addEventListener('change', function() {
+selectedDevice = this.value;
+// Other necessary logic...
+});
+
+document.getElementById('openCallSetup').addEventListener('click', async function() {
+    await populateDeviceOptions(); // Ensure this function is defined and populates the options.
+    
+    // Now show the modal using Bootstrap's jQuery-free method (if using Bootstrap 5)
+    var myModal = new bootstrap.Modal(document.getElementById('callSetupModal'));
+    myModal.show();
+});
+
+
+function initWebRTC() {
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(stream => {
+        localStream = stream;
+        document.getElementById('localVideo').srcObject = stream;
+        document.getElementById('localVideo').style.display = 'block';
+    })
+    .catch(error => {
+        console.error('MediaStream error:', error);
+        warningElement.innerText = "Error accessing media devices: " + error.message;
+        warningElement.style.display = "block";
+    });
+}
+
+
+
+
+    // Bind the send button to the sendMessage function
+    if (sendMessageButton) {
+        sendMessageButton.addEventListener('click', sendChatMessage);
+    }
+
+// Prevent default behavior (Prevent file from being opened)
+chatContainer.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    chatContainer.classList.add('dragging');
+});
+
+// Remove the highlight when the file leaves the chat container
+chatContainer.addEventListener('dragleave', function(e) {
+    chatContainer.classList.remove('dragging');
+});
+
+
+
+// Event listener for drag and drop into the chat container
+chatContainer.addEventListener('drop', function(e) {
+    e.preventDefault();
+    chatContainer.classList.remove('dragging');
+
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+        let file = e.dataTransfer.items[0].getAsFile();
+        if (file) {
+            sendFileToDevice(file);
+        }
+    }
+});
+
+messageInput.addEventListener('input', function() {
+    this.style.height = 'auto'; // Reset height
+    this.style.height = (this.scrollHeight) + 'px'; // Adjust height based on scroll height
+
+    // Handle server typing indication
+    clearTimeout(typingTimeout); // Clear previous timeout if exists
+    
+    const currentText = this.textContent.trim();  // Get current text from the input
+
+    if (currentText) {
+        // Emit current text being typed by the server
+        socket.emit('server_typing', { message: currentText });
+    }
+
+    // After a 1-second delay of not typing, emit that the server stopped typing
+    typingTimeout = setTimeout(function() {
+        socket.emit('server_stop_typing', { message: 'Server stopped typing' });
+    }, 500); // 1-second delay. Adjust as needed.
+});
+    
+function showSuccessAlert() {
+    const alertContainer = document.querySelector('.card-header'); // Assuming the div is directly inside the card-header. Adjust the selector if needed.
+
+    // Create a Bootstrap success alert
+    const successDiv = document.createElement('div');
+    successDiv.className = 'alert alert-success mt-2';
+    successDiv.innerText = 'Text successfully copied to clipboard!';
+    alertContainer.appendChild(successDiv);
+
+    // Optional: Auto-hide the success alert after a few seconds
+    setTimeout(() => {
+        successDiv.remove();
+    }, 3000);
+};
+
+function closeModal() {
+        var modal = document.getElementById('successModal');    
+        var backdrop = document.querySelector('.modal-backdrop');
+        modal.parentNode.removeChild(modal);
+        backdrop.parentNode.removeChild(backdrop);
+    }
+
+    // Toggle Timestamps
+    function toggleTimestamps() {
+        console.log('clicked the toggle timestamps')
+    showTimestamps = !showTimestamps;  // Toggle the showTimestamps state
+
+    const timestamps = document.querySelectorAll('.timestamp');
+    timestamps.forEach(ts => {
+        ts.style.display = showTimestamps ? 'inline' : 'none';  // Update the visibility of all timestamps
+    });
+
+    // Update the background color of the toggle button
+    document.getElementById('toggle-timestamps').style.backgroundColor = showTimestamps ? 'green' : 'gray';
+}
+
+    // Format the date and time
+    function formatDateTime(dateTime) {
+    const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+    };
+    return new Date(dateTime).toLocaleString('en-US', options);
+}
+
+
+// Error handling for socket events
+socket.on('connect_error', (error) => {
+    console.error('Socket connect_error:', error);
+});
+
+socket.on('connect_timeout', (timeout) => {
+    console.error('Socket connection timeout:', timeout);
+});
+
+socket.on('error', (error) => {
+    console.error('Socket error:', error);
+});
+document.addEventListener('DOMContentLoaded', function() {
+    
+    // Fetch elements after the DOM has loaded
+    const deviceSelectChat = document.getElementById('deviceSelectChat');
+    const serverFileInput = document.getElementById('serverFileInput');
+    const actionsDiv = document.getElementById('deviceActions'); // Ensure this element exists
+
+    console.log('DOM fully loaded and parsed');
+
+    // Function to display or hide actionsDiv based on device selection
+    function toggleActionsDiv(selectedDevice) {
+        actionsDiv.style.display = (selectedDevice && selectedDevice !== 'Select a device') ? 'block' : 'none';
+        if (selectedDevice && selectedDevice !== "Select a device") {
+            console.log('Emitting device_selected event for:', selectedDevice);
+            socket.emit('device_selected', selectedDevice);
+        }
+    }
+
+    // Restore the previously saved selection from local storage
+    const savedSelection = localStorage.getItem('selectedDevice');
+    console.log('Saved selection:', savedSelection);
+    if (deviceSelectChat) {
+        if (savedSelection && deviceSelectChat.options.length > 1) { // Check if options are available
+            deviceSelectChat.value = savedSelection;
+            toggleActionsDiv(savedSelection); // Use the function to set the display
+        } else {
+            // Check for an existing value in the dropdown and display actionsDiv accordingly
+            const existingValue = deviceSelectChat.value;
+            toggleActionsDiv(existingValue); // Check the current selection
+        }
+
+        // Event listener for the device dropdown change
+        deviceSelectChat.addEventListener('change', function() {
+            const selectedDevice = this.value;
+            console.log('Device selected:', selectedDevice);
+            localStorage.setItem('selectedDevice', selectedDevice);
+            toggleActionsDiv(selectedDevice); // Use the function to set the display
+        });
+    }
+
+    // Event listener for the file input change
+    if (serverFileInput) {
+        serverFileInput.addEventListener('change', updateLabelWithFileName);
+    }
+});
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    const shouldShowActions = localStorage.getItem('deviceActionsVisible') === 'true';
+    if (shouldShowActions) {
+        showDeviceActions();
+    } else {
+        hideDeviceActions();
+    }
+});
+
+document.getElementById("toggle-timestamps").addEventListener("click", toggleTimestamps);
+
+document.getElementById('message-input').addEventListener('focus', function() {
+    if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
+        // Hide buttons when input receives focus
+        document.getElementById('toggle-timestamps').style.display = 'none';
+        document.getElementById('upload-file').style.display = 'none';
+        document.getElementById('send-notification').style.display = 'none';
+    }
+});
+
+document.getElementById('message-input').addEventListener('blur', function() {
+    if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
+        // Show buttons when input loses focus
+        document.getElementById('toggle-timestamps').style.display = '';
+        document.getElementById('upload-file').style.display = '';
+        document.getElementById('send-notification').style.display = '';
+    }
+});
+
+
+async function startCall() {
+    console.log('clicked startCall!');
+
+    if (!peerConnection) setupPeerConnection(); // Ensure the peerConnection is initialized
+
+    try {
+        // Display the call setup modal allowing users to select devices before starting the call
+        $('#callSetupModal').modal('show');
+
+        // Listener for the "Start Call" button within the modal
+        document.getElementById('startCallButton').addEventListener('click', async () => {
+            // Retrieve saved device selections from localStorage or current selection
+            const savedAudioDevice = localStorage.getItem('selectedAudioDevice');
+            const savedVideoDevice = localStorage.getItem('selectedVideoDevice');
+            const audioSourceSelect = document.getElementById('audioSourceSelect');
+            const videoSourceSelect = document.getElementById('videoSourceSelect');
+            const audioSource = savedAudioDevice || audioSourceSelect.value;
+            const videoSource = savedVideoDevice || videoSourceSelect.value;
+
+            const constraints = {
+                audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+                video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+            };
+
+            // Obtain the media stream with the selected or saved devices
+            const stream = await navigator.mediaDevices.getUserMedia(constraints);
+            document.getElementById('localVideo').srcObject = stream;
+            stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+
+            document.getElementById('localVideo').style.display = 'block';
+            document.getElementById('webCallingUI').style.display = 'block';
+            $('#callSetupModal').modal('hide'); // Hide the modal after starting the call
+
+            // Create an offer and set it as the local description
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            // Send the offer to the remote peer using your signaling mechanism
+            socket.emit('offer', { offer });
+
+            // Listen for ICE candidates from STUN/TURN servers and send them to the remote peer
+            peerConnection.onicecandidate = event => {
+                if (event.candidate) {
+                    socket.emit('iceCandidate', { candidate: event.candidate });
+                }
+            };
+        }, { once: true }); // Ensures this event listener is only triggered once per page load
+
+    } catch (error) {
+        console.error('Failed to start call:', error);
+    }
+};
+
+
+
+
+function displayLocalStream(localStream) {
+    const localVideo = document.getElementById('localVideo');
+    if (localVideo) {
+        localVideo.srcObject = localStream;
+    }
+}
+
+function initializePeerConnection() {
+    // Initialize your peerConnection here with ICE servers, event handlers, etc.
+    window.peerConnection = new RTCPeerConnection(/* Configuration */);
+
+    // Setup event listeners for peerConnection (e.g., onicecandidate, ontrack)
+    // Example: Setup event listener for ICE candidates
+    window.peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            console.log('New ICE candidate:', event.candidate);
+            // Here you would send the candidate to the peer via your signaling server
+            // Example using socket.io:
+            socket.emit('ice_candidate', { candidate: event.candidate, to: selectedDevice });
+        }
+    };
+};
+
+
+function addTracksToPeerConnection(stream) {
+    stream.getTracks().forEach(track => {
+        window.peerConnection.addTrack(track, stream);
+    });
+}
+
+
+
+
+// Call this function when the page loads or before showing the call setup modal
+document.addEventListener('DOMContentLoaded', populateDeviceOptions);
+
+
+
+async function populateDeviceSelection() {
+const devices = await navigator.mediaDevices.enumerateDevices();
+devices.forEach(device => {
+    let option = document.createElement('option');
+    option.value = device.deviceId;
+    option.text = device.label || `${device.kind}: ${device.deviceId}`;
+    if (device.kind === 'audioinput') {
+        document.getElementById('audioSourceSelect').appendChild(option);
+    } else if (device.kind === 'videoinput') {
+        document.getElementById('videoSourceSelect').appendChild(option);
+    }
+});
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+// Populate device selection dropdowns first
+populateDeviceSelection().then(() => {
+    // After populating options, set the saved device as selected
+    const savedAudioDeviceId = localStorage.getItem('selectedAudioDeviceId');
+    if (savedAudioDeviceId) {
+        document.getElementById('audioSourceSelect').value = savedAudioDeviceId;
+    }
+
+    const savedVideoDeviceId = localStorage.getItem('selectedVideoDeviceId');
+    if (savedVideoDeviceId) {
+        document.getElementById('videoSourceSelect').value = savedVideoDeviceId;
+    }
+
+    // Optionally, automatically initialize the call or media stream with the selected devices
+    // startCall(savedAudioDeviceId, savedVideoDeviceId);
+});
+});
+
+function endCall() {
+if (selectedDevice) {
+    socket.emit('end_call', { target_device: selectedDevice });
+}
+// Close the peer connection if it exists
+if (peerConnection) {
+    peerConnection.getTracks().forEach(track => track.stop()); // Stop all tracks
+    peerConnection.close(); // Close the peer connection
+    peerConnection = null; // Set the peerConnection to null
+}
+
+// Stop all tracks on the local stream
+if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+}
+
+// Emit an event to inform the client that the call has ended
+socket.emit('end_call', { message: 'Call ended by server' });
+
+// Update UI if necessary
+document.getElementById('endCallButton').disabled = true;
+// Additional UI updates can be made here
+};
+
+
+
+
+document.getElementById('endCallButton').addEventListener('click', endCall);
+
+
+
+// Helper Functions
+function playNotificationSound() {
+    var audioElement = document.getElementById('notificationSound');
+    if (audioElement) {
+        audioElement.currentTime = 0; // Reset audio to the start
+        audioElement.play().catch(e => console.error("Error playing sound: ", e));
+    }
+}
+
+
+const savedDevices = JSON.parse(localStorage.getItem('connectedDevices') || '[]');
+
+document.addEventListener('DOMContentLoaded', function() {
+updateDropdown('deviceSelectChat', savedDevices);
+});
+
+function showDeviceActions() {
+    const deviceActions = document.getElementById('deviceActions');
+    deviceActions.style.display = 'block';
+    localStorage.setItem('deviceActionsVisible', 'true');
+}
+
+function hideDeviceActions() {
+    const deviceActions = document.getElementById('deviceActions');
+    deviceActions.style.display = 'none';
+    localStorage.setItem('deviceActionsVisible', 'false');
+}
+
+
+function updateLabelWithFileName(event) {
+    const fileInput = event.target;
+    const progressBarContainer = document.querySelector('.progressbar');
+
+    if (fileInput.files.length) {
+        const filename = fileInput.files[0].name;
+        const label = document.querySelector("label[for='serverFileInput']");
+        label.textContent = filename;
+
+        // Show the progress bar and reset progress & counter
+        progressBarContainer.style.display = "block";
+        $('.counter').text('0%');
+        $('.progressbar .progress').css('width', '0%');
+    } else {
+        // Hide the progress bar if no file is selected
+        progressBarContainer.style.display = "none";
+    }
+}
+
+function copyToClipboard(text) {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textarea);
+
+    // After copying, display the success alert
+    showSuccessAlert();
+}
+
+    function handleCopyClick(event, text) {
+        event.preventDefault();
+        copyToClipboard(text);
+        showClipboardAlert();
+    }
+
+    function showClipboardAlert() {
+        const alertElement = document.getElementById("clipboardAlert");
+
+if (alertElement) {
+    alertElement.style.display = "block";
+
+    // Hide the alert after 3 seconds
+    setTimeout(function() {
+        alertElement.style.display = "none";
+    }, 3000);
+} else {
+    console.warn("Clipboard alert element not found!");
+}
+}
+
+async function setupPeerConnection() {
+try {
+    const iceConfiguration = {
+        iceServers: [
+        {
+                    urls: 'STUN:freeturn.net:3478'
+                },
+                {
+                    urls: 'TURNS:freeturn.net:5349', // Replace with your TURN server address
+                    username: 'free',         // Replace with your TURN server username
+                    credential: 'free'     // Replace with your TURN server credential
+                }
+            ]
+    };
+
+    peerConnection = new RTCPeerConnection(iceConfiguration);
+    console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
+
+    // Handling ICE candidates
+    peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            console.log('New ICE candidate:', event.candidate);
+            socket.emit('ice_candidate', { candidate: event.candidate });
+        }
+    };
+
+peerConnection.ontrack = event => {
+console.log('New track received:', event.track.kind);
+if (event.streams && event.streams[0]) {
+    const stream = event.streams[0];
+    if (event.track.kind === 'video') {
+        document.getElementById('remoteVideo').srcObject = stream;
+        document.getElementById('remoteVideo').style.display = 'block';
+    }
+}
+};
+
+
+
+    // Monitoring ICE connection state changes
+peerConnection.oniceconnectionstatechange = async () => {
+    console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
+
+    const reconnectingOverlay = document.getElementById('reconnectingOverlay'); // Ensure this element exists in your HTML
+    
+    if (peerConnection.iceConnectionState === 'disconnected') {
+        console.log('Attempting to reconnect...');
+        reconnectingOverlay.style.display = 'block'; // Make the overlay visible
+
+        try {
+            if (!peerConnection) setupPeerConnection();
+
+            const offer = await peerConnection.createOffer();
+            await peerConnection.setLocalDescription(offer);
+
+            // Send the new offer to the remote peer using your signaling mechanism
+            // Include a 'reconnecting' property to indicate that this is a reconnecting offer
+            socket.emit('offer', { offer: offer, reconnecting: true }); // Correctly reference the offer.sdp and include 'reconnecting' property
+        } catch (reconnectError) {
+            console.error('Reconnection attempt failed:', reconnectError);
+            reconnectingOverlay.style.display = 'none'; // Hide the overlay if reconnection fails
+        }
+    } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+        reconnectingOverlay.style.display = 'none'; // Hide the overlay once reconnected
+    }
+};
+
+
+
+    // Obtain media stream and add it to the peer connection
+    const stream = await getMediaStream();
+    if (stream) {
+        stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+    }
+
+    // Additional setup as needed...
+    return peerConnection;
+
+} catch (error) {
+    console.error('Failed to set up peer connection:', error);
+    return null;
+}
+};
+
+
+
+
+async function getMediaStream() {
+// Check if the device has media capabilities
+const hasMediaDevices = navigator.mediaDevices && (navigator.mediaDevices.getUserMedia !== undefined);
+
+if (!hasMediaDevices) {
+    console.log("This device does not have media devices or media access is restricted.");
+    // Return a null or empty stream as the device has no media capabilities
+    return null;
+}
+
+const audioSource = document.getElementById('audioSourceSelect').value;
+const videoSource = document.getElementById('videoSourceSelect').value;
+
+const constraints = {
+    audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
+    video: { deviceId: videoSource ? { exact: videoSource } : undefined }
+};
+
+try {
+    return await navigator.mediaDevices.getUserMedia(constraints);
+} catch (error) {
+    console.error('Error accessing media devices:', error);
+    // Return null or handle the error as needed
+    return null;
+}
+}
+
+
+// Handling the answer
+socket.on('answer', async data => {
+    try {
+        const remoteDesc = new RTCSessionDescription(data.answer);
+        await peerConnection.setRemoteDescription(remoteDesc);
+
+        // Process queued candidates
+        while (iceCandidateQueue.length) {
+            const candidate = iceCandidateQueue.shift();
+            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        }
+    } catch (e) {
+        console.error('Error setting remote description from answer:', e);
+    }
+});
+
+
+
+socket.on('ice_candidate', async data => {
+    try {
+        if (peerConnection.remoteDescription) {
+            // If remote description is set, add the candidate
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } else {
+            // Otherwise, queue the candidate
+            iceCandidateQueue.push(data.candidate);
+        }
+    } catch (e) {
+        console.error('Error adding received ice candidate:', e);
+    }
+});
+
+socket.on('video-answer', (data) => {
+    const remoteDesc = new RTCSessionDescription(data.answer);
+    peerConnection.setRemoteDescription(remoteDesc);
+});
+
+
+socket.on('new-remote-ice-candidate', (data) => {
+    const candidate = new RTCIceCandidate(data.candidate);
+    peerConnection.addIceCandidate(candidate);
+});
+
+socket.on('connect', () => {
+    console.log('Connected to server'); 
+});
+
+
+socket.on('disconnect', () => {
+    console.log('Disconnected from server');
+});
+
+
+
+// Socket Event Handlers
+socket.on('update_device_list', function(data) {
+// The data object should already contain the connected_devices key with an array as the value.
+// No need to parse it as it's not a string.
+const connected_devices = data.connected_devices;
+console.log('Connected devices:', connected_devices);
+updateDropdown('deviceSelectChat', connected_devices);
+});
+
+
+
+socket.on('file_uploaded', function(data) {
+    const filesUl = document.getElementById('uploadedFiles');
+    const li = document.createElement('li');
+    li.className = "list-group-item d-flex justify-content-between align-items-center";
+    
+    // Add filename with download link
+    const fileLink = document.createElement('a');
+    fileLink.href = `/download/${data.filename}`;
+    fileLink.setAttribute("download", "");
+    fileLink.textContent = data.filename;
+    li.appendChild(fileLink);
+
+    // Add download button
+    const downloadBtn = document.createElement('a');
+    downloadBtn.href = `/download/${data.filename}`;
+    downloadBtn.setAttribute("download", "");
+    downloadBtn.className = "btn btn-primary btn-sm";
+    downloadBtn.textContent = "Download";
+    li.appendChild(downloadBtn);
+
+    // Add delete button
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = "btn btn-danger btn-sm ml-2";
+    deleteBtn.textContent = "Delete";
+    deleteBtn.onclick = function() {
+        // Here, you would typically make an AJAX call to the server to delete the file
+        // Once the server responds that the file is deleted, remove the list item from the UI
+        fetch(`/delete/${data.filename}`, { method: 'DELETE' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                li.remove();
+            } else {
+                console.error("Error deleting file:", data.message);
+            }
+        });
+    };
+    li.appendChild(deleteBtn);
+
+    filesUl.appendChild(li);
+});
+
+socket.on('server_notification', function(data) {
+    const sender = data.device;
+    const notificationMessage = data.notification || 'sent you a notification!';
+
+    // Play the notification sound
+    document.getElementById("notificationSound").play();
+
+    // Append the notification message to the chat box
+    const chatContainer = document.getElementById('chat-container');
+    const notificationElement = createMessageElement(`${sender}: ${notificationMessage}`, 'device-message');
+    
+    // Append the newly created notification element to the chat container
+    chatContainer.appendChild(notificationElement);
+    notificationElement.style.opacity = 1; // Make sure your CSS transitions can handle this
+
+    scrollToBottom(); // Scroll to the bottom of the chatbox
+});
+
+
+function sendNotification() {
+    console.log("sendNotificationButton pressed!");
+    const targetDevice = document.getElementById('deviceSelectChat').value;
+    const sender = "Server";  // This is the sender's name, in this case, "Server".
+
+    // Ensure that a valid device is selected
+    if (targetDevice !== 'Select a device' && targetDevice !== '') {
+        // Emit an event to the server to send the notification to the chosen device
+        socket.emit('send_notification_to_device', {
+            name: sender,
+            message: "Sent a notification!",
+            target_device: targetDevice
+        });
+
+        // Optionally append the notification to the chatbox as a server message
+        const messageContent = `${sender} Sent a notification to ${targetDevice}`;
+        createMessageElement(messageContent);
+
+        scrollToBottom(); // Scroll to the bottom of the chatbox
+
+        // Play the notification sound
+        playNotificationSound();
+    } else {
+        // Handle the case where no valid device is selected
+        console.error("Please select a valid device to send a notification.");
+    }
+};
+
+
+socket.on('broadcast_message_to_server', function(data) {
+    console.log('Received message:', data);
+
+    // Check if there's a special notification to play a sound
+    if (data.message === "Sent a notification!") {
+        notificationAudio.play(); // Play a notification sound if defined
+    }
+
+    // Prepare the sender's name and message content
+    const senderName = data.name.trim(); // Get the sender's name from the data object
+    const messageText = `${senderName}: ${data.message}`; // Create the message text
+
+    // Define class based on the sender
+    const className = data.message_class || 'server-message';
+    
+    // Use the createMessageElement function to create the message element
+    const msg = createMessageElement(messageText, className, data.timestamp);
+
+    // Get the chat container and append the new message element to it
+    const chatContainer = document.getElementById('chat-container');
+    chatContainer.appendChild(msg);
+
+    // Ensure the element is visible
+    msg.style.opacity = 1;
+
+    // Scroll the chat container to show the latest message
+    scrollToBottom(); // Make sure this function is defined to scroll the chat box to the bottom
+});
+
+
+
+
+
+// Event Handlers
+document.getElementById('deviceSelectChat').addEventListener('change', function() {
+    const selectedDevice = this.value;
+    localStorage.setItem('selectedDevice', selectedDevice);
+
+    const actionsDiv = document.getElementById('deviceActions');
+    actionsDiv.style.display = (selectedDevice !== 'Select a device') ? 'block' : 'none';
+    if (selectedDevice !== "Select a device") {
+        // Emit event to the server with the selected device
+        socket.emit('device_selected', selectedDevice);
+    }
+});
+
+function formatTimestamp() {
+    const options = {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        hour12: true,
+        timeZoneName: 'short'
+    };
+    return new Date().toLocaleString('en-US', options);
+}
+
+function scrollToBottom() {
+        const container = document.getElementById('chat-container');
+        container.scrollTop = container.scrollHeight;
+    }
+
+function createMessageElement(messageContent, className, existingTimestamp = null) {
+    // Create the main message div
+    const msg = document.createElement('div');
+    msg.classList.add('chat-message', 'animate__fadeIn', 'animate__animated');
+
+    if (className) {
+        msg.classList.add(className);
+    }
+
+    // Create the clipboard icon span
+    const clipboardIcon = document.createElement('span');
+    clipboardIcon.classList.add('clipboard-icon');
+    clipboardIcon.setAttribute('title', 'Copy to Clipboard');
+    clipboardIcon.innerHTML = '📋';
+    clipboardIcon.addEventListener('click', function() {
+        const timestampText = msg.querySelector('.timestamp').textContent;
+        const messageText = msg.querySelector('span:not(.clipboard-icon):not(.timestamp)').textContent;
+        copyToClipboard(timestampText + messageText);
+    });
+    msg.appendChild(clipboardIcon);
+
+    // Create the timestamp span
+    const timestamp = document.createElement('span');
+    timestamp.classList.add('timestamp');
+    // If an existing timestamp is provided, use it, otherwise generate a new one
+    const timestampText = existingTimestamp ? existingTimestamp : formatTimestamp();
+    timestamp.innerHTML = timestampText + ' - ';
+    // The style.display can be set based on whether you want it shown or hidden by default
+    timestamp.style.display = 'none'; // Set this to 'none' if you want it hidden by default
+    msg.appendChild(timestamp);
+
+    // Create the text content span
+    const text = document.createElement('span');
+    text.innerHTML = messageContent;
+    msg.appendChild(text);
+
+    return msg;
+}
+
+//function to send message
+function sendChatMessage() {
+    console.log("sendChatMessage called");
+
+    const messageInput = document.getElementById('message-input');
+    const messageContent = messageInput.textContent.trim().replace(/\n/g, '');
+
+    console.log("Message input element:", messageInput); // Debugging
+    console.log("Message content:", messageContent);
+    if (!messageContent) {
+        // Check if a warning already exists
+        let existingWarning = document.querySelector('.alert-warning');
+        if (existingWarning) {
+            existingWarning.remove(); // Remove the existing warning
+        }
+
+        // Display a Bootstrap warning if the textarea is empty
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'alert alert-warning mt-2';
+        warningDiv.innerText = 'Message content cannot be empty!';
+
+        // Insert the warning just after the messageInput parent element
+        messageInput.parentNode.insertAdjacentElement('afterend', warningDiv);
+
+        // Optional: Auto-hide the warning after a few seconds
+        setTimeout(() => {
+            warningDiv.remove();
+        }, 3000);
+
+        return; // Do not proceed with sending empty messages
+    };
+
+
+    const targetDevice = document.getElementById('deviceSelectChat').value;
+    if (targetDevice === 'Select a device') {
+        console.error('No device selected.');
+        displayWarning('Please select a device to send the message to.');
+        return;
+    }
+
+    const serverName = "Server";
+    const messageClass = 'server-message'; // Assuming this message is always sent from the server
+
+    socket.emit('chat_message_to_device', {
+    sender_device: serverName,
+    message: messageContent,
+    target_device: targetDevice,
+    message_class: messageClass
+}, (response) => {
+    // Handle acknowledgement
+    console.log(response);
+});
+
+    // Emit the 'stop typing' event right after sending the message
+    socket.emit('server_stop_typing');
+
+    const msg = createMessageElement(`${serverName}: ${messageContent}`, messageClass);
+    const chatContainer = document.getElementById('chat-container');
+    chatContainer.appendChild(msg);
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    messageInput.innerText = ''; // Clears the input for the next message
+};
+
+
+
+// Function to display a warning message to the user
+function displayWarning(message) {
+    if (warningElement) {
+        warningElement.innerText = message;
+        warningElement.classList.remove('d-none');
+    } else {
+        console.warn('Warning element not found');
+        // Fallback to alert if no warning UI element is found
+        alert(message);
+    }
+}
+
+
+
+// Here's how you should bind the Enter key to send the message, after the DOM is fully loaded
+document.addEventListener('DOMContentLoaded', function() {
+    const messageInputElement = document.getElementById('message-input');
+    if (messageInputElement) {
+        messageInputElement.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage(); // Call sendChatMessage when Enter is pressed
+                event.preventDefault(); // Prevent form submission or any default action
+            }
+        });
+    }
+});
+
+document.addEventListener('keydown', function(event) {
+    // Check if 'm' key is pressed for microphone toggle
+    if (event.key === 'm') {
+        toggleMicrophone();
+    }
+    // Check if 'c' key is pressed for camera toggle
+    else if (event.key === 'c') {
+        toggleCamera();
+    }
+});
+
+// Open the color picker modal
+function openColorPickerModal() {
+// Reset the color picker value or set to a default
+document.getElementById('colorPicker').value = '#ffffff';
+// Show the modal
+$('#colorPickerModal').modal('show');
+
+
+// When a color is confirmed, change the background color
+document.getElementById('confirmColor').onclick = function() {
+    changeBackgroundColor(); // Call your function to change the color
+    $('#colorPickerModal').modal('hide'); // Hide the modal
+};
+}
+
+function changeBackgroundColor() {
+    $('#colorPickerModal').modal({
+        backdrop: 'static', // Prevent closing when clicking outside
+        keyboard: false // Prevent closing with the escape key
+    });
+
+    // Show the modal
+    $('#colorPickerModal').modal('show');
+
+    // When a color is selected, change the background color of the target device
+    $('#confirmColor').off().on('click', function() {
+        const targetDevice = document.getElementById('deviceSelectChat').value;
+        const chosenColor = document.getElementById('colorPicker').value;
+
+        if (targetDevice !== 'Select a device' && targetDevice !== 'Server') {
+            socket.emit('change_color', {
+                target_device: targetDevice,
+                color: chosenColor
+            });
+
+            // Append message to chat box indicating the successful color change
+            appendMessageToChat("Server", `Successfully changed the background color of ${targetDevice} with the color of ${chosenColor}.`, 'server-message');
+
+            $('#colorPickerModal').modal('hide'); // Hide the modal once the color is selected
+        } 
+    });
+};
+
+
+
+
+// Function to send the file to the server
+function sendFileToDevice(file) {
+    // Check if the File APIs are supported in the browser
+    if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
+        alert('The File APIs are not fully supported in this browser.');
+        return;
+    }
+
+    const deviceName = document.getElementById('deviceSelectChat').value;
+    if (!deviceName || deviceName === "Select a device") {
+        alert("Select a device first!");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('file', file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `/send_file_to_device?device=${deviceName}`, true);
+
+    xhr.upload.onprogress = function(event) {
+        if (event.lengthComputable) {
+            const percentComplete = (event.loaded / event.total) * 100;
+            const progressBar = document.querySelector('.progress-bar');
+            progressBar.style.width = percentComplete + '%';
+            progressBar.textContent = Math.round(percentComplete) + '%';
+        }
+    };
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const progressBar = document.querySelector('.progress-bar');
+            progressBar.style.width = '100%';
+            progressBar.textContent = 'Upload complete';
+
+            setTimeout(() => {
+                document.querySelector('.progress').style.display = 'none';
+                progressBar.style.width = '0%';
+                progressBar.textContent = '0%';
+            }, 2000);
+
+            // Append a message to the chatbox indicating the file has been sent
+            appendMessageToChat("Server", `File "${file.name}" sent to ${deviceName}.`, 'server-message');
+        } else {
+            console.error("Server returned an error:", xhr.responseText);
+        }
+    };
+
+    xhr.onerror = function() {
+        console.error('Upload failed due to a network error.');
+    };
+
+    xhr.send(formData);
+    document.querySelector('.progress').style.display = 'block';
+};
+
+// Event listener for the file input change event
+document.getElementById('file-input').addEventListener('change', function(e) {
+    if (this.files.length > 0) {
+        const file = this.files[0];
+        sendFileToDevice(file);
+    }
+});
+
+
+// Function to add the message to chatbox as a server message
+function appendMessageToChat(sender, messageContent, className) {
+    const chatContainer = document.getElementById('chat-container');
+    const msg = createMessageElement(`${sender}: ${messageContent}`, className);
+    chatContainer.appendChild(msg);
+    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom
+}
+
+
+function hideWarning() {
+    if (warningElement) {
+        warningElement.classList.add('d-none');
+    } else {
+        console.warn('Warning element not found');
+    }
+}
+
+function clearChat() {
+    $('#messages').empty();
+}
+
+function sendNotification() {
+    console.log("sendNotificationButton pressed!");
+    const targetDevice = document.getElementById('deviceSelectChat').value;
+    const sender = "Server"; // This is the sender's name, in this case, "Server".
+
+    // Ensure that a valid device is selected
+    if (targetDevice !== 'Select a device' && targetDevice !== '') {
+        // Emit an event to the server to send the notification to the chosen device
+        socket.emit('send_notification_to_device', {
+            name: sender,
+            message: "Sent a notification!",
+            target_device: targetDevice
+        });
+
+        // Create the message content string
+        const messageContent = `sent a notification to ${targetDevice}`;
+
+        // Use the createMessageElement function to create the message element with the 'server-message' class
+        const msgElement = createMessageElement(messageContent, 'server-message');
+
+        // Append the message element to the chatbox
+        const chatContainer = document.getElementById('chat-container');
+        chatContainer.appendChild(msgElement);
+        msgElement.style.opacity = 1; // Ensure the element is visible and triggers any transition animations
+
+        scrollToBottom(); // Scroll the chatbox to the new message
+    } else {
+        // Handle the case where no valid device is selected
+        console.error("Please select a valid device to send a notification.");
+    }
+}
+
+
+//function to fetch messages from database
+
+function fetchMessages() {
+    fetch('/fetch_messages')
+    .then(response => response.json())
+    .then(data => {
+        const chatContainer = document.getElementById('chat-container');
+        data.forEach(message => {
+            // Apply 'server-message' class if the sender is 'server' (case-insensitive comparison)
+            const className = message.sender.toLowerCase() === 'server' ? 'server-message' : 'device-message';
+
+            // Prepend the sender's name to the message content
+            const fullMessage = `${message.sender.charAt(0).toUpperCase() + message.sender.slice(1)}: ${message.content}`;
+
+            // Create message element with the full message and the appropriate class
+            const messageElement = createMessageElement(
+                fullMessage,
+                className,
+                new Date(message.timestamp).toLocaleString()
+            );
+            chatContainer.appendChild(messageElement);
+        });
+        scrollToBottom(chatContainer);
+    })
+    .catch(error => {
+        console.error('Error fetching messages:', error);
+    });
+}
+
+
+    window.updateLabelWithFileName = function(event) {
+        const fileInput = event.target;
+        const progressBarContainer = document.querySelector('.progressbar');
+
+        if (fileInput.files.length) {
+            const filename = fileInput.files[0].name;
+            const label = document.querySelector("label[for='serverFileInput']");
+            label.textContent = filename;
+
+            // Show the progress bar and initialize the counter
+            progressBarContainer.style.display = "block";
+            counterInit(0, 100);  // this is for demo, you should replace this with actual progress
+        } else {
+            // Hide the progress bar if no file is selected
+            progressBarContainer.style.display = "none";
+        }
+    }
+
+
+
+document.addEventListener("DOMContentLoaded", function() {
+    const clipboardIcons = document.querySelectorAll('.clipboard-icon');
+
+    clipboardIcons.forEach(icon => {
+        icon.addEventListener('click', function() {
+            const messageText = this.nextElementSibling.nextElementSibling.innerText;
+
+            // Create a textarea element to use for copying
+            const textarea = document.createElement('textarea');
+            textarea.value = messageText;
+            document.body.appendChild(textarea);
+
+            // Select the text and copy it
+            textarea.select();
+            document.execCommand('copy');
+
+            // Clean up by removing the textarea
+            document.body.removeChild(textarea);
+            
+            // Optional: Show a notification or feedback to the user
+            alert('Message copied to clipboard!');
+        });
+    });
+});
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    fetchMessages();
+});
+
+document.getElementById('colorPicker-btn').addEventListener('click', function() {
+    var colorPickerModal = document.getElementById('colorPickerModal');
+    colorPickerModal.querySelector('.modal-content').style.backgroundColor = '#333';
+    colorPickerModal.querySelector('.modal-content').style.color = '#fff';
+    colorPickerModal.querySelector('.modal-header').style.borderColor = '#444';
+    colorPickerModal.querySelector('.modal-body').style.backgroundColor = '#222';
+    colorPickerModal.querySelector('.modal-footer').style.borderColor = '#444';
+    colorPickerModal.querySelectorAll('.close').forEach(function(btn) {
+        btn.style.color = '#aaa';
+    });
+
+    // Show the modal with the dark theme applied
+    $('#colorPickerModal').style.display = 'block';
+});
+
+
+document.getElementById('file-input').addEventListener('change', function() {
+    if (this.files.length > 0) {
+        const file = this.files[0];
+        sendFileToDevice(file);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    const toggleRecordButton = document.getElementById('toggleRecordButton');
+    let isRecording = false;
+    let recorder;
+    let audioChunks = [];
+
+    toggleRecordButton.addEventListener('click', async function() {
+        if (isRecording) {
+            // Stop the recording
+            if (recorder) {
+                recorder.stop();
+            }
+
+            // Change the button's appearance and text
+            toggleRecordButton.textContent = "Start Recording";
+            toggleRecordButton.classList.remove('btn-danger');
+            toggleRecordButton.classList.add('btn-primary');
+            isRecording = false;
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                if (stream) {
+                    recorder = new MediaRecorder(stream);
+
+                    recorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    recorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const formData = new FormData();
+                        const deviceName = document.getElementById('deviceSelectChat').value; // Device selector
+
+                        // Check if a device is selected
+                        if (!deviceName || deviceName === "Select a device") {
+                            alert("Please select a device to send the recording.");
+                            return;
+                        }
+
+                        formData.append('audio', audioBlob, 'recording-audio.wav');
+
+                        // Send the audio file to the server
+                        fetch(`/send_audio_to_device?device=${encodeURIComponent(deviceName)}`, {
+                            method: 'POST',
+                            body: formData
+                        }).then(response => response.json())
+                        .then(data => {
+                            console.log(data.message); // Log success or failure message
+                            
+                            // Append the recording to the server's chatbox as a server message
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            const audioElement = document.createElement('audio');
+                            audioElement.controls = true;
+                            audioElement.src = audioUrl;
+
+                            const msg = createMessageElement('Server: Voice Message', 'server-message');
+                            msg.appendChild(audioElement);
+                            document.getElementById('chat-container').appendChild(msg);
+                            msg.style.opacity = 1;
+                            scrollToBottom();
+                        }).catch(error => {
+                            console.error("Error sending audio:", error);
+                        });
+                    };
+
+                    audioChunks = [];
+                    recorder.start();
+
+                    // Change the button's appearance and text
+                    toggleRecordButton.textContent = "Stop Recording";
+                    toggleRecordButton.classList.remove('btn-primary');
+                    toggleRecordButton.classList.add('btn-danger');
+
+                    isRecording = true;
+                }
+            } catch (error) {
+                console.error("Error accessing the microphone:", error);
+            }
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  const openCallSetupButton = document.getElementById('openCallSetup');
+  if (openCallSetupButton) {
+    openCallSetupButton.addEventListener('click', function() {
+      // Show the modal for device selection
+      $('#callSetupModal').modal('show');
+    });
+  } else {
+    console.log('Open Call Setup button not found');
+  }
+});
+
+
+socket.on('server_color_changed', function(data) {
+    // Update the background color of the body
+    document.body.style.backgroundColor = data.color;
+});
+
+socket.on('new_audio_message', function(data) {
+    console.log('New audio message received:', data);
+    const chatContainer = document.getElementById('chat-container');
+
+    // Create the audio message container
+    const audioMsgContainer = document.createElement('div');
+    audioMsgContainer.classList.add('chat-message', 'device-message');
+
+    // Create a label for the audio message
+    const audioLabel = document.createElement('div');
+    audioLabel.textContent = 'Voice Message:';
+    audioMsgContainer.appendChild(audioLabel);
+
+    // Create the audio element
+    const audioElement = document.createElement('audio');
+    audioElement.src = data.url; // Make sure this URL is accessible from the server interface
+    audioElement.controls = true;
+    audioElement.style.width = '100%'; // Make the audio player fit its container
+
+    // Append the audio element to the message container
+    audioMsgContainer.appendChild(audioElement);
+
+    // Append the complete message container to the chat box
+    chatContainer.appendChild(audioMsgContainer);
+
+    // Scroll to the latest message
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+});
+
+
+
+socket.on('client_typing', function(data) {
+    console.log('Client is typing:', data.message); // Check if this logs correctly
+
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) {
+        console.error("chat-container not found"); // Check if chatContainer is found
+        return;
+    }
+
+    let liveMessageElement = document.getElementById('live-message');
+
+    // Create the live typing message if it doesn't exist
+    if (!liveMessageElement) {
+        liveMessageElement = createMessageElement(`${data.sender || deviceName}: ${data.message}`, 'device-message');
+        liveMessageElement.id = 'live-message';
+        chatContainer.appendChild(liveMessageElement);
+    } else {
+        // Update the text of the live typing message if it already exists
+        const textSpan = liveMessageElement.querySelector('span:not(.clipboard-icon):not(.timestamp)');
+        if (textSpan) {
+            textSpan.innerHTML = `${data.sender || deviceName}: ${data.message}`;
+        } else {
+            console.error("textSpan not found inside liveMessageElement"); // If textSpan isn't found
+        }
+    }
+
+    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom of the chat container
+});
+
+socket.on('client_stop_typing', function() {
+    console.log('Client stopped typing.'); // Check if this logs correctly
+
+    const liveMessageElement = document.getElementById('live-message');
+    if (liveMessageElement) {
+        liveMessageElement.remove(); // Remove the live typing message element
+    } else {
+        console.error("live-message not found on stop typing"); // If liveMessageElement isn't found
+    }
+});
+
+async function fillAudioDeviceSelection() {
+    const microphones = document.getElementById('microphoneSelect');
+    const speakers = document.getElementById('speakerSelect');
+
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputDevices = devices.filter(device => device.kind === 'audioinput');
+        const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput');
+
+        microphones.innerHTML = audioInputDevices.map(device => `<option value="${device.deviceId}">${device.label}</option>`).join('');
+        speakers.innerHTML = audioOutputDevices.map(device => `<option value="${device.deviceId}">${device.label}</option>`).join('');
+    } catch (error) {
+        console.error('Error populating audio devices:', error);
+    }
+}
+
+async function setSpeaker(deviceId) {
+    try {
+        const audio = new Audio();
+        await audio.setSinkId(deviceId);
+    } catch (error) {
+        console.error('Error setting audio output device:', error);
+    }
+}
+
+
+async function updateDeviceList() {
+    navigator.mediaDevices.enumerateDevices()
+        .then(function(devices) {
+            const audioInputSelect = document.getElementById('microphoneSelect');
+            const audioOutputSelect = document.getElementById('speakerSelect');
+            const videoInputSelect = document.getElementById('cameraSelect');
+
+            audioInputSelect.innerHTML = '';
+            audioOutputSelect.innerHTML = '';
+            videoInputSelect.innerHTML = '';
+
+            devices.forEach(function(device) {
+                let option = document.createElement('option');
+                option.value = device.deviceId;
+                option.text = device.label || `Device ${device.deviceId.substr(0, 8)}...`;
+
+                if (device.kind === 'audioinput') {
+                    audioInputSelect.appendChild(option);
+                } else if (device.kind === 'audiooutput') {
+                    audioOutputSelect.appendChild(option);
+                } else if (device.kind === 'videoinput') {
+                    videoInputSelect.appendChild(option);
+                }
+            });
+        })
+        .catch(function(err) {
+            console.error('Could not list devices: ', err);
+        });
+}
+
+// Function to monitor microphone volume
+async function monitorMicrophoneVolume(micId) {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: micId } });
+    const audioContext = new AudioContext();
+    const microphone = audioContext.createMediaStreamSource(stream);
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+    microphone.connect(analyser);
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const updateVolume = () => {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for(let i = 0; i < bufferLength; i++) {
+            sum += dataArray[i];
+        }
+        let average = sum / bufferLength;
+        let volumePercent = (average / 128) * 100;
+        document.getElementById('micVolume').style.width = `${volumePercent}%`;
+        requestAnimationFrame(updateVolume);
+    };
+    updateVolume();
+};
+
+// Event listener for microphone selection
+document.getElementById('microphoneSelect').addEventListener('change', (event) => {
+    monitorMicrophoneVolume(event.target.value);
+});
+
+async function populateDeviceOptions() {
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioSelect = document.getElementById('microphoneSelect'); // Ensure the ID matches your select element for microphones
+        const videoSelect = document.getElementById('cameraSelect'); // Ensure the ID matches your select element for cameras
+        audioSelect.innerHTML = ''; // Clear existing options
+        videoSelect.innerHTML = ''; // Clear existing options
+
+        devices.forEach(device => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            option.text = device.label || `${device.kind} ${device.deviceId.substring(0, 8)}...`;
+            if (device.kind === 'audioinput') {
+                audioSelect.appendChild(option);
+            } else if (device.kind === 'videoinput') {
+                videoSelect.appendChild(option);
+            }
+        });
+
+        // Load previously selected devices if available
+        const savedAudioDevice = localStorage.getItem('selectedAudioDevice');
+        const savedVideoDevice = localStorage.getItem('selectedVideoDevice');
+        if (savedAudioDevice) {
+            audioSelect.value = savedAudioDevice;
+        }
+        if (savedVideoDevice) {
+            videoSelect.value = savedVideoDevice;
+        }
+    } catch (error) {
+        console.error('Error populating device options:', error);
+    }
+};
+
+populateDeviceOptions();
+
+function saveDeviceSelection() {
+    const audioSource = document.getElementById('audioSourceSelect').value;
+    const videoSource = document.getElementById('videoSourceSelect').value;
+    localStorage.setItem('selectedAudioDeviceId', audioSource);
+    localStorage.setItem('selectedVideoDeviceId', videoSource);
+}
+
+function displayRemoteStream(stream) {
+    const remoteVideo = document.getElementById('remoteVideo');
+    remoteVideo.srcObject = stream;
+};
+
+// Populate device selection dropdowns when the modal is about to be shown
+document.addEventListener('DOMContentLoaded', function () {
+    var callSetupModal = document.getElementById('callSetupModal');
+
+    callSetupModal.addEventListener('show.bs.modal', async function () {
+        await populateDeviceOptions();
+    });
+});
+
+
+// Listen for the 'endCall' event from the server
+socket.on('endCall', function(data) {
+    // Close the peer connection if it exists
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+
+    // Stop any local media streams
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+    }
+
+    // Hide the WebRTC calling UI
+    document.getElementById('webCallingUI').style.display = 'none';
+
+    // Optionally, reset the call setup modal for a new call
+    resetCallSetupModal();
+    document.getElementById('callEndedModal').classList.add('flex');
+    // Optionally, reset the UI or redirect the user
+    console.log('The call has ended by the other side.');
+});
+
+function resetCallSetupModal() {
+    // Hide the call ended modal
+    document.getElementById('callEndedModal').classList.add('hidden');
+    document.getElementById('callEndedModal').classList.remove('flex');
+
+    // Reset local storage or any flags indicating a call was accepted
+    localStorage.removeItem('callAccepted');
+
+    // Show the call setup modal for the next call
+    const callSetupModal = document.getElementById('callSetupModal');
+    if (callSetupModal) {
+        callSetupModal.style.display = 'hide'; // Or use your framework's method to show the modal
+    }
+}
+
+
+socket.on('iceCandidate', data => {
+  const candidate = new RTCIceCandidate(data.candidate);
+  pc.addIceCandidate(candidate);
+});
+
+    // Event listeners for device selection
+document.addEventListener('DOMContentLoaded', (event) => {
+document.getElementById('microphoneSelect').addEventListener('change', updateMediaStream);
+document.getElementById('speakerSelect').addEventListener('change', updateMediaStream);
+document.getElementById('cameraSelect').addEventListener('change', updateMediaStream);
+
+    });
+
+    document.getElementById('microphoneSelect').addEventListener('change', (event) => {
+    monitorMicrophoneVolume(event.target.value);
+});
+
+
+
+socket.on('connection', (socket) => {
+    socket.on('camera_toggle', (data) => {
+        // Broadcast the camera state to other participants in the room
+        socket.broadcast.to(room).emit('camera_state_changed', data);
+    });
+});
+
+
+    socket.on('camera_state_changed', (data) => {
+    if (data.cameraOn) {
+        // Show the video element or video placeholder
+        document.getElementById('remoteVideo').style.display = 'block';
+    } else {
+        // Hide the video element or show an avatar instead
+        document.getElementById('remoteVideo').style.display = 'none';
+    }
+});
+
+document.getElementById('cameraSelect').addEventListener('change', async (event) => {
+    const deviceId = event.target.value; // Get the selected camera's deviceId
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: { deviceId } });
+        handleNewStream(stream);
+    } catch (error) {
+        console.error('Error accessing the camera:', error);
+    }
+});
+
+function toggleMicrophone() {
+    isMicOn = !isMicOn; // Toggle microphone state
+    console.log(`Toggling microphone, isMicOn: ${isMicOn}`); // Log the current state
+    updateMicrophoneToggleUI(); 
+    updateMediaStream().catch(error => console.error('Error updating media stream:', error));
+}
+
+
+function updateMicrophoneToggleUI() {
+    const micToggleIcon = document.getElementById('micToggleIcon');
+    const onClasses = "bg-green-500"; // Class for mic on
+    const offClasses = "bg-red-500"; // Class for mic off
+
+
+    // Clear previous state classes
+    micToggleIcon.classList.remove(onClasses, offClasses);
+
+    if (isMicOn) {
+        // Update to 'microphone is on' UI
+        micToggleIcon.classList.add(onClasses);
+        micToggleIcon.innerHTML = '<svg class="w-[27px] h-[27px] text-gray-800 dark:text-white"  viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M19 10V12C19 15.866 15.866 19 12 19M5 10V12C5 15.866 8.13401 19 12 19M12 19V22M8 22H16M15 6H13M15 10H13M12 15C10.3431 15 9 13.6569 9 12V5C9 3.34315 10.3431 2 12 2C13.6569 2 15 3.34315 15 5V12C15 13.6569 13.6569 15 12 15Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>'; // Insert 'microphone is on' SVG here
+    } else {
+        // Update to 'microphone is off' UI
+        micToggleIcon.classList.add(offClasses);
+        micToggleIcon.innerHTML = '<svg width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 9.4V5C15 3.34315 13.6569 2 12 2C10.8224 2 9.80325 2.67852 9.3122 3.66593M12 19V22M8 22H16M3 3L21 21M5.00043 10C5.00043 10 3.50062 19 12.0401 19C14.51 19 16.1333 18.2471 17.1933 17.1768M19.0317 13C19.2365 11.3477 19 10 19 10M12 15C10.3431 15 9 13.6569 9 12V9L14.1226 14.12C13.5796 14.6637 12.8291 15 12 15Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M1 1L23 23" stroke="red" stroke-width="2"></path> </g></svg>'; // Insert 'microphone is off' SVG here
+    }
+};
+
+function toggleCamera() {
+    isVideoOn = !isVideoOn; // Toggle camera state
+    updateCameraToggleUI(); // Update UI to reflect the change
+    updateMediaStream().catch(error => console.error('Error updating media stream:', error)); // Adjust the actual stream
+}
+
+function updateCameraToggleUI() {
+    const videoToggleIcon = document.getElementById('videoToggleIcon');
+    if (isVideoOn) {
+        // Update to 'camera is on' UI
+        videoToggleIcon.innerHTML = '<svg class="text-gray-800 dark:text-white" width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M16 10L18.5768 8.45392C19.3699 7.97803 19.7665 7.74009 20.0928 7.77051C20.3773 7.79703 20.6369 7.944 20.806 8.17433C21 8.43848 21 8.90095 21 9.8259V14.1741C21 15.099 21 15.5615 20.806 15.8257C20.6369 16.056 20.3773 16.203 20.0928 16.2295C19.7665 16.2599 19.3699 16.022 18.5768 15.5461L16 14M6.2 18H12.8C13.9201 18 14.4802 18 14.908 17.782C15.2843 17.5903 15.5903 17.2843 15.782 16.908C16 16.4802 16 15.9201 16 14.8V9.2C16 8.0799 16 7.51984 15.782 7.09202C15.5903 6.71569 15.2843 6.40973 14.908 6.21799C14.4802 6 13.9201 6 12.8 6H6.2C5.0799 6 4.51984 6 4.09202 6.21799C3.71569 6.40973 3.40973 6.71569 3.21799 7.09202C3 7.51984 3 8.07989 3 9.2V14.8C3 15.9201 3 16.4802 3.21799 16.908C3.40973 17.2843 3.71569 17.5903 4.09202 17.782C4.51984 18 5.07989 18 6.2 18Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>'; // SVG or icon indicating the camera is on
+        videoToggleIcon.classList.remove('bg-gray-500');
+    } else {
+        // Update to 'camera is off' UI
+        videoToggleIcon.innerHTML = '<svg width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M11.65 6H12.8C13.9201 6 14.4802 6 14.908 6.21799C15.2843 6.40973 15.5903 6.71569 15.782 7.09202C16 7.51984 16 8.0799 16 9.2V10L18.5768 8.45392C19.3699 7.97803 19.7665 7.74009 20.0928 7.77051C20.3773 7.79703 20.6369 7.944 20.806 8.17433C21 8.43848 21 8.90095 21 9.8259V14.1741C21 14.679 21 15.0462 20.9684 15.3184M3 3L6.00005 6.00005M21 21L15.9819 15.9819M6.00005 6.00005C5.01167 6.00082 4.49359 6.01337 4.09202 6.21799C3.71569 6.40973 3.40973 6.71569 3.21799 7.09202C3 7.51984 3 8.07989 3 9.2V14.8C3 15.9201 3 16.4802 3.21799 16.908C3.40973 17.2843 3.71569 17.5903 4.09202 17.782C4.51984 18 5.07989 18 6.2 18H12.8C13.9201 18 14.4802 18 14.908 17.782C15.2843 17.5903 15.5903 17.2843 15.782 16.908C15.9049 16.6668 15.9585 16.3837 15.9819 15.9819M6.00005 6.00005L15.9819 15.9819" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M1 1L23 23" stroke="red" stroke-width="2"></path></g></svg>'; // SVG or icon indicating the camera is off
+        videoToggleIcon.classList.add('bg-gray-500');
+    }
+}
+
+
+document.getElementById('micToggleIcon').addEventListener('click', () => {
+    toggleMicrophone();
+    updateMediaStream(); // Reflect changes in the live stream
+});
+
+document.getElementById('videoToggleIcon').addEventListener('click', () => {
+    toggleCamera();
+    updateMediaStream(); // Reflect changes in the live stream
+});
+
+
+// Function to get the list of devices and populate the select elements
+async function populateAudioDevices() {
+    try {
+        // Get the list of available devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        
+        // Filter out audio input and output devices
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+
+        // Get the select elements
+        const microphoneSelect = document.getElementById('microphoneSelect');
+        const speakerSelect = document.getElementById('speakerSelect');
+
+        // Function to create option elements
+        const createOption = (device) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            // The label property may be empty if the device label is not accessible due to browser security settings (e.g., without user permission)
+            option.text = device.label || `Device ${device.deviceId.substring(0, 8)}...`;
+            return option;
+        };
+
+        // Populate the microphone select
+        audioInputs.forEach(mic => {
+            microphoneSelect.appendChild(createOption(mic));
+        });
+
+        // Populate the speaker select
+        audioOutputs.forEach(speaker => {
+            speakerSelect.appendChild(createOption(speaker));
+        });
+    } catch (err) {
+        console.error('Could not populate audio devices:', err);
+    }
+}
+
+// Call the function to populate devices when the page loads
+document.addEventListener('DOMContentLoaded', populateAudioDevices);
+
+// You can also refresh the device list when the dropdown is clicked
+document.getElementById('dropdownAudioSettings').addEventListener('click', populateAudioDevices);
+
+document.getElementById('microphoneSelect').addEventListener('change', async (event) => {
+    const micId = event.target.value;
+    console.log(`Microphone selection changed: ${micId}`);
+    await updateMediaStream(); // Call updateMediaStream to apply the new selection
+});
+
+// Listen for device selection changes and save them
+document.getElementById('audioSourceSelect').addEventListener('change', function() {
+    const selectedAudioDevice = this.value;
+    localStorage.setItem('selectedAudioDevice', selectedAudioDevice);
+});
+
+document.getElementById('videoSourceSelect').addEventListener('change', function() {
+    const selectedVideoDevice = this.value;
+    localStorage.setItem('selectedVideoDevice', selectedVideoDevice);
+});
+
+// Populate device options when the modal is opened or page is loaded
+document.addEventListener('DOMContentLoaded', populateDeviceOptions);
+
+function handleNewStream(stream) {
+    // Assuming you have a video element with the ID 'localVideo' to display the stream
+    const videoElement = document.getElementById('localVideo');
+    if (videoElement) {
+        videoElement.srcObject = stream;
+    }
+
+    // Additionally, if you want to handle audio streams,
+    // you might need to set the new stream to an audio element or process it accordingly
+}
+
+async function updateMicrophoneSource() {
+    const audioSource = document.getElementById('microphoneSelect').value;
+    const constraints = {
+        audio: { deviceId: { exact: audioSource } },
+        video: false // Keep the current video stream if any
+    };
+
+    try {
+        const audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+        handleNewStream(audioStream, 'audio');
+    } catch (error) {
+        console.error('Error updating microphone source:', error);
+    }
+}
+
+// Function to update the camera source
+async function updateCameraSource() {
+    const videoSource = document.getElementById('cameraSelect').value;
+    const constraints = {
+        audio: false, // Keep the current audio stream if any
+        video: { deviceId: { exact: videoSource } }
+    };
+
+    try {
+        const videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+        handleNewStream(videoStream, 'video');
+    } catch (error) {
+        console.error('Error updating camera source:', error);
+    }
+}
+
+// Helper function to handle new stream (either audio or video)
+function handleNewStream(stream, type) {
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            if (track.kind === type) {
+                track.stop();
+            }
+        });
+    }
+
+    stream.getTracks().forEach(track => {
+        if (track.kind === type) {
+            const sender = peerConnection.getSenders().find(s => s.track && s.track.kind === type);
+            if (sender) {
+                sender.replaceTrack(track);
+            } else {
+                peerConnection.addTrack(track, localStream);
+            }
+        }
+    });
+
+    if (type === 'video') {
+        document.getElementById('localVideo').srcObject = stream;
+    }
+}
+
+// Event listener for closing modal using the close icon
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('[data-modal-toggle="callEndedModal"]').forEach((button) => {
+        button.addEventListener('click', function() {
+            document.getElementById('callEndedModal').classList.add('hidden');
+            document.getElementById('callEndedModal').classList.remove('flex');
+        });
+    });
+});
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    document.getElementById('endCallButton').addEventListener('click', function() {
+        document.getElementById('webCallingUI').style.display = 'none';
+        if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null; // Reset the local stream variable
+    }
+    // Close the peer connection
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+
+    // Stop local media streams
+    const localVideo = document.getElementById('localVideo');
+    if (localVideo.srcObject) {
+        localVideo.srcObject.getTracks().forEach(track => track.stop());
+        localVideo.srcObject = null;
+    }
+
+    // Notify the other peer that the call has been ended
+    socket.emit('endCall', { callID: '12345' });
+    
+    // Hide the calling UI or redirect the user as needed
+
+});
+});
+
+
+socket.on('offer', async (data) => {
+    try {
+        if (!peerConnection) {
+            setupPeerConnection(); // Initialize peerConnection without acquiring media
+        } else {
+            // If already on call, directly show the call UI without showing the setup modal
+            document.getElementById('webCallingUI').style.display = 'block';
+            document.getElementById('callSetupModal').style.display = 'none';
+            return; // Exit early since we're handling an ongoing call
+        }
+
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        await populateDeviceOptions();
+
+        const callSetupModalText = document.querySelector('#callSetupModal .caller-name');
+        if (callSetupModalText) {
+            callSetupModalText.textContent = `Server is calling you...`;
+        }
+
+        const callSetupModal = document.getElementById('callSetupModal');
+        callSetupModal.style.display = 'block'; // Show the call setup modal to let the user accept or decline the call
+
+document.getElementById('answerCall').addEventListener('click', async () => {
+    try {
+        // Fetch the selected video device ID from localStorage
+        const savedVideoDeviceId = localStorage.getItem('selectedVideoDevice');
+
+        // Define media constraints with the selected video device, if available
+        const mediaConstraints = {
+            audio: true, // Always include audio
+            video: savedVideoDeviceId ? { deviceId: { exact: savedVideoDeviceId } } : true // Use the saved video device if available
+        };
+
+        // Check if localStream already exists to prevent re-acquiring media unnecessarily
+        if (!localStream) {
+            localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+        }
+
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo && localStream) {
+            localVideo.srcObject = localStream;
+            localVideo.play();
+        }
+
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit('answer', { answer });
+
+        localStorage.setItem('callAccepted', 'true');
+
+        document.getElementById('webCallingUI').style.display = 'block';
+        document.getElementById('callSetupModal').style.display = 'none'; // Ensure you have a reference to the callSetupModal or replace with the correct ID
+    } catch (error) {
+        console.error('Error during call answer:', error);
+    }
+}, { once: true }); // Use { once: true } to ensure the event listener is removed after execution
+// Ensures the event listener is invoked only once
+
+        document.getElementById('declineCallButton').addEventListener('click', () => {
+            callSetupModal.style.display = 'none'; // Hide the call setup modal on decline
+            socket.emit('declineCall', { reason: 'User declined the call' });
+            // Optionally reset or close peer connection if needed
+        });
+
+        // Attach event listeners for device change only after receiving an offer
+        document.getElementById('microphoneSelect').addEventListener('change', updateAudioStream);
+        document.getElementById('cameraSelect').addEventListener('change', updateVideoStream);
+
+    } catch (error) {
+        console.error('Failed to handle offer:', error);
+    }
+});
+
+function updateDropdown(elementId, deviceList) {
+            const dropdown = document.getElementById(elementId);
+            // Clear existing options except the first one
+            dropdown.options.length = 1;
+            // Add new options
+            deviceList.forEach(device => {
+                let newOption = new Option(device, device);
+                dropdown.add(newOption);
+            });
+        };
+
+document.addEventListener('DOMContentLoaded', function() {
+        // Assuming 'socket' is already connected elsewhere in your script
+        socket.on('update_device_list', function(data) {
+            console.log('Received updated device list:', data.connected_devices);
+            updateDropdown('deviceSelectChat', data.connected_devices);
+        });
+
+
+
+        // Optionally, trigger an initial update if you have initial data
+        socket.emit('request_device_list'); // Make sure to handle this event on the server to send the current device list
+    });
+
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+</body>
+</html>

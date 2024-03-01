@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Call Room - {{ room_id }}</title>
+</head>
+<body>
+        <!-- Web Calling UI -->
+<div id="webCallingUI" class="hidden fixed inset-0 bg-gray-800 border border-gray-200 rounded-lg shadow z-50">
+    <!-- Remote Video Area -->
+    <div class="absolute inset-0 flex justify-center pb-3 md:pb-20 lg:pb-24">
+        <video id="remoteVideo" class="w-full h-auto max-h-[calc(100%-4rem)] md:max-h-[calc(100%-5rem)] lg:max-h-[calc(100%-6rem)] object-cover border-4 border-violet-600" autoplay></video> <!-- Added border classes -->
+    </div>
+    <!-- Local Video (Top Right) -->
+    <div class="absolute top-4 right-4">
+        <video id="localVideo" class="w-24 h-24 md:w-36 md:h-36 lg:w-48 lg:h-48 rounded-lg object-cover border-4 border-violet-600" autoplay muted></video> <!-- Added border classes -->
+    </div>
+    <!-- Call Action Buttons -->
+    <div class="absolute bottom-0 left-0 right-0 p-3 flex justify-center gap-4 bg-gray-700">
+        <!-- Mute Button -->
+        
+        <div class="bg-gray-900 rounded-full flex items-center justify-center">
+            <button id="micToggleIcon" class="inline-flex items-center justify-center bg-violet-600 text-white font-bold rounded-full p-3">
+                <svg class="w-[27px] h-[27px] text-gray-800 dark:text-white"  viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M19 10V12C19 15.866 15.866 19 12 19M5 10V12C5 15.866 8.13401 19 12 19M12 19V22M8 22H16M15 6H13M15 10H13M12 15C10.3431 15 9 13.6569 9 12V5C9 3.34315 10.3431 2 12 2C13.6569 2 15 3.34315 15 5V12C15 13.6569 13.6569 15 12 15Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+            </button>
+            <button id="dropdownAudioSettings" data-dropdown-toggle="audioDropdownMenu" data-dropdown-placement="top" class="text-white font-bold p-3">
+                <svg class="w-[19px] h-[19px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 8">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7 7.674 1.3a.91.91 0 0 0-1.348 0L1 7"/>
+                  </svg>
+            </button>
+            <!-- Dropdown Menu for Audio Settings -->
+            <div id="audioDropdownMenu" class="hidden absolute bottom-full mb-4 left-1/2 transform -translate-x-1/2 bg-gray-800 divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700 w-96">
+                <ul class="py-2 text-sm text-white">
+                    <!-- Microphone Settings -->
+                    <li class="px-4 py-2 font-bold text-xl">Audio Settings</li>
+                    <li class="px-4 py-2 font-bold">Microphone</li>
+                    <li class="px-4 py-2 font-bold">
+                        <select id="microphoneSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                            <!-- Microphone options will be populated here -->
+                        </select>
+                    </li>
+                    <li class="px-4 py-2 font-bold">Speaker</li>
+                        <div class="px-4 py-2 w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div id="micVolume" class="bg-violet-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </li>
+    
+                    <!-- Speaker Settings -->
+                    <li class="px-4 py-2 font-bold">
+                        <select id="speakerSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                        <!-- Speaker options will be populated here -->
+                    </select></li>
+                   
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Select Camera Button -->
+        <div class="bg-gray-900 rounded-full flex">
+        <button id="videoToggleIcon" class="inline-flex items-center justify-center bg-violet-600 text-white font-bold rounded-full p-3">
+            <svg width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M16 10L18.5768 8.45392C19.3699 7.97803 19.7665 7.74009 20.0928 7.77051C20.3773 7.79703 20.6369 7.944 20.806 8.17433C21 8.43848 21 8.90095 21 9.8259V14.1741C21 15.099 21 15.5615 20.806 15.8257C20.6369 16.056 20.3773 16.203 20.0928 16.2295C19.7665 16.2599 19.3699 16.022 18.5768 15.5461L16 14M6.2 18H12.8C13.9201 18 14.4802 18 14.908 17.782C15.2843 17.5903 15.5903 17.2843 15.782 16.908C16 16.4802 16 15.9201 16 14.8V9.2C16 8.0799 16 7.51984 15.782 7.09202C15.5903 6.71569 15.2843 6.40973 14.908 6.21799C14.4802 6 13.9201 6 12.8 6H6.2C5.0799 6 4.51984 6 4.09202 6.21799C3.71569 6.40973 3.40973 6.71569 3.21799 7.09202C3 7.51984 3 8.07989 3 9.2V14.8C3 15.9201 3 16.4802 3.21799 16.908C3.40973 17.2843 3.71569 17.5903 4.09202 17.782C4.51984 18 5.07989 18 6.2 18Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>           
+              
+        </button>
+        <button class="text-white font-bold p-3" data-dropdown-toggle="cameraDropdownMenu" data-dropdown-placement="top">
+            <svg class="w-[19px] h-[19px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 8">
+                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7 7.674 1.3a.91.91 0 0 0-1.348 0L1 7"/>
+              </svg>
+        </button>
+        <!-- Dropdown Menu for Video Settings -->
+        <div id="cameraDropdownMenu" class="hidden absolute bottom-full mb-3 left-1/2 transform -translate-x-1/2 bg-gray-800 divide-y divide-gray-100 rounded-lg shadow w-96 h-56 dark:bg-gray-700">
+            <ul class="py-2 text-sm text-white">
+                <li class="px-4 py-2 font-bold text-xl">Video Settings</li>
+                <li class="px-4 py-2 font-bold">Camera</li>
+                <li class="px-4 py-2 font-bold">
+                    <select id="cameraSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"></select>
+                </li>
+            </ul>
+        </div>        
+        </div>
+
+        <!-- Toggle Chat Button -->
+        
+        <button class="inline-flex items-center justify-center bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-full p-3" type="button">
+            <svg class="w-[22px] h-[22px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 18" fill="currentColor">
+                <path d="M18 4H16V9C16 10.0609 15.5786 11.0783 14.8284 11.8284C14.0783 12.5786 13.0609 13 12 13H9L6.846 14.615C7.17993 14.8628 7.58418 14.9977 8 15H11.667L15.4 17.8C15.5731 17.9298 15.7836 18 16 18C16.2652 18 16.5196 17.8946 16.7071 17.7071C16.8946 17.5196 17 17.2652 17 17V15H18C18.5304 15 19.0391 14.7893 19.4142 14.4142C19.7893 14.0391 20 13.5304 20 13V6C20 5.46957 19.7893 4.96086 19.4142 4.58579C19.0391 4.21071 18.5304 4 18 4Z" fill="currentColor"/>
+                <path d="M12 0H2C1.46957 0 0.960859 0.210714 0.585786 0.585786C0.210714 0.960859 0 1.46957 0 2V9C0 9.53043 0.210714 10.0391 0.585786 10.4142C0.960859 10.7893 1.46957 11 2 11H3V13C3 13.1857 3.05171 13.3678 3.14935 13.5257C3.24698 13.6837 3.38668 13.8114 3.55279 13.8944C3.71889 13.9775 3.90484 14.0126 4.08981 13.996C4.27477 13.9793 4.45143 13.9114 4.6 13.8L8.333 11H12C12.5304 11 13.0391 10.7893 13.4142 10.4142C13.7893 10.0391 14 9.53043 14 9V2C14 1.46957 13.7893 0.960859 13.4142 0.585786C13.0391 0.210714 12.5304 0 12 0Z" fill="currentColor"/>
+                </svg>
+        </button>
+
+        <!-- End Call Button -->
+        <button id="endCallButton" class="inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold rounded-full p-3" type="button">
+            <svg class="w-[22px] h-[22px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 19 18">
+                <path d="M18 13.446a3.02 3.02 0 0 0-.946-1.985l-1.4-1.4a3.054 3.054 0 0 0-4.218 0l-.7.7a.983.983 0 0 1-1.39 0l-2.1-2.1a.983.983 0 0 1 0-1.389l.7-.7a2.98 2.98 0 0 0 0-4.217l-1.4-1.4a2.824 2.824 0 0 0-4.218 0c-3.619 3.619-3 8.229 1.752 12.979C6.785 16.639 9.45 18 11.912 18a7.175 7.175 0 0 0 5.139-2.325A2.9 2.9 0 0 0 18 13.446Z"/>
+                </svg>
+        </button>
+</div>
+
+</div>
+</body>
+</html>
