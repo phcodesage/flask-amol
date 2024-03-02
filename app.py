@@ -688,7 +688,7 @@ def change_color(data):
 
     if target_device in device_socket_map:
         socket_id = device_socket_map[target_device]
-        emit('set_background', color, room=socket_id)
+        emit('set_background', color, broadcast=True)
         app.logger.info("Color changed successfully for device %s", target_device)
     else:
         app.logger.error("Device %s not found in device_socket_map.", target_device)
