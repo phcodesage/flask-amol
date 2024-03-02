@@ -448,7 +448,7 @@ def register_device():
             db.session.commit()
             session['device_name'] = device_name
 
-            # Emit an update to all clients about the new device
+            # emit an update to all clients about the new device
             emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
 
             flash('Device registered successfully.', 'success')
@@ -533,8 +533,8 @@ def background_device_update():
     """Background task that sends the list of connected devices every X seconds."""
     while True:
         socketio.sleep(30)  # Adjust time as needed
-        # Emit the list of connected devices to all clients
-        socketio.emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
+        # emit the list of connected devices to all clients
+        emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
 
 
 
@@ -575,7 +575,7 @@ def handle_disconnect():
 @socketio.on('request_device_list')
 def handle_request_device_list():
     print("Client requested the list of connected devices.")
-    # Emit the current list of connected devices back to the requesting client
+    # emit the current list of connected devices back to the requesting client
     emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
 
 
@@ -629,7 +629,7 @@ def handle_chat_message(data):
         print("An error occurred while saving the message:", e)
         db.session.rollback()
     
-    # Emit the message to the specified device or broadcast it
+    # emit the message to the specified device or broadcast it
     if target_device and target_device in device_socket_map:
         socket_id = device_socket_map[target_device]
         emit('broadcast_message', data, broadcast=True)
@@ -727,7 +727,7 @@ def send_file_to_device():
             if device_name in device_socket_map:
                 socket_id = device_socket_map[device_name]
                 time.sleep(2)
-                socketio.emit('receive_file', {'file_path': download_url, 'filename': filename}, room=socket_id)
+                emit('receive_file', {'file_path': download_url, 'filename': filename}, room=socket_id)
 
             return jsonify(status='success', message='File sent successfully'), 200
 
@@ -755,7 +755,7 @@ def send_audio_to_device():
 
             if device_name in device_socket_map:
                 socket_id = device_socket_map[device_name]
-                socketio.emit('new_audio_message_to_device', {'url': download_url}, room=socket_id)
+                emit('new_audio_message_to_device', {'url': download_url}, room=socket_id)
 
             return jsonify(status='success', message='Audio sent successfully'), 200
 
@@ -808,7 +808,7 @@ def send_message_to_device():
 
     if device_name in device_socket_map:
         socket_id = device_socket_map[device_name]
-        socketio.emit('broadcast_message', {'message': message}, room=socket_id)
+        emit('broadcast_message', {'message': message}, room=socket_id)
         return jsonify(status='success', message='Message sent successfully'), 200
 
     return jsonify(status='fail', message='Device not found'), 400
@@ -824,7 +824,7 @@ def change_background_color_request():
 
     if device_name in device_socket_map:
         socket_id = device_socket_map[device_name]
-        socketio.emit('set_background', {'color': color}, room=socket_id)
+        emit('set_background', {'color': color}, room=socket_id)
         return jsonify(status='success', message='Background color changed successfully'), 200
 
     return jsonify(status='fail', message='Device not found'), 400
@@ -843,7 +843,7 @@ def upload_file():
         file.save(file_path)
 
         # Use 'send' for broadcasting to all clients
-        socketio.emit('file_uploaded', {'filename': filename})
+        emit('file_uploaded', {'filename': filename})
 
         # Create a public URL for the uploaded file
         public_url = url_for('static', filename=os.path.join('uploads', filename))
@@ -869,8 +869,8 @@ def upload_audio():
     # Create a URL that can be accessed over HTTP
     file_url = url_for('uploaded_file', filename=filename, _external=True)
     
-    # Emit the socket event with the correct HTTP URL
-    socketio.emit('new_audio_message', {'url': file_url})
+    # emit the socket event with the correct HTTP URL
+    emit('new_audio_message', {'url': file_url})
     
     return jsonify({'status': 'success', 'message': 'Audio file uploaded successfully', 'url': file_url})
 
@@ -988,7 +988,7 @@ def on_data(data):
     if data["type"] != "new-ice-candidate":
         print('{} message from {} to {}'.format(
             data["type"], sender_sid, target_sid))
-    socketio.emit('data', data, room=target_sid)
+    emit('data', data, room=target_sid)
 
 
 @socketio.on('send_notification_to_device')
@@ -1019,7 +1019,7 @@ def handle_send_notification(data):
 @socketio.on('message')
 def handle_message(data):
     logging.info(f"Received message: {data}")
-    # Emit to all clients except the sender
+    # emit to all clients except the sender
     emit('message', data, room=request.sid, include_self=False)
 
 

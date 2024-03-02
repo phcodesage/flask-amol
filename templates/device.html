@@ -915,9 +915,10 @@ body {
 <audio id="remoteAudio" autoplay></audio>
 <script src="https://cdn.WebRTC-Experiment.com/RecordRTC.js"></script>
 <script>
-    const socket = io('https://test.flask-server.tech', {
-    path: '/socket.io',  // Ensure this path is correct; it's the default for Flask-SocketIO // If you need to pass query parameters
+const socket = io(location.origin, {
+    path: '/socket.io',  // Ensure this path is correct; it's the default for Flask-SocketIO
 });
+
     socket.on('connect', function() {
         console.log('Connected to server');
         endCall(); // End call on reconnect, which may occur after a page refresh
