@@ -22,22 +22,28 @@
     
     <style>
 :root {
-    --primary: #6f42c1;
-    --secondary: #121212;
-    --success: #198754;
-    --info: #0dcaf0;
-    --warning: #fd7e14;
-    --danger: #dc3545;
-    --link: #6f42c1;
-    --text: #ccc;
-    --muted: #1a1a1a;
+    /* Using Google's Material Design color palette for a dark theme */
+    --primary: #3b008d; /* Material Design Purple 700 */
+    --secondary: #121212; /* Material Design background */
+    --success: #66bb6a; /* Material Green 400 */
+    --info: #014261; /* Material Light Blue 400 */
+    --warning: #ffa726; /* Material Orange 400 */
+    --danger: #ef5350; /* Material Red 400 */
+    --link: #623f8b; /* Material Purple for links */
+    --text: #e0e0e0; /* Light grey text for high readability */
+    --muted: #4d4d4d; /* Slightly lighter background for elements */
+    --border: #424242; /* Material Design border for elements */
+    --highlight: #018679; /* Material Design teal 200 for hover states */
 }
+
 
 body {
     background-color: var(--secondary);
     color: var(--text);
+    font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+    line-height: 1.6;
+    margin: 0;
     padding: 20px;
-
 }
 
 .form-group, .modal-content, #chatBox, .list-group-item {
@@ -45,21 +51,43 @@ body {
     border-color: var(--text);
 }
 
+
 input[type="color"], select {
     background-color: var(--muted);
     color: var(--text);
     border-color: var(--text);
 }
 
+
 .btn {
-    border: 1px solid var(--info);
-    background-color: var(--muted);
-    color: var(--info);
+    background-color: var(--primary);
+    color: var(--text);
+    padding: 0.75rem 1.5rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.btn, .form-control, a {
+    transition: all 0.3s ease;
+}
+
+.btn:hover, .form-control:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
 }
 
 .btn:hover {
-    background-color: var(--info);
-    color: var(--muted);
+    background-color: var(--highlight);
+}
+
+.form-control {
+    background-color: var(--muted);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.5rem 1rem;
 }
 
 .chat-container {
@@ -69,13 +97,19 @@ input[type="color"], select {
     background-color: var(--muted);
     color: var(--text);
     height: 500px;
-    border: none;
     overflow-y: auto;
     margin-bottom: 10px;
     padding: 10px;
-    border-radius: 5px;
-    scrollbar-width: thin;
-    scrollbar-color: var(--link) var(--secondary);
+    border-radius: 4px;
+}
+
+.chat-box::-webkit-scrollbar-track {
+    background: var(--secondary);
+}
+
+.chat-box::-webkit-scrollbar-thumb {
+    background-color: var(--primary);
+    border-radius: 20px;
 }
 
 .chat-container.dragging {
@@ -83,17 +117,29 @@ input[type="color"], select {
     background-color: rgba(255, 255, 255, 0.5);
 }
 
+a {
+    color: var(--link);
+    text-decoration: none;
+}
+
+
+a:hover {
+    color: var(--highlight);
+}
 
 .shadow-sm {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.11);
+    box-shadow: 0 2px 4px 0 rgba(0,0,0,0.14), 0 3px 4px -2px rgba(0,0,0,0.12), 0 1px 5px 0 rgba(0,0,0,0.20);
 }
-
 /* From device styles */
 .card {
-    background-color: var(--primary);
-    border-color: var(--primary);
+    background-color: var(--muted);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 16px;
+    margin-bottom: 20px;
 }
-/* ... [keep the remaining styles from the device interface here] */
+
 
 /* Server styles continued */
 .chat-box {
@@ -104,7 +150,11 @@ input[type="color"], select {
 }
 
 .chat-box, #messages li {
-    background-color: var(--muted);
+    background-color: var(--secondary);
+    color: var(--text);
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 4px;
 }
 
 #live-message {
@@ -164,6 +214,13 @@ input[type="color"], select {
     word-wrap: break-word;
 }
 
+
+.server-message, .device-message {
+    background-color: var(--info);
+    padding: 10px;
+    border-radius: 4px;
+}
+
 .server-message {
     align-self: flex-end;
     background-color: var(--primary);
@@ -173,7 +230,7 @@ input[type="color"], select {
 .device-message {
     align-self: flex-start;
     background-color: var(--info);
-    color: var(--muted)!important;
+    color: var(--text)!important;
 }
 
 .chat-container .chat-message {
@@ -191,11 +248,8 @@ input[type="color"], select {
 
 
 .timestamp {
-    display: none; /* hidden by default */
-    font-size: 0.8rem;
-    color: var(--danger)!important;
-    margin-right: 10px;
-    align-self: center;
+    color: var(--danger);
+    font-size: 0.75rem;
 }
 
 .chat-message .clipboard-icon {
@@ -245,6 +299,23 @@ border: 1px solid #84D65A;
 box-shadow: 0px 0px 5px -3px #111;
 }
 
+.success {
+    background: #2a9d8f; /* A darker, softer green */
+    color: var(--secondary); /* Using the dark background color for text */
+    border-color: #2a9d8f;
+}
+
+.card-header {
+    background-color: var(--primary);
+    color: var(--text);
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--border);
+}
+
+.card-body {
+    padding: 16px;
+}
+
 .success__icon {
 width: 20px;
 height: 20px;
@@ -272,6 +343,22 @@ margin-left: auto;
 .success__close path {
 fill: #2B641E;
 }
+
+.text-center {
+    text-align: center;
+}
+
+.mt-2 {
+    margin-top: 0.5rem;
+}
+
+.mb-2 {
+    margin-bottom: 0.5rem;
+}
+
+.p-2 {
+    padding: 0.5rem;
+}
     </style>
 
 </head>
@@ -279,8 +366,8 @@ fill: #2B641E;
 <body>
     <div class="mx-auto mt-5 max-w-full">
         <!-- Color Picker Modal -->
-    <div id="colorPickerModal" class="fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center hidden" aria-labelledby="colorPickerModalLabel" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered">
+    <div id="colorPickerModal" class="fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center hidden z-50" aria-labelledby="colorPickerModalLabel" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered w-1/3">
             <div class="modal-content bg-gray-800 text-white rounded-lg">
                 <div class="modal-header border-b border-gray-700 p-4">
                     <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
@@ -460,101 +547,25 @@ fill: #2B641E;
                     </select>
                 </div>
             </div>
-        </div>
-
-
-
-        <!-- Device Actions -->
-        <div id="deviceActions" class="mt-3">
-            <div class="row justify-content-center">
-                <div class="col-lg-10">
-                
-            <!-- Server Actions Div -->
-            <div id="serverActions" class="flex flex-wrap justify-center items-center gap-4 my-8 sm:flex-nowrap">
-                <!-- Notification Section -->
-                <button id="sendNotificationBtn" onclick="sendNotification()" class="btn btn-warning rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Send Notification</button>
-                
-                <!-- Background Color Change -->
-                <button onclick="changeBackgroundColor()" class="btn btn-info rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" id="colorPicker-btn">Change Color</button>
-                
-                <!-- File Sending Section -->
-                <input type="file" id="file-input" class="hidden">
-                <button onclick="document.getElementById('file-input').click()" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Send File</button>
-                
-                <!-- Recording Section -->
-                <button id="toggleRecordButton" class="btn btn-accent rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" type="button">Start Recording</button>    
-                
-                <!-- Timestamp Toggle -->
-                <button id="toggle-timestamps" class="btn btn-success rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" type="button">Toggle Timestamps</button>
-                
-                <!-- Voice Call Section -->
-                <div id="voiceCallSection" class="w-full sm:w-auto mt-3 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
-                    <!-- Trigger for Call Setup Modal -->
-                    <button id="startCallButton" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Start a Call</button>
-                    <button id="shareScreenButton" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Share Screen</button>
-                    <button id="endCallButton" class="btn btn-red-500 hover:bg-red-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" disabled>End Call</button>
-                    
-                    <audio id="remoteAudio" autoplay class="hidden"></audio>
+            <div class="flex justify-center m-5">
+                <div class="list-group">
+                    <div id="clipboardAlert" class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert" style="display:none;">
+                        Copied to clipboard!
+                        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <a href="#" class="list-group-item list-group-item-action shadow-sm" 
+                    onclick="handleCopyClick(event, '{{ base_url }}:{{ port }}{{ endpoint }}')">
+                        Device can connect on: {{ base_url }}{{ port }}{{ endpoint }}
+                    </a>
                 </div>
-            </div>
-
-
-
-                    <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav') }}" preload="auto"></audio>
-    
-                    <!-- Chat Section -->
-                    
-                    <div class="card text-white mb-3">
-                        <div class="card-header">Chat</div>
-                        <div id="alert-message" class="alert alert-primary d-none" role="alert"></div>
-                        <div class="card-body">
-                            <div id="chat-container" class="chat-container">
-                                <!-- Messages will be appended here by JavaScript -->
-                            </div>
-                        </div>
-                    </div>
-                    <div class="input-group mb-3"> <!-- Use Bootstrap's input group for a better mobile experience -->
-                        <div id="message-input" contenteditable="true" class="form-control" placeholder="Type a message..." aria-label="Type a message" tabindex="0" style="color: rgb(102, 102, 102);"></div>
-                        <div class="input-group-append">
-                            <button id="send-message" class="btn btn-primary" type="button">Send</button>
-                            <button id="clear-chat" class="btn btn-secondary" type="button">Clear</button>
-                        </div>
-                    </div>
-                    <!-- Remaining code... -->
-    
-                    <div class="progress mb-3" style="display: none;">
-                        <div class="progress-bar mb-3" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                    </div>
-                    
-                    
-                    <div id="successMessage" class="alert alert-success d-none">
-                        <p></p>
-                    </div>
-    
-                    <!-- Uploaded Files -->
-                    <h4 class="mt-4" style="margin: 0;">Uploaded Files</h4>
-                    <ul id="uploadedFiles" class="list-group mb-3 shadow-sm"></ul>
-                </div>
-            </div>
-
-        </div>
-    
-        <div class="flex justify-center m-5">
-            <div class="list-group">
-                <div id="clipboardAlert" class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert" style="display:none;">
-                    Copied to clipboard!
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <a href="#" class="list-group-item list-group-item-action shadow-sm" 
-                onclick="handleCopyClick(event, '{{ base_url }}:{{ port }}{{ endpoint }}')">
-                    Device can connect on: {{ base_url }}{{ port }}{{ endpoint }}
-                </a>
             </div>
         </div>
     
-    </div>
+
+    
+
     
     {% if success %}
     <div class="success container-fluid">
@@ -593,13 +604,7 @@ fill: #2B641E;
         </div>
     </div>
 
-
-
     {% endif %}
-
-
-
-
 
 <!-- Tailwind Call Setup Modal with Dark Theme and Blur Background -->
 <div id="callSetupModal" class="fixed z-10 inset-0 overflow-y-auto hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
@@ -642,8 +647,78 @@ fill: #2B641E;
       </div>
     </div>
   </div>
+</div>
+          <!-- Device Actions -->
+          <div id="deviceActions" class="mt-3">
+            <div class="row justify-content-center">
+                <div class="col-lg-10">
+                
+                    <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav') }}" preload="auto"></audio>
+    
+                    <!-- Chat Section -->
+                    
+                    <div class="card text-white mb-3">
+                        <div class="card-header">Chat</div>
+                        <div id="alert-message" class="alert alert-primary d-none" role="alert"></div>
+                        <div class="card-body">
+                            <div id="chat-container" class="chat-container">
+                                <!-- Messages will be appended here by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="input-group mb-3"> <!-- Use Bootstrap's input group for a better mobile experience -->
+                        <div id="message-input" contenteditable="true" class="form-control" placeholder="Type a message..." aria-label="Type a message" tabindex="0" style="color: rgb(102, 102, 102);"></div>
+                        <div class="input-group-append">
+                            <button id="send-message" class="btn btn-primary" type="button">Send</button>
+                            <button id="clear-chat" class="btn btn-secondary" type="button">Clear</button>
+                        </div>
+                                    <!-- Server Actions Div -->
+            <div id="serverActions" class="flex flex-wrap justify-center items-center gap-4 sm:flex-nowrap">
+                <!-- Notification Section -->
+                <button id="sendNotificationBtn" onclick="sendNotification()" class="btn btn-warning rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Send Notification</button>
+                
+                <!-- Background Color Change -->
+                <button onclick="changeBackgroundColor()" class="btn btn-info rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" id="colorPicker-btn">Change Color</button>
+                
+                <!-- File Sending Section -->
+                <input type="file" id="file-input" class="hidden">
+                <button onclick="document.getElementById('file-input').click()" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Send File</button>
+                
+                <!-- Recording Section -->
+                <button id="toggleRecordButton" class="btn btn-accent rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" type="button">Start Recording</button>    
+                
+                <!-- Timestamp Toggle -->
+                <button id="toggle-timestamps" class="btn btn-success rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" type="button">Toggle Timestamps</button>
+                
+                <!-- Voice Call Section -->
+                <div id="voiceCallSection" class="w-full sm:w-auto mt-3 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <!-- Trigger for Call Setup Modal -->
+                    <button id="startCallButton" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Start a Call</button>
+                    <button id="shareScreenButton" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Share Screen</button>
+                    <button id="endCallButton" class="btn btn-red-500 hover:bg-red-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" disabled>End Call</button>
+                    
+                    <audio id="remoteAudio" autoplay class="hidden"></audio>
+                </div>
+            </div>
+                    </div>
+                    <!-- Remaining code... -->
+    
+                    <div class="progress mb-3" style="display: none;">
+                        <div class="progress-bar mb-3" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+                    </div>
+                    
+                    
+                    <div id="successMessage" class="alert alert-success d-none">
+                        <p></p>
+                    </div>
+    
+                    <!-- Uploaded Files -->
+                    <h4 class="mt-4" style="margin: 0;">Uploaded Files</h4>
+                    <ul id="uploadedFiles" class="list-group mb-3 shadow-sm"></ul>
+                </div>
+            </div>
 
-  
+        </div>
 <script>
 const socket = io(location.origin, {
     path: '/socket.io',  // Ensure this path is correct; it's the default for Flask-SocketIO
