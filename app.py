@@ -574,7 +574,6 @@ def handle_disconnect():
 
 @socketio.on('request_device_list')
 def handle_request_device_list():
-    print("Client requested the list of connected devices.")
     # emit the current list of connected devices back to the requesting client
     emit('update_device_list', {'connected_devices': list(device_socket_map.keys())}, broadcast=True)
 

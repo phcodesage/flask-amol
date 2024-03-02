@@ -278,6 +278,27 @@ fill: #2B641E;
 
 <body>
     <div class="mx-auto mt-5 max-w-full">
+        <!-- Color Picker Modal -->
+    <div id="colorPickerModal" class="fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center hidden" aria-labelledby="colorPickerModalLabel" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-gray-800 text-white rounded-lg">
+                <div class="modal-header border-b border-gray-700 p-4">
+                    <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
+                    <button type="button" class="close text-gray-400 hover:text-white" onclick="toggleModal('colorPickerModal', false)" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body bg-gray-700 p-4">
+                    <input type="color" id="colorPicker" name="color" title="Choose your color" class="w-full h-10">
+                </div>
+                <div class="modal-footer border-t border-gray-700 p-4">
+                    <button type="button" class="btn btn-secondary" onclick="toggleModal('colorPickerModal', false)">Close</button>
+                    <button type="button" class="btn btn-primary" id="confirmColor">Select Color</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- This example requires Tailwind CSS and Flowbite. Place the script tag before your closing </body> tag. -->
     <div id="callEndedModal" data-modal-target="callEndedModal" tabindex="-1" class="hidden fixed inset-0 z-50 overflow-y-auto overflow-x-hidden h-modal md:h-full justify-center items-center flex bg-black bg-opacity-50 backdrop-blur-[2px] animate-fadeIn">
         <div class="relative p-4 w-full max-w-md h-full md:h-auto animate-scaleUp">
@@ -447,37 +468,37 @@ fill: #2B641E;
         <div id="deviceActions" class="mt-3">
             <div class="row justify-content-center">
                 <div class="col-lg-10">
-    
-                    <!-- Server Actions Div -->
-                    <div id="serverActions">
-                        <!-- Notification Section -->
-                        <button id="sendNotificationBtn" onclick="sendNotification()" class="btn btn-warning">Send Notification</button>
-                        
-                        <!-- Background Color Change -->
-                        <button onclick="changeBackgroundColor()" class="btn btn-primary" id="colorPicker-btn">Change Color</button>
-                        
-                        <!-- File Sending Section -->
-                        <input type="file" id="file-input" style="display: none;">
-                        <button onclick="document.getElementById('file-input').click()" class="btn btn-primary bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-white">Send File</button>
-                        <button id="toggleRecordButton" class="btn btn-primary" type="button">Start Recording</button>    
-                        <button id="toggle-timestamps" class="btn btn-secondary mb-2 mb-md-0" type="button" style="background-color: green;">Toggle Timestamps</button>
-                    </div>
-                    <!-- Voice Call Section -->
-                    <div id="voiceCallSection" class="mt-3 flex items-center">
-                        <!-- Trigger for Call Setup Modal -->
-                        <button id="openCallSetup" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 focus:outline-none focus:shadow-outline" type="button">
-                            Start a Call
-                        </button>
-                        <button id="openCallSetup" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-4 focus:outline-none focus:shadow-outline" type="button" id="shareScreenButton">
-                            Share Screen
-                        </button>
-                        <button id="endCallButton" class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded mt-4 focus:outline-none focus:shadow-outline" type="button" disabled>
-                            End Call
-                        </button>
-                        
-                        <audio id="remoteAudio" autoplay></audio>
-                    </div>
+                
+            <!-- Server Actions Div -->
+            <div id="serverActions" class="flex flex-wrap justify-center items-center gap-4 my-8 sm:flex-nowrap">
+                <!-- Notification Section -->
+                <button id="sendNotificationBtn" onclick="sendNotification()" class="btn btn-warning rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Send Notification</button>
+                
+                <!-- Background Color Change -->
+                <button onclick="changeBackgroundColor()" class="btn btn-info rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" id="colorPicker-btn">Change Color</button>
+                
+                <!-- File Sending Section -->
+                <input type="file" id="file-input" class="hidden">
+                <button onclick="document.getElementById('file-input').click()" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Send File</button>
+                
+                <!-- Recording Section -->
+                <button id="toggleRecordButton" class="btn btn-accent rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" type="button">Start Recording</button>    
+                
+                <!-- Timestamp Toggle -->
+                <button id="toggle-timestamps" class="btn btn-success rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" type="button">Toggle Timestamps</button>
+                
+                <!-- Voice Call Section -->
+                <div id="voiceCallSection" class="w-full sm:w-auto mt-3 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
+                    <!-- Trigger for Call Setup Modal -->
+                    <button id="startCallButton" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Start a Call</button>
+                    <button id="shareScreenButton" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Share Screen</button>
+                    <button id="endCallButton" class="btn btn-red-500 hover:bg-red-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" disabled>End Call</button>
                     
+                    <audio id="remoteAudio" autoplay class="hidden"></audio>
+                </div>
+            </div>
+
+
 
                     <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav') }}" preload="auto"></audio>
     
@@ -515,26 +536,7 @@ fill: #2B641E;
                     <ul id="uploadedFiles" class="list-group mb-3 shadow-sm"></ul>
                 </div>
             </div>
-            <!-- Color Picker Modal -->
-        <div class="modal fade" id="colorPickerModal" tabindex="-1" aria-labelledby="colorPickerModalLabel" aria-hidden="true" style="display: none;">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content" style="background-color: #333; color: #fff;">
-                    <div class="modal-header" style="border-color: #444;">
-                        <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" style="color: #aaa;">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body" style="background-color: #222;">
-                        <input type="color" id="colorPicker" name="color" title="Choose your color">
-                    </div>
-                    <div class="modal-footer" style="border-color: #444;">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                        <button type="button" class="btn btn-primary" id="confirmColor">Select Color</button>
-                    </div>
-                </div>
-            </div>
-        </div>
+
         </div>
     
         <div class="flex justify-center m-5">
@@ -817,14 +819,6 @@ document.addEventListener('DOMContentLoaded', () => {
 document.getElementById('deviceSelectChat').addEventListener('change', function() {
 selectedDevice = this.value;
 // Other necessary logic...
-});
-
-document.getElementById('openCallSetup').addEventListener('click', async function() {
-    await populateDeviceOptions(); // Ensure this function is defined and populates the options.
-    
-    // Now show the modal using Bootstrap's jQuery-free method (if using Bootstrap 5)
-    var myModal = new bootstrap.Modal(document.getElementById('callSetupModal'));
-    myModal.show();
 });
 
 
@@ -1759,17 +1753,21 @@ document.getElementById('confirmColor').onclick = function() {
 };
 }
 
-function changeBackgroundColor() {
-    $('#colorPickerModal').modal({
-        backdrop: 'static', // Prevent closing when clicking outside
-        keyboard: false // Prevent closing with the escape key
-    });
+function toggleModal(modalId, show) {
+    const modal = document.getElementById(modalId);
+    if (show) {
+        modal.style.display = 'flex';
+    } else {
+        modal.style.display = 'none';
+    }
+}
 
+function changeBackgroundColor() {
     // Show the modal
-    $('#colorPickerModal').modal('show');
+    toggleModal('colorPickerModal', true);
 
     // When a color is selected, change the background color of the target device
-    $('#confirmColor').off().on('click', function() {
+    document.getElementById('confirmColor').addEventListener('click', function() {
         const targetDevice = document.getElementById('deviceSelectChat').value;
         const chosenColor = document.getElementById('colorPicker').value;
 
@@ -1782,7 +1780,8 @@ function changeBackgroundColor() {
             // Append message to chat box indicating the successful color change
             appendMessageToChat("Server", `Successfully changed the background color of ${targetDevice} with the color of ${chosenColor}.`, 'server-message');
 
-            $('#colorPickerModal').modal('hide'); // Hide the modal once the color is selected
+            // Hide the modal once the color is selected
+            toggleModal('colorPickerModal', false);
         } 
     });
 };
@@ -2720,20 +2719,30 @@ document.getElementById('answerCall').addEventListener('click', async () => {
 });
 
 function updateDropdown(elementId, deviceList) {
-            const dropdown = document.getElementById(elementId);
-            // Clear existing options except the first one
-            dropdown.options.length = 1;
-            // Add new options
-            deviceList.forEach(device => {
-                let newOption = new Option(device, device);
-                dropdown.add(newOption);
-            });
-        };
+    const dropdown = document.getElementById(elementId);
+    const selectedValue = dropdown.value;
+    console.log("Selected Value before update:", selectedValue); // Debugging line
+
+    dropdown.options.length = 1;
+
+    deviceList.forEach(device => {
+        let newOption = new Option(device, device);
+        dropdown.add(newOption);
+    });
+
+    if (deviceList.includes(selectedValue)) {
+        dropdown.value = selectedValue;
+    } else {
+        console.log("Selected Value does not exist in the new list:", selectedValue); // Debugging line
+    }
+};
+
+
 
         document.addEventListener('DOMContentLoaded', function() {
     // Assuming 'socket' is already connected elsewhere in your script
     socket.on('update_device_list', function(data) {
-        console.log('Received updated device list:', data.connected_devices);
+        
         updateDropdown('deviceSelectChat', data.connected_devices);
         updateDeviceList(data.connected_devices); // Function to update the device list UI
     });
