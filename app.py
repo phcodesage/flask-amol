@@ -3,7 +3,7 @@ eventlet.monkey_patch()
 
 
 from flask import Flask, redirect, render_template, request, jsonify, send_from_directory, url_for, current_app, redirect, url_for, flash
-from flask_socketio import SocketIO, emit
+from flask_socketio import SocketIO, emit, Namespace
 from flask_cors import CORS
 from werkzeug.utils import secure_filename
 import traceback
@@ -33,7 +33,7 @@ from dotenv import load_dotenv
 from flask import session  # Don't forget to import session
 from flask_migrate import Migrate
 from datetime import datetime
-from threading import Lock
+from threading import Lock, Event
 
 
 interface_accessed = False
@@ -191,6 +191,21 @@ class Message(db.Model):
     def __repr__(self):
        return f"Message('{self.sender}', '{self.content}', '{self.timestamp}', '{self.message_class}')"
 
+
+class MyNamespace(Namespace):
+    def on_receive_file(self, sid, data):
+        # This function is called when the 'receive_file' event is emitted by the client
+        ack_event = Event()
+        def ack():
+            ack_event.set()  # Set the event to signal that the acknowledgment has been received
+
+        self.emit('receive_file', data, room=sid, callback=ack)
+        ack_received = ack_event.wait(timeout=10)  # Wait up to 10 seconds for the acknowledgment
+
+        if ack_received:
+            return {'status': 'success', 'message': 'File received by device'}
+        else:
+            return {'status': 'fail', 'message': 'No acknowledgment from device'}
 
 CORS(app)
 socketio = SocketIO(app, cors_allowed_origins="*", logger=True, async_mode='eventlet')
@@ -417,7 +432,6 @@ def server_interface():
 
 
 from flask import flash, redirect, render_template, request, session, url_for
-from flask_socketio import emit
 
 @app.route('/register_device', methods=['GET', 'POST'])
 def register_device():
@@ -489,8 +503,8 @@ def device():
     # This is just for demonstration and doesn't establish a real-time, persistent connection
     if device_name not in device_socket_map:
         # For demonstration, using a placeholder for socket_id since there's no actual WebSocket connection here
-        placeholder_socket_id = "placeholder_socket_id"
-        device_socket_map[device_name] = placeholder_socket_id
+        
+        device_socket_map[device_name] = device_name
         # Update any necessary state to reflect this device is now considered "connected"
         print(f"Device {device_name} marked as connected.")
 
@@ -635,6 +649,11 @@ def handle_chat_message(data):
     else:
         emit('broadcast_message', data, broadcast=True)
 
+def ensure_client_upload_folder_exists():
+    client_upload_path = os.path.join(app.config['UPLOAD_FOLDER'], 'client_uploads')
+    if not os.path.exists(client_upload_path):
+        os.makedirs(client_upload_path)
+
 
 @socketio.on('change_server_color')
 def handle_change_server_color(data):
@@ -710,30 +729,36 @@ def send_file_to_device():
         device_name = request.args.get('device')
         file = request.files['file']
 
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            original_extension = file.filename.rsplit('.', 1)[1].lower()
-            filename_base = secure_filename(file.filename.rsplit('.', 1)[0])
-            filename = f"{filename_base}.{original_extension}"
-            
-            ensure_upload_folder_exists()
+        if not file:
+            return jsonify(status='fail', message='No file provided'), 400
 
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            file.save(file_path)
+        if not allowed_file(file.filename):
+            return jsonify(status='fail', message='File type not allowed'), 400
 
-            download_url = url_for('download_file', filename=filename)
+        filename = secure_filename(file.filename)
+        original_extension = file.filename.rsplit('.', 1)[1].lower()
+        filename_base = secure_filename(file.filename.rsplit('.', 1)[0])
+        filename = f"{filename_base}.{original_extension}"
+        
+        ensure_upload_folder_exists()
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        download_url = url_for('download_file', filename=filename, _external=True)
 
-            if device_name in device_socket_map:
-                socket_id = device_socket_map[device_name]
-                time.sleep(2)
-                emit('receive_file', {'file_path': download_url, 'filename': filename}, room=socket_id)
+        if device_name and device_name in device_socket_map:
+            # If the device is found, emit the file info to that specific device only.
+            socket_id = device_socket_map[device_name]
+            socketio.emit('receive_file', {'file_path': download_url, 'filename': filename})
+        else:
+            # If the device is not specified or not found, broadcast the file info to all connected clients.
+            socketio.emit('receive_file', {'file_path': download_url, 'filename': filename})
 
-            return jsonify(status='success', message='File sent successfully'), 200
-
-        return jsonify(status='fail', message='Failed to send file'), 400
+        return jsonify(status='success', message='File sent successfully'), 200
 
     except Exception as e:
+        app.logger.error(f"Error in send_file_to_device: {e}")
         return jsonify(status='error', message=str(e)), 500
+
 
 @app.route('/send_audio_to_device', methods=['POST'])
 def send_audio_to_device():
@@ -754,7 +779,7 @@ def send_audio_to_device():
 
             if device_name in device_socket_map:
                 socket_id = device_socket_map[device_name]
-                emit('new_audio_message_to_device', {'url': download_url}, room=socket_id)
+                socketio.emit('new_audio_message_to_device', {'url': download_url})
 
             return jsonify(status='success', message='Audio sent successfully'), 200
 
@@ -768,6 +793,22 @@ def handle_offer(data):
     # Forward the offer to the receiver
     emit('offer', data, broadcast=True, include_self=False)
 
+@socketio.on('file_received')
+def handle_file_received(data):
+    print(f"File {data['filename']} was received by {data['deviceName']}")
+    filename = data['filename']
+    device_name = data['deviceName']
+    original_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    new_path = os.path.join(app.config['UPLOAD_FOLDER'], 'client_uploads', filename)
+
+    ensure_client_upload_folder_exists()
+
+    # Move the file to 'client_uploads' only if it exists in the original path
+    if os.path.exists(original_path):
+        os.rename(original_path, new_path)
+        app.logger.info(f"File {filename} moved to client_uploads after confirmed by {device_name}")
+    else:
+        app.logger.error(f"Failed to move {filename} to client_uploads: file does not exist in the expected directory")
 
 
 @socketio.on('message')
@@ -842,7 +883,7 @@ def upload_file():
         file.save(file_path)
 
         # Use 'send' for broadcasting to all clients
-        emit('file_uploaded', {'filename': filename})
+        socketio.emit('file_uploaded', {'filename': filename})
 
         # Create a public URL for the uploaded file
         public_url = url_for('static', filename=os.path.join('uploads', filename))
@@ -869,7 +910,7 @@ def upload_audio():
     file_url = url_for('uploaded_file', filename=filename, _external=True)
     
     # emit the socket event with the correct HTTP URL
-    emit('new_audio_message', {'url': file_url})
+    socketio.emit('new_audio_message', {'url': file_url})
     
     return jsonify({'status': 'success', 'message': 'Audio file uploaded successfully', 'url': file_url})
 

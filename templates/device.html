@@ -13,6 +13,7 @@
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.socket.io/3.1.3/socket.io.js"></script>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>  
         <!-- Flowbite JS -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@1.6.0/dist/flowbite.min.js"></script>
 
@@ -1797,15 +1798,23 @@ function setupPeerConnection() {
     try {
         const iceConfiguration = {
             iceServers: [
-                // Google's public STUN server
-                {
+        {
                     urls: 'STUN:freeturn.net:3478'
                 },
-                // TURN server
                 {
                     urls: 'TURNS:freeturn.net:5349', // Replace with your TURN server address
                     username: 'free',         // Replace with your TURN server username
                     credential: 'free'     // Replace with your TURN server credential
+                },
+                {
+                    urls: 'turn:relay1.expressturn.com:3478', // Replace with your TURN server address
+                    username: 'efR4WZU7FHW3B0ON24',         // Replace with your TURN server username
+                    credential: '28lkTxddQRNMtyAh'     // Replace with your TURN server credential
+                }, 
+                {
+                    urls: 'turn:relay1.expressturn.com:3478', // Replace with your TURN server address
+                    username: 'efR4WZU7FHW3B0ON24',         // Replace with your TURN server username
+                    credential: '28lkTxddQRNMtyAh'     // Replace with your TURN server credential
                 }
             ]
         };
@@ -1929,7 +1938,7 @@ document.getElementById('answerCall').addEventListener('click', async () => {
 
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
-        socket.emit('answer', { answer });
+        socket.emit('answer', { answer: answer });
 
         localStorage.setItem('callAccepted', 'true');
 
@@ -2238,6 +2247,8 @@ socket.on('receive_file', function(data) {
         document.getElementById('fileModal').style.display = 'none';
     });
 });
+
+
 
 document.getElementById('file-input').addEventListener('change', function() {
     if (this.files.length > 0) {
@@ -3461,59 +3472,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 
-
-async function startCall() {
-    console.log('clicked startCall!');
-
-    if (!peerConnection) setupPeerConnection(); // Ensure the peerConnection is initialized
-
-    try {
-        // Display the call setup modal allowing users to select devices before starting the call
-        const callSetupModal = document.getElementById('callSetupModalCalling');
-        callSetupModal.style.display = 'block'; // Use 'block' or your preferred method to show the modal
-
-        // Listener for the "Start Call" button within the modal
-        document.getElementById('startCallButton').addEventListener('click', async () => {
-            // Retrieve saved device selections from localStorage or current selection
-            const savedAudioDevice = localStorage.getItem('selectedAudioDevice');
-            const savedVideoDevice = localStorage.getItem('selectedVideoDevice');
-            const audioSourceSelect = document.getElementById('audioSourceSelect');
-            const videoSourceSelect = document.getElementById('videoSourceSelect');
-            const audioSource = savedAudioDevice || audioSourceSelect.value;
-            const videoSource = savedVideoDevice || videoSourceSelect.value;
-
-            const constraints = {
-                audio: { deviceId: audioSource ? { exact: audioSource } : undefined },
-                video: { deviceId: videoSource ? { exact: videoSource } : undefined }
-            };
-
-            const stream = await navigator.mediaDevices.getUserMedia(constraints);
-            document.getElementById('localVideo').srcObject = stream;
-            stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-
-            document.getElementById('localVideo').style.display = 'block';
-            document.getElementById('webCallingUI').style.display = 'block';
-            callSetupModal.style.display = 'none'; // Hide the modal after starting the call
-
-            // Create an offer and set it as the local description
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-
-            // Send the offer to the remote peer using your signaling mechanism
-            socket.emit('offer', { offer });
-
-            // Listen for ICE candidates from STUN/TURN servers and send them to the remote peer
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    socket.emit('iceCandidate', { candidate: event.candidate });
-                }
-            };
-        }, { once: true }); // Ensures this event listener is only triggered once per page load
-
-    } catch (error) {
-        console.error('Failed to start call:', error);
-    }
-}
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('chatToggle').addEventListener('click', function() {

@@ -385,7 +385,16 @@ fill: #2B641E;
             </div>
         </div>
     </div>
-
+        <!-- Full-Screen Overlay for File Upload Progress -->
+        <div class="full-screen-overlay" id="fileUploadOverlay" style="display: none;">
+            <div class="progress-bar-container">
+                <div class="file-name" id="fileNameDisplay"></div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressBarFill"></div>
+                </div>
+                <div class="upload-status" id="uploadStatusDisplay"></div>
+            </div>
+        </div>
     <!-- This example requires Tailwind CSS and Flowbite. Place the script tag before your closing </body> tag. -->
     <div id="callEndedModal" data-modal-target="callEndedModal" tabindex="-1" class="hidden fixed inset-0 z-50 overflow-y-auto overflow-x-hidden h-modal md:h-full justify-center items-center flex bg-black bg-opacity-50 backdrop-blur-[2px] animate-fadeIn">
         <div class="relative p-4 w-full max-w-md h-full md:h-auto animate-scaleUp">
@@ -438,7 +447,7 @@ fill: #2B641E;
         </div>
         
                     <!-- Reconnecting Overlay as a Modal -->
-        <div id="reconnectingOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 z-50 flex items-center justify-center hidden">
+        <div id="reconnectingOverlay" class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center hidden">
             <div class="modal-content bg-gray-800 shadow-lg rounded-lg p-4 max-w-sm mx-auto">
                 <div class="modal-header border-b border-gray-700 mb-2">
                     <h5 class="modal-title text-white text-lg font-medium">Reconnecting...</h5>
@@ -693,7 +702,7 @@ fill: #2B641E;
                 <!-- Voice Call Section -->
                 <div id="voiceCallSection" class="w-full sm:w-auto mt-3 flex flex-col sm:flex-row items-center space-y-4 sm:space-y-0 sm:space-x-4">
                     <!-- Trigger for Call Setup Modal -->
-                    <button id="startCallButton" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Start a Call</button>
+                    <button id="startCallButton" onclick="startCall()" btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Start a Call</button>
                     <button id="shareScreenButton" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Share Screen</button>
                     <button id="endCallButton" class="btn btn-red-500 hover:bg-red-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" disabled>End Call</button>
                     
@@ -1246,8 +1255,9 @@ if (peerConnection) {
 
 // Stop all tracks on the local stream
 if (localStream) {
-    localStream.getTracks().forEach(track => track.stop());
-}
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null; // Clear the localStream reference
+    }
 
 // Emit an event to inform the client that the call has ended
 socket.emit('end_call', { message: 'Call ended by server' });
@@ -1356,9 +1366,20 @@ try {
                     urls: 'TURNS:freeturn.net:5349', // Replace with your TURN server address
                     username: 'free',         // Replace with your TURN server username
                     credential: 'free'     // Replace with your TURN server credential
+                },
+                {
+                    urls: 'turn:relay1.expressturn.com:3478', // Replace with your TURN server address
+                    username: 'efR4WZU7FHW3B0ON24',         // Replace with your TURN server username
+                    credential: '28lkTxddQRNMtyAh'     // Replace with your TURN server credential
+                }, 
+                {
+                    urls: 'turn:relay1.expressturn.com:3478', // Replace with your TURN server address
+                    username: 'efR4WZU7FHW3B0ON24',         // Replace with your TURN server username
+                    credential: '28lkTxddQRNMtyAh'     // Replace with your TURN server credential
                 }
             ]
     };
+
 
     peerConnection = new RTCPeerConnection(iceConfiguration);
     console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
@@ -1371,7 +1392,8 @@ try {
         }
     };
 
-peerConnection.ontrack = event => {
+
+    peerConnection.ontrack = event => {
 console.log('New track received:', event.track.kind);
 if (event.streams && event.streams[0]) {
     const stream = event.streams[0];
@@ -1384,35 +1406,100 @@ if (event.streams && event.streams[0]) {
 
 
 
-    // Monitoring ICE connection state changes
+
+
 peerConnection.oniceconnectionstatechange = async () => {
     console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
 
-    const reconnectingOverlay = document.getElementById('reconnectingOverlay'); // Ensure this element exists in your HTML
-    
+    const reconnectingOverlay = document.getElementById('reconnectingOverlay');
+    if (!reconnectingOverlay) {
+        console.error('Reconnecting overlay element is missing.');
+        return; // Exit if the overlay element is not found
+    }
+
     if (peerConnection.iceConnectionState === 'disconnected') {
         console.log('Attempting to reconnect...');
         reconnectingOverlay.style.display = 'block'; // Make the overlay visible
 
         try {
-            if (!peerConnection) setupPeerConnection();
+            // Ensure peerConnection is in a stable signaling state before creating a new offer
+            if (peerConnection.signalingState === 'stable') {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
 
-            const offer = await peerConnection.createOffer();
-            await peerConnection.setLocalDescription(offer);
-
-            // Send the new offer to the remote peer using your signaling mechanism
-            // Include a 'reconnecting' property to indicate that this is a reconnecting offer
-            socket.emit('offer', { offer: offer, reconnecting: true }); // Correctly reference the offer.sdp and include 'reconnecting' property
+                // Check the WebSocket connection state before emitting the offer
+                if (socket && socket.connected) {
+                    socket.emit('offer', { offer, reconnecting: true });
+                } else {
+                    console.error('WebSocket is not connected.');
+                }
+            } else {
+                console.error('Signaling state is not stable:', peerConnection.signalingState);
+            }
         } catch (reconnectError) {
             console.error('Reconnection attempt failed:', reconnectError);
-            reconnectingOverlay.style.display = 'none'; // Hide the overlay if reconnection fails
+            displayErrorMessage('Reconnection attempt failed.'); // Display error to the user
+        } finally {
+            reconnectingOverlay.style.display = 'none'; // Hide the overlay after attempting to reconnect
         }
     } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
         reconnectingOverlay.style.display = 'none'; // Hide the overlay once reconnected
+        displaySuccessMessage('Reconnected successfully.'); // Notify the user about successful reconnection
     }
 };
 
+// Check and handle changes in the ICE connection state
+peerConnection.oniceconnectionstatechange = async () => {
+    console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
 
+    const reconnectingOverlay = document.getElementById('reconnectingOverlay');
+    if (!reconnectingOverlay) {
+        console.error('Reconnecting overlay element is missing.');
+        return; // Exit if the overlay element is not found
+    }
+
+    if (peerConnection.iceConnectionState === 'disconnected') {
+        console.log('Attempting to reconnect...');
+        reconnectingOverlay.style.display = 'block'; // Make the overlay visible
+
+        try {
+            // Ensure peerConnection is in a stable signaling state before creating a new offer
+            if (peerConnection.signalingState === 'stable') {
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                // Check the WebSocket connection state before emitting the offer
+                if (socket && socket.connected) {
+                    socket.emit('offer', { offer, reconnecting: true });
+                } else {
+                    console.error('WebSocket is not connected.');
+                }
+            } else {
+                console.error('Signaling state is not stable:', peerConnection.signalingState);
+            }
+        } catch (reconnectError) {
+            console.error('Reconnection attempt failed:', reconnectError);
+            displayErrorMessage('Reconnection attempt failed.'); // Display error to the user
+        } finally {
+            reconnectingOverlay.style.display = 'none'; // Hide the overlay after attempting to reconnect
+        }
+    } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+        reconnectingOverlay.style.display = 'none'; // Hide the overlay once reconnected
+        displaySuccessMessage('Reconnected successfully.'); // Notify the user about successful reconnection
+    }
+};
+
+// Function to display error messages to the user
+function displayErrorMessage(message) {
+    // Implement this according to your application's UI
+    alert("Error: " + message);
+}
+
+// Function to display success messages to the user
+function displaySuccessMessage(message) {
+    // Implement this according to your application's UI
+    alert("Success: " + message);
+}
 
     // Obtain media stream and add it to the peer connection
     const stream = await getMediaStream();
@@ -1465,16 +1552,19 @@ socket.on('answer', async data => {
     try {
         const remoteDesc = new RTCSessionDescription(data.answer);
         await peerConnection.setRemoteDescription(remoteDesc);
+        console.log("Remote description set successfully.");
 
-        // Process queued candidates
-        while (iceCandidateQueue.length) {
+        // Now add all queued ICE candidates (if any)
+        while (iceCandidateQueue.length > 0) {
             const candidate = iceCandidateQueue.shift();
-            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+            console.log("Adding ice candidate from queue:", candidate);
+            await peerConnection.addIceCandidate(candidate);
         }
     } catch (e) {
-        console.error('Error setting remote description from answer:', e);
+        console.error('Error setting remote description or adding ICE candidate:', e);
     }
 });
+
 
 
 
@@ -1861,9 +1951,28 @@ function changeBackgroundColor() {
     });
 };
 
+function showProgressBar(fileName) {
+    document.getElementById('fileUploadOverlay').style.display = 'flex';
+    document.getElementById('fileNameDisplay').textContent = fileName;
+    updateProgressBar(0);
+};
+
+function updateProgressBar(percent, complete = false, message = '') {
+    var progressBarFill = document.getElementById('progressBarFill');
+    var uploadStatusDisplay = document.getElementById('uploadStatusDisplay');
+
+    progressBarFill.style.width = percent + '%';
+    uploadStatusDisplay.textContent = complete ? message : 'Uploading... ' + Math.round(percent) + '%';
+
+    if (complete) {
+        setTimeout(() => {
+            document.getElementById('fileUploadOverlay').style.display = 'none';
+        }, 3000); // Hide after 3 seconds
+    }
+};
 
 
-
+// Function to send the file to the server
 // Function to send the file to the server
 function sendFileToDevice(file) {
     // Check if the File APIs are supported in the browser
@@ -1918,6 +2027,8 @@ function sendFileToDevice(file) {
     xhr.send(formData);
     document.querySelector('.progress').style.display = 'block';
 };
+
+
 
 // Event listener for the file input change event
 document.getElementById('file-input').addEventListener('change', function(e) {
@@ -2840,8 +2951,46 @@ function updateDropdown(elementId, deviceList) {
     // Request an updated device list every second
     setInterval(function() {
         socket.emit('request_device_list');
-    }, 2000); // 1000 milliseconds = 1 second
+    }, 2000); // 1000 milliseconds = 1 second 
 });
+
+socket.on('file_response', function(response) {
+    console.log('File response received:', response);
+
+    if (response.status === 'success') {
+        // File was successfully sent and acknowledged by the device
+        console.log('Success:', response.message);
+        alert('File transfer was successful and acknowledged by the device.');
+    } else if (response.status === 'fail') {
+        // File was sent but not acknowledged by the device
+        console.error('Failure:', response.message);
+
+        // Here, handle the specific case where the file was sent but not acknowledged
+        if (response.message === 'File sent but not acknowledged by device') {
+            alert('File was sent but not acknowledged by the device. Please try again.');
+        } else {
+            // Handle other failure scenarios
+            alert('File transfer failed: ' + response.message);
+        }
+    } else {
+        // Handle any other unexpected scenarios
+        console.error('Unexpected response:', response);
+        alert('Unexpected response from server: ' + response.message);
+    }
+});
+
+
+// Function to display success messages (implement this according to your application's UI)
+function displaySuccessMessage(message) {
+    // Example: Update an element's text and show it as a pop-up or in a specific section of your webpage
+    alert("Success: " + message); // This is a simple example, you might want to use something more user-friendly
+}
+
+// Function to display error messages (implement this according to your application's UI)
+function displayErrorMessage(message) {
+    // Example: Update an element's text and show it as a pop-up or in a specific section of your webpage
+    alert("Error: " + message); // This is a simple example, you might want to use something more user-friendly
+}
 
 
 </script>
