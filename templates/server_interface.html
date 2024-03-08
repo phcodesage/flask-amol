@@ -367,25 +367,37 @@ fill: #2B641E;
 <body>
     <div class="mx-auto max-w-full">
         <!-- Color Picker Modal -->
-    <div id="colorPickerModal" class="fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center hidden z-50" aria-labelledby="colorPickerModalLabel" aria-modal="true" role="dialog">
-        <div class="modal-dialog modal-dialog-centered w-1/3">
-            <div class="modal-content bg-gray-800 text-white rounded-lg">
-                <div class="modal-header border-b border-gray-700 p-4">
-                    <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
-                    <button type="button" class="close text-gray-400 hover:text-white" onclick="toggleModal('colorPickerModal', false)" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body bg-gray-700 p-4">
-                    <input type="color" id="colorPicker" name="color" title="Choose your color" class="w-full h-10">
-                </div>
-                <div class="modal-footer border-t border-gray-700 p-4">
-                    <button type="button" class="btn btn-secondary" onclick="toggleModal('colorPickerModal', false)">Close</button>
-                    <button type="button" class="btn btn-primary" id="confirmColor">Select Color</button>
+        <div id="colorPickerModal" class="fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center hidden z-50" aria-labelledby="colorPickerModalLabel" aria-modal="true" role="dialog">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content bg-gray-800 text-white rounded-lg mx-auto" style="width: fit-content;">
+                    <div class="modal-header border-b border-gray-700 p-4">
+                        <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
+                        <button type="button" class="close text-gray-400 hover:text-white" onclick="toggleModal('colorPickerModal', false)" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body bg-gray-700 p-4 grid grid-cols-6 gap-4 justify-center">
+                        <!-- Predefined color options -->
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FF5733;" onclick="selectColor('#FF5733')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FF57;" onclick="selectColor('#33FF57')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #3357FF;" onclick="selectColor('#3357FF')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #F333FF;" onclick="selectColor('#F333FF')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FFFF33;" onclick="selectColor('#FFFF33')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FFFF;" onclick="selectColor('#33FFFF')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FF33FF;" onclick="selectColor('#FF33FF')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FFAA;" onclick="selectColor('#33FFAA')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #AA33FF;" onclick="selectColor('#AA33FF')"></div>
+                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FFAA33;" onclick="selectColor('#FFAA33')"></div>
+                        <!-- Add more colors as needed -->
+                    </div>
+                    <div class="modal-footer border-t border-gray-700 p-4">
+                        <button type="button" class="btn btn-secondary" onclick="toggleModal('colorPickerModal', false)">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+        
+        
         <!-- Full-Screen Overlay for File Upload Progress -->
         <div class="full-screen-overlay" id="fileUploadOverlay" style="display: none;">
             <div class="progress-bar-container">
@@ -484,7 +496,7 @@ fill: #2B641E;
                         <li class="px-4 py-2 font-bold text-xl">Audio Settings</li>
                         <li class="px-4 py-2 font-bold">Microphone</li>
                         <li class="px-4 py-2 font-bold">
-                            <select id="microphoneSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-1/3 p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                            <select id="microphoneSelect" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
                                 <!-- Microphone options will be populated here -->
                             </select>
                         </li>
@@ -691,9 +703,29 @@ fill: #2B641E;
                 <button onclick="changeBackgroundColor()" class="btn btn-info rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" id="colorPicker-btn">Change Color</button>
                 
                 <!-- File Sending Section -->
-                <input type="file" id="file-input" class="hidden">
-                <button onclick="document.getElementById('file-input').click()" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Send File</button>
-                
+                <input type="file" id="file-input" class="hidden" onchange="previewFile()">
+                <button onclick="document.getElementById('file-input').click()" class="btn btn-blue-500 hover:bg-blue-600 rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105">Choose File</button>
+
+                                <!-- Modal for file preview and confirmation -->
+                <div id="filePreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content bg-gray-800 text-white rounded-lg mx-auto p-4">
+                            <div class="modal-header border-b border-gray-700 p-4 flex justify-between items-center">
+                                <h5 class="modal-title">File Preview</h5>
+                                <button type="button" class="close text-gray-400 hover:text-white" onclick="toggleModal('filePreviewModal', false)">
+                                    &times;
+                                </button>
+                            </div>
+                            <div class="modal-body bg-gray-700 p-4">
+                                <p id="file-info"></p> <!-- Place for file information -->
+                            </div>
+                            <div class="modal-footer border-t border-gray-700 p-4">
+                                <button type="button" class="btn btn-red-500" onclick="toggleModal('filePreviewModal', false)">Cancel</button>
+                                <button type="button" class="btn btn-primary" onclick="sendFileToDevicePreview()">Send File</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Recording Section -->
                 <button id="toggleRecordButton" class="btn btn-accent rounded-lg py-2 px-4 transition duration-300 ease-in-out transform hover:-translate-y-1 hover:scale-105" type="button">Start Recording</button>    
                 
@@ -737,7 +769,7 @@ const socket = io(location.origin)
 let warningElement = document.getElementById('deviceWarning');
 let typingTimeout;
 let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
-let localStream;
+let localStream = null;
 let callWindow = null;
 const remoteAudio = document.getElementById('remoteAudio');
 const MAX_FILE_SIZE = 1024 * 1024 * 1024 * 1024; // 1 Terabyte
@@ -849,11 +881,14 @@ if (!PCConstructor) {
             const reconnectingOverlay = document.getElementById('reconnectingOverlay'); // Ensure this element exists in your HTML
 
             if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
-                console.log('WebRTC connection lost. Trying to reconnect...');
+                console.log('WebRTC connection lost. Ending the call');
                 // Show some overlay or message to inform the user that the connection is trying to reconnect
                 reconnectingOverlay.style.display = 'block';
-                reconnectingOverlay.textContent = 'Connection Lost. Trying to reconnect...'; // Update this as needed
-
+                reconnectingOverlay.textContent = 'Connection Lost. Call will end'; // Update this as needed
+                resetWebRTCCall();
+                stopLocalMediaStreams(); 
+                document.getElementById('callEndedModal').classList.add('flex');
+                socket.emit('endCall', { callID: '12345' });
                 // Here, instead of ending the call, you can try to implement reconnect logic or wait for automatic ICE restart
             } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
                 // If the connection state recovers to 'connected' or 'completed', hide the overlay
@@ -999,13 +1034,17 @@ chatContainer.addEventListener('dragleave', function(e) {
 
 // Event listener for drag and drop into the chat container
 chatContainer.addEventListener('drop', function(e) {
-    e.preventDefault();
-    chatContainer.classList.remove('dragging');
-
+    e.preventDefault(); // Prevent default behavior (Prevent file from being opened)
+    chatContainer.classList.remove('dragging'); // Assuming you have some visual feedback for dragging
     if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
-        let file = e.dataTransfer.items[0].getAsFile();
-        if (file) {
-            sendFileToDevice(file);
+        // Get the first item as a file (if it is a file)
+        const item = e.dataTransfer.items[0];
+        if (item.kind === 'file') {
+            const file = item.getAsFile();
+            // Assign the file to the file input for consistency
+            document.getElementById('file-input').files = e.dataTransfer.files;
+            // Preview the file
+            previewFile(file);
         }
     }
 });
@@ -1176,7 +1215,10 @@ async function startCall() {
 
     if (!peerConnection) setupPeerConnection(); // Ensure the peerConnection is initialized
 
-    // Request permission from the user to access media devices with specific constraints for Full HD video
+
+    try {
+        // Display the call setup modal allowing users to select devices before starting the call
+          // Request permission from the user to access media devices with specific constraints for Full HD video
     navigator.mediaDevices.getUserMedia({ 
         audio: true, // Request audio without specific constraints, assuming default device and settings
         video: {
@@ -1219,9 +1261,6 @@ async function startCall() {
     });
 
 
-
-    try {
-        // Display the call setup modal allowing users to select devices before starting the call
         document.getElementById('callSetupModal').style.display = 'block';
 
         // Listener for the "Start Call" button within the modal
@@ -1262,16 +1301,14 @@ async function startCall() {
     }
 };
 
-
-
-
-function displayLocalStream(localStream) {
-    const localVideo = document.getElementById('localVideo');
-    if (localVideo) {
-        localVideo.srcObject = localStream;
+function stopLocalMediaStreams() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            track.stop(); // This will turn off the camera and microphone
+        });
+        localStream = null; // Clear the global reference to release the stream
     }
 }
-
 
 
 
@@ -1280,12 +1317,6 @@ function addTracksToPeerConnection(stream) {
         window.peerConnection.addTrack(track, stream);
     });
 }
-
-
-
-
-// Call this function when the page loads or before showing the call setup modal
-document.addEventListener('DOMContentLoaded', populateDeviceOptions);
 
 
 
@@ -1321,46 +1352,6 @@ populateDeviceSelection().then(() => {
     // startCall(savedAudioDeviceId, savedVideoDeviceId);
 });
 });
-
-function endCall() {
-    if (selectedDevice) {
-        socket.emit('end_call', { target_device: selectedDevice });
-    }
-
-    // Correctly stop all tracks associated with the peer connection
-    if (peerConnection) {
-        // If there are any sender tracks, stop them
-        peerConnection.getSenders().forEach(sender => {
-            if (sender.track) {
-                sender.track.stop();
-            }
-        });
-
-        // Close the peer connection
-        peerConnection.close();
-        peerConnection = null; // Reset the peerConnection variable
-    }
-
-    // Stop all tracks on the local stream
-    if (localStream) {
-        localStream.getTracks().forEach(track => {
-            track.stop();
-        });
-        localStream = null; // Clear the localStream reference
-    }
-
-    // Emit an event to inform the client that the call has ended
-    socket.emit('end_call', { message: 'Call ended by server' });
-
-
-}
-
-
-
-
-document.getElementById('endCallButton').addEventListener('click', endCall);
-
-
 
 // Helper Functions
 function playNotificationSound() {
@@ -1491,14 +1482,6 @@ socket.on('answer', async data => {
 });
 
 
-
-
-console.log("Offer SDP:", offerSdp);
-console.log("Answer SDP:", answerSdp);
-
-
-
-
 socket.on('device_ice_candidate', async data => {
     console.log(data)
     try {
@@ -1526,15 +1509,29 @@ socket.on('new-remote-ice-candidate', (data) => {
 });
 
 socket.on('connect', () => {
-    console.log('Connected to the server'); 
-});
+    console.log('Connected to the server');
 
+    // Check if there was a previous connection and if a call was in progress
+    if (peerConnection) {
+        // Close the existing peer connection
+        peerConnection.close();
+        peerConnection = null; // Reset the peerConnection variable
+    }
+    // Optionally, check if a local stream was active and stop its tracks
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null; // Reset the localStream variable
+    }
+
+    document.getElementById('webCallingUI').style.display = 'none'; // Example UI element, adjust as needed
+    document.getElementById('callSetupModal').style.display = 'none'; // Hide modals or other call-related elements
+    localStorage.removeItem('callAccepted'); // If you use local storage to track call status
+
+});
 
 socket.on('disconnect', () => {
     console.log('Disconnected from server');
 });
-
-
 
 
 socket.on('file_uploaded', function(data) {
@@ -1837,17 +1834,19 @@ document.addEventListener('keydown', function(event) {
 
 // Open the color picker modal
 function openColorPickerModal() {
-// Reset the color picker value or set to a default
-document.getElementById('colorPicker').value = '#ffffff';
-// Show the modal
-$('#colorPickerModal').modal('show');
+    // Apply dark theme styles to the modal
+    var colorPickerModal = document.getElementById('colorPickerModal');
+    colorPickerModal.querySelector('.modal-content').style.backgroundColor = '#333';
+    colorPickerModal.querySelector('.modal-content').style.color = '#fff';
+    colorPickerModal.querySelector('.modal-header').style.borderColor = '#444';
+    colorPickerModal.querySelector('.modal-body').style.backgroundColor = '#222';
+    colorPickerModal.querySelector('.modal-footer').style.borderColor = '#444';
+    colorPickerModal.querySelectorAll('.close').forEach(function(btn) {
+        btn.style.color = '#aaa';
+    });
 
-
-// When a color is confirmed, change the background color
-document.getElementById('confirmColor').onclick = function() {
-    changeBackgroundColor(); // Call your function to change the color
-    $('#colorPickerModal').modal('hide'); // Hide the modal
-};
+    // Show the modal
+    toggleModal('colorPickerModal', true);
 }
 
 function toggleModal(modalId, show) {
@@ -1858,6 +1857,27 @@ function toggleModal(modalId, show) {
         modal.style.display = 'none';
     }
 }
+
+function selectColor(color) {
+    // Assuming 'deviceSelectChat' is a selector for choosing a target device
+    const targetDevice = document.getElementById('deviceSelectChat').value;
+
+    if (targetDevice && targetDevice !== 'Select a device' && targetDevice !== 'Server') {
+        // Emit the color change event
+        socket.emit('change_color', {
+            target_device: targetDevice,
+            color: color
+        });
+
+        // Append message to chat box indicating the successful color change
+        appendMessageToChat("Server", `Successfully changed the background color of ${targetDevice} to ${color}.`, 'server-message');
+    }
+
+    // Hide the modal after selecting the color
+    toggleModal('colorPickerModal', false);
+}
+
+document.getElementById('colorPicker-btn').addEventListener('click', openColorPickerModal);
 
 function changeBackgroundColor() {
     // Show the modal
@@ -1903,8 +1923,27 @@ function updateProgressBar(percent, complete = false, message = '') {
     }
 };
 
+const fileInput = document.getElementById('file-input');
+function previewFile() {
+    
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        const fileInfo = document.getElementById('file-info');
+        fileInfo.textContent = `File name: ${file.name}, File type: ${file.type}, File size: ${file.size / 1024 / 1024} MB`; // Update file information in the modal
+        toggleModal('filePreviewModal', true); // Show the modal
+    }
+};
+function resetFilePreviewAndInput() {
+    document.getElementById('file-input').value = ''; // Reset file input
+    document.getElementById('file-info').textContent = ''; // Clear file info in the modal
+}
 
-// Function to send the file to the server
+
+function sendFileToDevicePreview() {
+    if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+    sendFileToDevice(file)
+}}
 // Function to send the file to the server
 function sendFileToDevice(file) {
     // Check if the File APIs are supported in the browser
@@ -1938,7 +1977,7 @@ function sendFileToDevice(file) {
             const progressBar = document.querySelector('.progress-bar');
             progressBar.style.width = '100%';
             progressBar.textContent = 'Upload complete';
-
+            appendMessageToChat("Server", `File "${file.name}" sent to ${deviceName}.`, 'server-message');
             setTimeout(() => {
                 document.querySelector('.progress').style.display = 'none';
                 progressBar.style.width = '0%';
@@ -1946,9 +1985,12 @@ function sendFileToDevice(file) {
             }, 2000);
 
             // Append a message to the chatbox indicating the file has been sent
-            appendMessageToChat("Server", `File "${file.name}" sent to ${deviceName}.`, 'server-message');
+            
+            toggleModal('filePreviewModal', false);
+
         } else {
             console.error("Server returned an error:", xhr.responseText);
+            resetFilePreviewAndInput();
         }
     };
 
@@ -1966,7 +2008,7 @@ function sendFileToDevice(file) {
 document.getElementById('file-input').addEventListener('change', function(e) {
     if (this.files.length > 0) {
         const file = this.files[0];
-        sendFileToDevice(file);
+        previewFile(file)
     }
 });
 
@@ -2116,16 +2158,9 @@ document.getElementById('colorPicker-btn').addEventListener('click', function() 
     });
 
     // Show the modal with the dark theme applied
-    $('#colorPickerModal').style.display = 'block';
+    colorPickerModal.style.display = 'block';
 });
 
-
-document.getElementById('file-input').addEventListener('change', function() {
-    if (this.files.length > 0) {
-        const file = this.files[0];
-        sendFileToDevice(file);
-    }
-});
 
 document.addEventListener('DOMContentLoaded', function() {
     const toggleRecordButton = document.getElementById('toggleRecordButton');
@@ -2442,9 +2477,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 });
 
-
-// Listen for the 'endCall' event from the server
-socket.on('endCall', function(data) {
+function resetWebRTCCall() {
     // Close the peer connection if it exists
     if (peerConnection) {
         peerConnection.close();
@@ -2453,18 +2486,27 @@ socket.on('endCall', function(data) {
 
     // Stop any local media streams
     if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+        localStream.getTracks().forEach(track => {
+            track.stop();
+        });
         localStream = null;
     }
 
     // Hide the WebRTC calling UI
     document.getElementById('webCallingUI').style.display = 'none';
 
-    // Optionally, reset the call setup modal for a new call
-    resetCallSetupModal();
-    document.getElementById('callEndedModal').classList.add('flex');
-    // Optionally, reset the UI or redirect the user
+    resetCallSetupModal(); // You will need to define this function
+
+    console.log('WebRTC call and local media reset.');
+}
+
+
+// Listen for the 'endCall' event from the server
+socket.on('endCall', function(data) {
     console.log('The call has ended by the other side.');
+    resetWebRTCCall();
+    stopLocalMediaStreams(); 
+    document.getElementById('callEndedModal').classList.add('flex'); // Show call ended notification
 });
 
 function resetCallSetupModal() {
@@ -2733,6 +2775,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('endCallButton').addEventListener('click', function() {
+        
         document.getElementById('webCallingUI').style.display = 'none';
         if (localStream) {
         localStream.getTracks().forEach(track => track.stop());
@@ -2750,12 +2793,11 @@ document.addEventListener('DOMContentLoaded', () => {
         localVideo.srcObject.getTracks().forEach(track => track.stop());
         localVideo.srcObject = null;
     }
-
+    stopLocalMediaStreams(); 
+    resetWebRTCCall()
     // Notify the other peer that the call has been ended
     socket.emit('endCall', { callID: '12345' });
     
-    // Hide the calling UI or redirect the user as needed
-
 });
 });
 
@@ -2843,7 +2885,7 @@ document.getElementById('answerCall').addEventListener('click', async () => {
 function updateDropdown(elementId, deviceList) {
     const dropdown = document.getElementById(elementId);
     const selectedValue = dropdown.value;
-    console.log("Selected Value before update:", selectedValue); // Debugging line
+
 
     dropdown.options.length = 1;
 

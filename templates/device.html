@@ -959,7 +959,6 @@ const socket = io(location.origin)
 
 
     document.addEventListener('DOMContentLoaded', async () => {
-        await populateDeviceOptions();
         attachEventListeners();
     });
 
@@ -1134,7 +1133,6 @@ chatContainer.addEventListener('dragover', function(e) {
     chatContainer.classList.add('dragging');
 });
 
-
 // Remove the highlight when the file leaves the chat container
 chatContainer.addEventListener('dragleave', function() {
     chatContainer.classList.remove('dragging');
@@ -1155,14 +1153,13 @@ chatContainer.addEventListener('drop', function(e) {
         }
     }
 });
-
-    // Bind the send button to the sendMessage function
-    sendMessageButton.addEventListener('click', sendMessage);
-    messageInput.addEventListener('keydown', function(event) {
-    if (event.key === 'Enter' || event.keyCode === 13) {
-        event.preventDefault(); // Prevent adding a newline in the textarea
-        sendMessageButton.click(); // Simulate a click on the send button
-    }
+// Bind the send button to the sendMessage function
+sendMessageButton.addEventListener('click', sendMessage);
+messageInput.addEventListener('keydown', function(event) {
+if (event.key === 'Enter' || event.keyCode === 13) {
+    event.preventDefault(); // Prevent adding a newline in the textarea
+    sendMessageButton.click(); // Simulate a click on the send button
+}
 });
 
 // Assuming messageInput is a contenteditable div or an input field
@@ -1232,7 +1229,6 @@ document.getElementById('ok-btn').addEventListener('click', function() {
     document.getElementById('userCallEndedModal').classList.add('hidden'); // Hide the modal when "Close" is clicked
 });
 
-
 // Attach an event listener to the end call button
 document.addEventListener('DOMContentLoaded', () => {
     // End Call button functionality
@@ -1286,7 +1282,6 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('userCallEndedModal').classList.add('hidden'); // Hide the modal when "Close" is clicked
     });
 });
-
 
 function uploadFile(file) {
     showProgressBar(file.name); // Show the progress bar
@@ -1713,10 +1708,7 @@ function handleFileUpload(file) {
 }
 
 
-socket.on('endCall', function(data) {
-    resetCallState(); // Call the function to reset call state and UI
-    callSetupModal.style.display = 'none';
-});
+
 
 function resetCallState() {
     // Log the event for debugging purposes
@@ -1744,7 +1736,10 @@ function resetCallState() {
 };
 
 
-
+socket.on('endCall', function(data) {
+    resetCallState(); // Call the function to reset call state and UI
+    callSetupModal.style.display = 'none';
+});
 
     socket.on('broadcast_message', function(data) {
     const messagesList = document.getElementById('chat-container');
@@ -1810,17 +1805,15 @@ async function setupPeerConnection() {
     try {
         const iceConfiguration = {
        iceServers: [
-            // Test some STUN server
             {
                 urls: 'stun:freestun.net:5350',
             },
-            // Test some TURN server
             {
                 urls: 'turn:freestun.net:5350',
                 username: 'free',
                 credential: 'free',
             },
-        ]// Valid value within range.
+        ]
         }
 
         if (!validateIceServers(iceConfiguration.iceServers)) { 
@@ -1920,11 +1913,40 @@ socket.on('offer', async (data) => {
             // If already on call, directly show the call UI without showing the setup modal
             document.getElementById('webCallingUI').style.display = 'block';
             document.getElementById('callSetupModal').style.display = 'none';
+            const savedVideoDeviceId = localStorage.getItem('selectedVideoDevice');
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        await populateDeviceOptions();
+        // Define media constraints with the selected video device, if available
+        const mediaConstraints = {
+            audio: true, // Always include audio
+            video: savedVideoDeviceId ? { deviceId: { exact: savedVideoDeviceId } } : true // Use the saved video device if available
+        };
+
+        // Check if localStream already exists to prevent re-acquiring media unnecessarily
+        if (!localStream) {
+            localStream = await navigator.mediaDevices.getUserMedia(mediaConstraints);
+            localStream.getTracks().forEach(track => {
+                peerConnection.addTrack(track, localStream);
+            });
+        }
+
+        const localVideo = document.getElementById('localVideo');
+        if (localVideo && localStream) {
+            localVideo.srcObject = localStream;
+            localVideo.play();
+        }
+
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit('answer', { answer: answer });
+
+        localStorage.setItem('callAccepted', 'true');
+
+        document.getElementById('webCallingUI').style.display = 'block';
+        document.getElementById('callSetupModal').style.display = 'none';
             return; // Exit early since we're handling an ongoing call
         }
 
-        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
-        await populateDeviceOptions();
 
         const callSetupModalText = document.querySelector('#callSetupModal .caller-name');
         if (callSetupModalText) {
@@ -1938,7 +1960,8 @@ socket.on('offer', async (data) => {
     try {
         // Fetch the selected video device ID from localStorage
         const savedVideoDeviceId = localStorage.getItem('selectedVideoDevice');
-
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data.offer));
+        await populateDeviceOptions();
         // Define media constraints with the selected video device, if available
         const mediaConstraints = {
             audio: true, // Always include audio
@@ -1970,8 +1993,7 @@ socket.on('offer', async (data) => {
     } catch (error) {
         console.error('Error during call answer:', error);
     }
-}, { once: true }); // Use { once: true } to ensure the event listener is removed after execution
-// Ensures the event listener is invoked only once
+});
 
         document.getElementById('declineCallButton').addEventListener('click', () => {
             callSetupModal.style.display = 'none'; // Hide the call setup modal on decline
@@ -1989,20 +2011,20 @@ socket.on('offer', async (data) => {
 });
 
 
-// Ensures the event listener is invoked only once
 
 
-        // Decline Call button event listener
-        endCallButton.addEventListener('click', () => {
-            if (localStream) {
-                localStream.getTracks().forEach(track => track.stop());
-            }
 
-            // Reset UI visibility
-            document.getElementById('webCallingUI').style.display = 'none';
-            callSetupModal.style.display = 'none';
-            socket.emit('declineCall', { reason: 'User declined the call' });
-        });
+// Decline Call button event listener
+endCallButton.addEventListener('click', () => {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+
+    // Reset UI visibility
+    document.getElementById('webCallingUI').style.display = 'none';
+    callSetupModal.style.display = 'none';
+    socket.emit('declineCall', { reason: 'User declined the call' });
+});
 
 
 
@@ -2057,1200 +2079,10 @@ function updatePeerConnection(newVideoTrack) {
     }
 }
 
-socket.on('server_typing', function(data) {
-    console.log('Server is typing:', data.message); // Check if this logs correctly
-
-    const chatContainer = document.getElementById('chat-container');
-    if (!chatContainer) {
-        console.error("chat-container not found"); // Check if chatContainer is found
-        return;
-    }
-
-    let liveMessageElement = document.getElementById('live-message');
-
-    // If the liveMessageElement doesn't exist, use createMessageElement to create it and append it
-    if (!liveMessageElement) {
-        liveMessageElement = createMessageElement(`Server: ${data.message}`, 'server-message');
-        liveMessageElement.id = 'live-message';
-        chatContainer.appendChild(liveMessageElement);
-    } else {
-        // Update the text of the live typing message if it already exists
-        const textSpan = liveMessageElement.querySelector('span:not(.clipboard-icon):not(.timestamp)');
-        if (textSpan) {
-            textSpan.innerHTML = `Server: ${data.message}`;
-        } else {
-            console.error("textSpan not found inside liveMessageElement"); // If textSpan isn't found
-        }
-    }
-
-    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom of the chat container
-});
-
-
-socket.on('server_stop_typing', function() {
-    console.log('Server stopped typing.');
-
-    // Remove the live message element from the chatbox when server stops typing
-    const liveMessageElement = document.getElementById('live-message');
-    if (liveMessageElement) {
-        liveMessageElement.remove();
-    }
-});
-
-
-
-socket.on('set_background', function(data) {
-        console.log(data)
-        document.body.style.backgroundColor = data;
-    });
-
-
-    document.getElementById('clear-chat').addEventListener('click', function() {
-        chatContainer.innerHTML = '';
-        socket.emit('clear_chat');
-    });
-
-    document.getElementById('upload-file').addEventListener('click', function() {
-    document.getElementById('file-input').click();
-});
-
-socket.on('receive_notification', function(data) {
-    console.log(data)
-    const notificationMessage = data.message || 'You have a new notification!';
-    const timestamp = new Date().toLocaleString(); // You can adjust the locale and options as needed
-    const sender = "Server";  // This is the sender's name
-
-    // Play the notification sound
-    document.getElementById("notificationSound").play();
-
-    // Append the notification message to the chat box
-    const chatContainer = document.getElementById('chat-container');
-    const notificationElement = document.createElement('div');
-    notificationElement.className = 'chat-message animate__fadeIn animate__animated server-message';
-    notificationElement.innerHTML = `
-        <span class="clipboard-icon" title="Copy to Clipboard">📋</span>
-        <span class="timestamp">${timestamp}</span>
-        <span>${sender}: ${notificationMessage}</span>
-    `;
-    // If you want to initially hide the timestamp, you can set the style directly here
-    // notificationElement.querySelector('.timestamp').style.display = 'none';
-
-    chatContainer.appendChild(notificationElement);
-
-    // Ensure the latest message is always in view
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-});
-
-socket.on('new_audio_message_to_device', function(data) {
-    console.log('New audio message received:', data);
-    const chatContainer = document.getElementById('chat-container');
-
-    // Ensure the chatContainer exists
-    if (!chatContainer) {
-        console.error('Chat container not found');
-        return;
-    }
-
-    // Create the audio message container
-    const audioMsgContainer = document.createElement('div');
-    audioMsgContainer.className = 'chat-message server-message'; // Use the same class as other device messages for consistency
-
-    // Create a label for the audio message
-    const audioLabel = document.createElement('div');
-    audioLabel.textContent = 'Voice Message:'; // Customize this text as needed
-    audioLabel.className = 'audio-message-label'; // Add a class for potential styling
-    audioMsgContainer.appendChild(audioLabel);
-
-    // Create the audio element
-    const audioElement = document.createElement('audio');
-    audioElement.src = data.url; // Ensure the URL is correct and the server is properly serving the audio file
-    audioElement.controls = true;
-    audioElement.style.width = '100%'; // This ensures the audio player fits within the message container
-
-    // Append the audio element to the message container
-    audioMsgContainer.appendChild(audioElement);
-
-    // Append the complete message container to the chat box
-    chatContainer.appendChild(audioMsgContainer);
-
-    // Scroll to the latest message
-    chatContainer.scrollTop = chatContainer.scrollHeight;
-});
-
-// Receive messages from the server
-socket.on('message', async message => {
-        console.log('Received the call', message)
-        if (!peerConnection) {
-            initPeerConnection();
-        }
-
-        try {
-            if (message.offer) {
-                $('#call-modal-div').modal('show');
-                await peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
-                const answer = await peerConnection.createAnswer();
-                await peerConnection.setLocalDescription(answer);
-                socket.emit('message', { 'answer': answer });
-
-                document.getElementById('call-controls').style.display = 'block';
-            } else if (message.iceCandidate) {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(message.iceCandidate));
-            }
-        } catch (error) {
-            console.error('Failed to handle message:', error);
-        }
-    })
-
-
-socket.on('receive_file', function(data) {
-    console.log(data)
-    if (!data) {
-        console.error('Received null or undefined data on receive_file event.');
-        return;
-    }
-
-    const { file_path, filename } = data;
-
-    // Ensure file_path and filename are strings and non-empty
-    if (typeof file_path !== 'string' || file_path.trim() === '' || 
-        typeof filename !== 'string' || filename.trim() === '') {
-        console.error('Invalid file data received:', data);
-        return;
-    }
-
-    // Optional: Basic script check to prevent potential XSS (you can make this stricter)
-    if (/<script/i.test(filename)) {
-        console.error('Potential malicious filename detected:', filename);
-        return;
-    }
-
-    // Display the modal and filename
-    document.getElementById('fileName').innerText = filename;
-    document.getElementById('fileModal').style.display = 'block';
-
-    // Event listener for the "Accept" link
-    document.getElementById('downloadLink').addEventListener('click', (e) => {
-        e.preventDefault(); // Prevent default behavior
-        
-        console.log("Fetching:", file_path); // Log the URL you're fetching
-        fetch(file_path)
-        .then(response => {
-            if (!response.ok) {
-                return response.text().then(text => {
-                    throw new Error('Network response was not ok. Status: ' + response.status + '. Message: ' + text);
-                });
-            }
-            return response.blob();
-        })
-        .then(blob => {
-            const blobURL = window.URL.createObjectURL(blob);
-
-            // Download the file
-            const link = document.createElement("a");
-            link.href = blobURL;
-            link.download = filename;
-            link.click();
-
-            // Optional: Clean up blob URL after usage to release memory
-            setTimeout(() => {
-                window.URL.revokeObjectURL(blobURL);
-            }, 100);
-
-            // Close the modal
-            document.getElementById('fileModal').style.display = 'none';
-        })
-        .catch(error => {
-            console.error("Error fetching:", file_path, "Error:", error);
-            alert("Sorry, the download failed. Please try again later.");
-        });
-    });
-
-    // Event listener for the "Reject" button
-    document.getElementById('rejectFile').addEventListener('click', () => {
-        // Close the modal without downloading the file
-        document.getElementById('fileModal').style.display = 'none';
-    });
-});
-
-
-
-document.getElementById('file-input').addEventListener('change', function() {
-    if (this.files.length > 0) {
-        uploadFile(this.files[0]);
-    }
-});
-
-
-
-async function fillAudioDeviceSelection() {
-    const microphones = document.getElementById('microphoneSelect');
-    const speakers = document.getElementById('speakerSelect');
-
-    try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const audioInputDevices = devices.filter(device => device.kind === 'audioinput');
-        const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput');
-
-        microphones.innerHTML = audioInputDevices.map(device => `<option value="${device.deviceId}">${device.label}</option>`).join('');
-        speakers.innerHTML = audioOutputDevices.map(device => `<option value="${device.deviceId}">${device.label}</option>`).join('');
-    } catch (error) {
-        console.error('Error populating audio devices:', error);
-    }
-}
-
-async function setSpeaker(deviceId) {
-    try {
-        const audio = new Audio();
-        await audio.setSinkId(deviceId);
-    } catch (error) {
-        console.error('Error setting audio output device:', error);
-    }
-}
-
-document.getElementById('send-notification').addEventListener('click', function() {
-    console.log('clicked the send_notification button!');
-
-    // Emit a notification message to the server
-    socket.emit('send_notification_to_server', { target_device: deviceName, notification: 'Sent a notification!' });
-
-    // Create and display the notification log message in the chatbox with timestamp
-    const notificationLogMessage = "Sent a notification to the server!";
-    const msgElement = createMessageElement(notificationLogMessage, 'device-message');
-
-    document.getElementById('chat-container').appendChild(msgElement);
-    msgElement.style.opacity = 1; // Trigger the transition animation
-
-    scrollToBottom(); // Assuming you have a scrollToBottom function to keep the chatbox scrolled to the most recent message
-});
-
-
-
-
-document.getElementById("toggle-timestamps").addEventListener("click", toggleTimestamps);
-
-document.addEventListener("DOMContentLoaded", function() {
-    let messageOptions = document.querySelectorAll('.message-options-icon');
-
-    // For each message options icon
-    messageOptions.forEach(function(icon) {
-        icon.addEventListener('click', function(e) {
-            let optionsMenu = e.target.nextElementSibling;
-            
-            // Toggle the display of the message options menu
-            if(optionsMenu.style.display === "none" || optionsMenu.style.display === "") {
-                optionsMenu.style.display = "block";
-            } else {
-                optionsMenu.style.display = "none";
-            }
-        });
-    });
-
-    // Close the menu if clicked outside
-    window.addEventListener('click', function(e) {
-        if(!e.target.classList.contains('message-options-icon')) {
-            let allOptionsMenus = document.querySelectorAll('.message-options');
-            allOptionsMenus.forEach(function(menu) {
-                menu.style.display = "none";
-            });
-        }
-    });
-});
-
-document.addEventListener("DOMContentLoaded", function() {
-    let messageOptionsIcons = document.querySelectorAll('.message-options-icon');
-
-    // For each message options icon
-    messageOptionsIcons.forEach(function(icon) {
-        icon.addEventListener('click', function(e) {
-            let optionsMenu = e.target.nextElementSibling;
-            
-            // Toggle the display of the message options menu
-            if(optionsMenu.style.display === "none" || optionsMenu.style.display === "") {
-                optionsMenu.style.display = "block";
-            } else {
-                optionsMenu.style.display = "none";
-            }
-        });
-    });
-
-    document.addEventListener("DOMContentLoaded", function() {
-    const clipboardIcons = document.querySelectorAll('.clipboard-icon');
-
-    clipboardIcons.forEach(icon => {
-        icon.addEventListener('click', function() {
-            const messageText = this.nextElementSibling.nextElementSibling.innerText;
-
-            // Create a textarea element to use for copying
-            const textarea = document.createElement('textarea');
-            textarea.value = messageText;
-            document.body.appendChild(textarea);
-
-            // Select the text and copy it
-            textarea.select();
-            document.execCommand('copy');
-
-            // Clean up by removing the textarea
-            document.body.removeChild(textarea);
-            
-            // Optional: Show a notification or feedback to the user
-            alert('Message copied to clipboard!');
-        });
-    });
-});
-
-
-    // Close the menu if clicked outside
-    window.addEventListener('click', function(e) {
-        if(!e.target.classList.contains('message-options-icon')) {
-            let allOptionsMenus = document.querySelectorAll('.message-options');
-            allOptionsMenus.forEach(function(menu) {
-                menu.style.display = "none";
-            });
-        }
-    });
-});
-
-// Add event listener for when the DOM has fully loaded
-// Add event listener for when the DOM has fully loaded
-document.addEventListener('DOMContentLoaded', (event) => {
-    // Function to emit the color change to the server
-    var confirmColorBtn = document.getElementById('confirmColor');
-    confirmColorBtn.addEventListener('click', function() {
-        var chosenColor = document.getElementById('colorPicker').value;
-
-        // Emit the color change event to the server
-        socket.emit('change_server_color', { color: chosenColor });
-
-        // Close the modal
-        var colorPickerModal = document.getElementById('colorPickerModal');
-        colorPickerModal.style.display = 'none';
-    });
-});
-
-
-
-document.getElementById('message-input').addEventListener('focus', function() {
-    if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
-        // Hide buttons when input receives focus
-        document.getElementById('toggle-timestamps').style.display = 'none';
-        document.getElementById('upload-file').style.display = 'none';
-        document.getElementById('send-notification').style.display = 'none';
-    }
-});
-
-document.getElementById('message-input').addEventListener('blur', function() {
-    if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
-        // Show buttons when input loses focus
-        document.getElementById('toggle-timestamps').style.display = '';
-        document.getElementById('upload-file').style.display = '';
-        document.getElementById('send-notification').style.display = '';
-    }
-});
-
-document.getElementById('audio-input').addEventListener('change', function(event) {
-    const file = event.target.files[0];
-    if (file && file.type.startsWith('audio/')) {
-        // Process and display the audio
-        const audioElement = document.createElement('audio');
-        audioElement.controls = true;
-        audioElement.src = URL.createObjectURL(file);
-
-        // Use your existing createMessageElement function to create a message container
-        const msg = createMessageElement('Voice Message:', 'device-message');
-        
-        // Append the audio element to the message container
-        msg.appendChild(audioElement);
-
-        // Append the message container to the chatbox
-        document.getElementById('chat-container').appendChild(msg);
-        
-        // Trigger the transition and scroll to the bottom
-        msg.style.opacity = 1;
-        scrollToBottom();
-    }
-});
-
-document.addEventListener('DOMContentLoaded', (event) => {
-    // Add the event listener to the button that should open the color picker modal
-    var changeServerColorBtn = document.getElementById('changeServerColorBtn');
-    changeServerColorBtn.addEventListener('click', openColorPicker);
-});
-
-
-document.addEventListener('DOMContentLoaded', function() {
-    
-    const toggleRecordButton = document.getElementById('toggleRecordButton');
-    let isRecording = false;
-    let recorder;
-    let audioChunks = [];
-
-    toggleRecordButton.addEventListener('click', async function() {
-        if (isRecording) {
-            // Stop the recording
-            if (recorder) {
-                recorder.stop();
-            }
-
-            // Change the button's appearance and text
-            toggleRecordButton.textContent = "Start Recording";
-            toggleRecordButton.classList.remove('btn-danger');
-            toggleRecordButton.classList.add('btn-primary');
-
-            isRecording = false;
-        } else {
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-                if (stream) {
-                    recorder = new MediaRecorder(stream);
-
-                    recorder.ondataavailable = event => {
-                        audioChunks.push(event.data);
-                    };
-
-                    recorder.onstop = () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
-                        const formData = new FormData();
-                        const deviceName = document.getElementById('deviceSelectChat').value; // Assuming this is your device selector
-
-                        // Check if a device is selected
-                        if (!deviceName || deviceName === "Select a device") {
-                            alert("Please select a device to send the recording.");
-                            return;
-                        }
-
-                        formData.append('audio', audioBlob, 'recording.wav');
-
-                        // Send the audio file to the server
-                        fetch(`/send_audio_to_device?device=${encodeURIComponent(deviceName)}`, {
-                            method: 'POST',
-                            body: formData
-                        }).then(response => response.json())
-                          .then(data => {
-                              console.log(data.message); // Log success or failure message
-                          }).catch(error => {
-                              console.error("Error sending audio:", error);
-                          });
-
-                        // Append the recording to the server's chatbox
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        const audioElement = document.createElement('audio');
-                        audioElement.controls = true;
-                        audioElement.src = audioUrl;
-
-                        const msg = createMessageElement('', 'device-message');
-                        msg.appendChild(audioElement);
-                        document.getElementById('chat-container').appendChild(msg);
-                        msg.style.opacity = 1;
-                        scrollToBottom();
-                    };
-
-                    audioChunks = [];
-                    recorder.start();
-
-                    // Change the button's appearance and text
-                    toggleRecordButton.classList.remove('btn-primary');
-                    toggleRecordButton.classList.add('btn-danger');
-
-                    isRecording = true;
-                }
-            } catch (error) {
-                console.error("Error accessing the microphone:", error);
-            }
-        }
-    });
-
-});
-
-document.addEventListener('mousedown', function(e) {
-    if (e.target && e.target.classList.contains('chat-message')) {
-        // Start enlarging effect
-        e.target.classList.add('enlarging');
-
-        pressTimer = setTimeout(function() {
-            e.target.classList.remove('enlarging');  // Stop enlarging effect
-            startEditMode(e.target);
-        }, 1000);  // Detect a long press of 1 second
-    }
-})
-
-document.addEventListener('mouseup', function() {
-    clearTimeout(pressTimer);
-    // Ensure the enlarging effect is stopped if the mouse button is released before the timer completes
-    let messages = document.querySelectorAll('.chat-message.enlarging');
-    messages.forEach(msg => msg.classList.remove('enlarging'));
-});
-
-
-// Gracefully close the peer connection on window unload/close
-window.onunload = window.onbeforeunload = () => {
-    if (peerConnection) {
-        peerConnection.close();
-    }
-
-    // Check if the socket is connected before closing
-    if (socket && socket.connected) {
-        socket.close();
-    }
-};
-
-function emitIfSocketConnected(event, data) {
-    if (socket && socket.connected) {
-        socket.emit(event, data);
-    } else {
-        console.error('Socket is not connected. Cannot emit:', event);
-    }
-}
-recordButton.addEventListener('click', () => {
-    $('#audioRecordingModal').modal({
-        backdrop: 'static',
-        keyboard: false
-    });
-});
-
-
-
-
-// Function to list audio input and output devices
-async function updateAudioStream() {
-    try {
-        if (isMicOn) {
-            const audioSource = document.getElementById('microphoneSelect').value;
-            // Only request the audio track
-            const audioConstraints = { audio: { deviceId: audioSource ? { exact: audioSource } : undefined } };
-
-            // Request only the audio stream
-            const audioStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
-            const newAudioTrack = audioStream.getAudioTracks()[0];
-
-            // Find the sender corresponding to the audio track
-            const audioSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'audio');
-            if (audioSender) {
-                await audioSender.replaceTrack(newAudioTrack);
-            }
-
-            // Replace the audio track in the localStream without affecting the video tracks
-            if (localStream) {
-                const oldAudioTracks = localStream.getAudioTracks();
-                oldAudioTracks.forEach(track => {
-                    track.stop(); // Stop the old audio tracks
-                    // Check if the track exists in the localStream before removing it
-                    if (localStream.getTrackById(track.id)) {
-                        localStream.removeTrack(track);
-                    }
-                });
-
-                localStream.addTrack(newAudioTrack); // Add the new audio track to the localStream
-            }
-        } else {
-            // Mute or stop the audio track if the microphone is turned off
-            if (localStream) {
-                const audioTracks = localStream.getAudioTracks();
-                audioTracks.forEach(track => {
-                    track.stop(); // Stop each audio track
-                    // Check if the track exists in the localStream before removing it
-                    if (localStream.getTrackById(track.id)) {
-                        localStream.removeTrack(track);
-                    }
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error updating audio stream:', error);
-    }
-};
-
-
-
-
-async function updateVideoStream() {
-    try {
-        if (isVideoOn) {
-            const videoSource = document.getElementById('cameraSelect').value;
-            const videoConstraints = { video: { deviceId: videoSource ? { exact: videoSource } : undefined } };
-
-            // Get new video stream
-            const newStream = await navigator.mediaDevices.getUserMedia(videoConstraints);
-            const newVideoTrack = newStream.getVideoTracks()[0];
-
-            // Replace video track in the peer connection
-            const videoSender = peerConnection.getSenders().find(sender => sender.track.kind === 'video');
-            if (videoSender) {
-                await videoSender.replaceTrack(newVideoTrack);
-            }
-
-            // Update localStream with new video track
-            if (localStream) {
-            // Stop and remove the old video track
-            const oldVideoTracks = localStream.getVideoTracks();
-            if (oldVideoTracks.length > 0) {
-                oldVideoTracks.forEach(track => {
-                    track.stop();
-                    localStream.removeTrack(track); // Ensure track is a MediaStreamTrack
-                });
-            }
-
-            // Add new video track
-            localStream.addTrack(newVideoTrack);
-
-            // Update local video display
-            const localVideo = document.getElementById('localVideo');
-            if (localVideo) {
-                localVideo.srcObject = localStream;
-            }
-        }
-        } else {
-            // Stop and remove the video track if the camera is turned off
-            if (localStream) {
-                const videoTracks = localStream.getVideoTracks();
-                videoTracks.forEach(track => {
-                    track.stop();
-                    localStream.removeTrack(track);
-                });
-
-                // Clear the local video display
-                document.getElementById('localVideo').srcObject = null;
-            }
-        }
-    } catch (error) {
-        console.error('Error updating video stream:', error);
-    }
-}
-
-
-
-
-
-function handleNewStream(stream) {
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-    }
-
-    localStream = stream;
-    const localVideo = document.getElementById('localVideo');
-    localVideo.srcObject = localStream;
-};
-
-
-function setAudioOutputDevice(deviceId) {
-    // Assuming 'remoteAudio' is the audio element for the remote stream
-    const remoteAudio = document.getElementById('remoteAudio');
-    if (remoteAudio.setSinkId) {
-        remoteAudio.setSinkId(deviceId)
-            .then(() => {
-                console.log(`Audio output device set to ${deviceId}`);
-            })
-            .catch((error) => {
-                console.warn('Error setting audio output device:', error);
-            });
-    }
-};
-
-
-// Function to monitor microphone volume
-async function monitorMicrophoneVolume(micId) {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: micId } });
-    const audioContext = new AudioContext();
-    const microphone = audioContext.createMediaStreamSource(stream);
-    const analyser = audioContext.createAnalyser();
-    analyser.fftSize = 512;
-    microphone.connect(analyser);
-
-    const bufferLength = analyser.frequencyBinCount;
-    const dataArray = new Uint8Array(bufferLength);
-
-    const updateVolume = () => {
-        analyser.getByteFrequencyData(dataArray);
-        let sum = 0;
-        for(let i = 0; i < bufferLength; i++) {
-            sum += dataArray[i];
-        }
-        let average = sum / bufferLength;
-        let volumePercent = (average / 128) * 100;
-        document.getElementById('micVolume').style.width = `${volumePercent}%`;
-        requestAnimationFrame(updateVolume);
-    };
-    updateVolume();
-};
-
-// Event listener for microphone selection
-document.getElementById('microphoneSelect').addEventListener('change', (event) => {
-    monitorMicrophoneVolume(event.target.value);
-});
-
-
-
-
-socket.on('connection', (socket) => {
-    socket.on('camera_toggle', (data) => {
-        // Broadcast the camera state to other participants in the room
-        socket.broadcast.to(room).emit('camera_state_changed', data);
-    });
-});
-
-socket.on('camera_state_changed', (data) => {
-    const remoteVideo = document.getElementById('remoteVideo');
-    const remoteVideoContainer = remoteVideo.parentElement;
-
-    if (data.cameraOn) {
-        // If there's a video set, show the video element
-        remoteVideo.style.display = 'block';
-        // Remove loading state classes if present
-        remoteVideoContainer.classList.remove('loading-state');
-    } else {
-        // If there's no video set, show loading state
-        remoteVideo.style.display = 'none';
-        // Add loading state classes
-        remoteVideoContainer.classList.add('loading-state');
-        console.log('Camera is off');
-    }
-});
-
-
-
-// Function to update the microphone source
-async function updateMicrophoneSource() {
-    const audioSource = document.getElementById('microphoneSelect').value;
-    const constraints = {
-        audio: { deviceId: { exact: audioSource } },
-        video: false // Keep the current video stream if any
-    };
-
-    try {
-        const audioStream = await navigator.mediaDevices.getUserMedia(constraints);
-        handleNewStream(audioStream, 'audio');
-    } catch (error) {
-        console.error('Error updating microphone source:', error);
-    }
-}
-
-
-// Function to update the camera source
-async function updateCameraSource() {
-    const videoSource = document.getElementById('cameraSelect').value;
-    const constraints = {
-        audio: false, // Keep the current audio stream if any
-        video: { deviceId: { exact: videoSource } }
-    };
-
-    try {
-        const videoStream = await navigator.mediaDevices.getUserMedia(constraints);
-        handleNewStream(videoStream, 'video');
-    } catch (error) {
-        console.error('Error updating camera source:', error);
-    }
-}
-
-// Function to replace the audio track in the peer connection
-function replaceAudioTrack(stream) {
-    const audioTrack = stream.getAudioTracks()[0];
-    const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
-    if (sender) {
-        sender.replaceTrack(audioTrack);
-    }
-}
-
-// Function to replace the video track in the peer connection
-async function replaceVideoTrack(deviceId) {
-    try {
-        // Check if the deviceId is among the enumerated devices
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDeviceIds = devices.filter(d => d.kind === 'videoinput').map(d => d.deviceId);
-        
-        if (!videoDeviceIds.includes(deviceId)) {
-            console.error('Specified video device ID not found among available devices.');
-            // Fallback or notify the user
-            return;
-        }
-
-        // Attempt to get the stream with the specified deviceId
-        const constraints = { video: { deviceId: { exact: deviceId } } };
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        const track = stream.getVideoTracks()[0];
-        const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
-        await sender.replaceTrack(track);
-    } catch (error) {
-        if (error.name === 'OverconstrainedError') {
-            console.error('Cannot replace video track:', error.message);
-            // Handle the error (fallback or notify the user)
-        } else {
-            console.error('Unexpected error replacing video track:', error);
-        }
-    }
-};
-
-
-// Event listeners for device selection changes
-document.getElementById('microphoneSelect').addEventListener('change', updateMicrophoneSource);
-document.getElementById('cameraSelect').addEventListener('change', updateCameraSource);
-
-document.addEventListener('DOMContentLoaded', function() {
-    // Existing resize functionality
-    const localVideoContainer = document.querySelector('.resizableVideoContainer');
-
-    let isResizing = false;
-
-
-
-    // Function to apply the size to the localVideo div
-    window.setSize = function() {
-    let width = document.getElementById('videoWidth').value;
-    let height = document.getElementById('videoHeight').value;
-
-    // Ensure width ends with 'px'
-    if (!width.endsWith('px')) {
-        width += 'px';
-    }
-
-    // Ensure height ends with 'px'
-    if (!height.endsWith('px')) {
-        height += 'px';
-    }
-
-    const video = document.getElementById('localVideo');
-    video.style.width = width;
-    video.style.height = height;
-// Close the modal after setting the size
-};
-
-
-
-});
-
-document.addEventListener('keydown', function(event) {
-    // Check if 'm' key is pressed for microphone toggle
-    if (event.key === 'm') {
-        toggleMicrophone();
-    }
-    // Check if 'c' key is pressed for camera toggle
-    else if (event.key === 'c') {
-        toggleCamera();
-    }
-});
-
-function saveDeviceSelection() {
-    const audioSource = document.getElementById('audioSourceSelect').value;
-    const videoSource = document.getElementById('videoSourceSelect').value;
-    localStorage.setItem('selectedAudioDeviceId', audioSource);
-    localStorage.setItem('selectedVideoDeviceId', videoSource);
-}
-
 socket.on('iceCandidate', data => {
   const candidate = new RTCIceCandidate(data.candidate);
   pc.addIceCandidate(candidate);
 });
-
-document.addEventListener('DOMContentLoaded', (event) => {
-document.getElementById('microphoneSelect').addEventListener('change', updateAudioStream);
-document.getElementById('speakerSelect').addEventListener('change', updateAudioStream);
-document.getElementById('cameraSelect').addEventListener('change', updateVideoStream);
-
-    });
-
-function toggleMicrophone() {
-    isMicOn = !isMicOn; // Toggle microphone state
-    console.log(`Toggling microphone, isMicOn: ${isMicOn}`); // Log the current state
-    updateMicrophoneToggleUI(); 
-    updateAudioStream().catch(error => console.error('Error updating media stream:', error));
-}
-
-function updateMicrophoneToggleUI() {
-    const micToggleIcon = document.getElementById('micToggleIcon');
-    const onClasses = "bg-green-500"; // Class for mic on
-    const offClasses = "bg-red-500"; // Class for mic off
-
-
-    // Clear previous state classes
-    micToggleIcon.classList.remove(onClasses, offClasses);
-
-    if (isMicOn) {
-        // Update to 'microphone is on' UI
-        micToggleIcon.classList.add(onClasses);
-        micToggleIcon.innerHTML = '<svg class="w-[27px] h-[27px] text-gray-800 dark:text-white"  viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M19 10V12C19 15.866 15.866 19 12 19M5 10V12C5 15.866 8.13401 19 12 19M12 19V22M8 22H16M15 6H13M15 10H13M12 15C10.3431 15 9 13.6569 9 12V5C9 3.34315 10.3431 2 12 2C13.6569 2 15 3.34315 15 5V12C15 13.6569 13.6569 15 12 15Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>'; // Insert 'microphone is on' SVG here
-    } else {
-        // Update to 'microphone is off' UI
-        micToggleIcon.classList.add(offClasses);
-        micToggleIcon.innerHTML = '<svg width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 9.4V5C15 3.34315 13.6569 2 12 2C10.8224 2 9.80325 2.67852 9.3122 3.66593M12 19V22M8 22H16M3 3L21 21M5.00043 10C5.00043 10 3.50062 19 12.0401 19C14.51 19 16.1333 18.2471 17.1933 17.1768M19.0317 13C19.2365 11.3477 19 10 19 10M12 15C10.3431 15 9 13.6569 9 12V9L14.1226 14.12C13.5796 14.6637 12.8291 15 12 15Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M1 1L23 23" stroke="red" stroke-width="2"></path> </g></svg>'; // Insert 'microphone is off' SVG here
-    }
-};
-
-function toggleCamera() {
-    isVideoOn = !isVideoOn; // Toggle camera state
-    updateCameraToggleUI(); // Update UI to reflect the change
-    updateVideoStream().catch(error => console.error('Error updating media stream:', error)); // Adjust the actual stream
-}
-
-function updateCameraToggleUI() {
-    const videoToggleIcon = document.getElementById('videoToggleIcon');
-    if (isVideoOn) {
-        // Update to 'camera is on' UI
-        videoToggleIcon.innerHTML = '<svg class="text-gray-800 dark:text-white" width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M16 10L18.5768 8.45392C19.3699 7.97803 19.7665 7.74009 20.0928 7.77051C20.3773 7.79703 20.6369 7.944 20.806 8.17433C21 8.43848 21 8.90095 21 9.8259V14.1741C21 15.099 21 15.5615 20.806 15.8257C20.6369 16.056 20.3773 16.203 20.0928 16.2295C19.7665 16.2599 19.3699 16.022 18.5768 15.5461L16 14M6.2 18H12.8C13.9201 18 14.4802 18 14.908 17.782C15.2843 17.5903 15.5903 17.2843 15.782 16.908C16 16.4802 16 15.9201 16 14.8V9.2C16 8.0799 16 7.51984 15.782 7.09202C15.5903 6.71569 15.2843 6.40973 14.908 6.21799C14.4802 6 13.9201 6 12.8 6H6.2C5.0799 6 4.51984 6 4.09202 6.21799C3.71569 6.40973 3.40973 6.71569 3.21799 7.09202C3 7.51984 3 8.07989 3 9.2V14.8C3 15.9201 3 16.4802 3.21799 16.908C3.40973 17.2843 3.71569 17.5903 4.09202 17.782C4.51984 18 5.07989 18 6.2 18Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>'; // SVG or icon indicating the camera is on
-        videoToggleIcon.classList.remove('bg-gray-500');
-    } else {
-        // Update to 'camera is off' UI
-        videoToggleIcon.innerHTML = '<svg width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M11.65 6H12.8C13.9201 6 14.4802 6 14.908 6.21799C15.2843 6.40973 15.5903 6.71569 15.782 7.09202C16 7.51984 16 8.0799 16 9.2V10L18.5768 8.45392C19.3699 7.97803 19.7665 7.74009 20.0928 7.77051C20.3773 7.79703 20.6369 7.944 20.806 8.17433C21 8.43848 21 8.90095 21 9.8259V14.1741C21 14.679 21 15.0462 20.9684 15.3184M3 3L6.00005 6.00005M21 21L15.9819 15.9819M6.00005 6.00005C5.01167 6.00082 4.49359 6.01337 4.09202 6.21799C3.71569 6.40973 3.40973 6.71569 3.21799 7.09202C3 7.51984 3 8.07989 3 9.2V14.8C3 15.9201 3 16.4802 3.21799 16.908C3.40973 17.2843 3.71569 17.5903 4.09202 17.782C4.51984 18 5.07989 18 6.2 18H12.8C13.9201 18 14.4802 18 14.908 17.782C15.2843 17.5903 15.5903 17.2843 15.782 16.908C15.9049 16.6668 15.9585 16.3837 15.9819 15.9819M6.00005 6.00005L15.9819 15.9819" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M1 1L23 23" stroke="red" stroke-width="2"></path></g></svg>'; // SVG or icon indicating the camera is off
-        videoToggleIcon.classList.add('bg-gray-500');
-    }
-}
-
-
-
-document.getElementById('micToggleIcon').addEventListener('click', () => {
-    console.log('clicked the micToggleIcon!');
-    toggleMicrophone();
-    updateAudioStream(); // Reflect changes in the live stream
-});
-
-document.getElementById('videoToggleIcon').addEventListener('click', () => {
-    toggleCamera();
-    updateVideoStream(); // Reflect changes in the live stream
-});
-
-
-
-
-async function populateAudioDevices() {
-    try {
-        // Get the list of available devices
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        
-        // Filter out audio input and output devices
-        const audioInputs = devices.filter(device => device.kind === 'audioinput');
-        const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
-
-        // Get the select elements
-        const microphoneSelect = document.getElementById('microphoneSelect');
-        const speakerSelect = document.getElementById('speakerSelect');
-
-        // Function to create option elements
-        const createOption = (device) => {
-            const option = document.createElement('option');
-            option.value = device.deviceId;
-            // The label property may be empty if the device label is not accessible due to browser security settings (e.g., without user permission)
-            option.text = device.label || `Device ${device.deviceId.substring(0, 8)}...`;
-            return option;
-        };
-
-        // Populate the microphone select
-        audioInputs.forEach(mic => {
-            microphoneSelect.appendChild(createOption(mic));
-        });
-
-        // Populate the speaker select
-        audioOutputs.forEach(speaker => {
-            speakerSelect.appendChild(createOption(speaker));
-        });
-    } catch (err) {
-        console.error('Could not populate audio devices:', err);
-    }
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  const openCallSetupButton = document.getElementById('openCallSetup');
-  if (openCallSetupButton) {
-    openCallSetupButton.addEventListener('click', function() {
-      // Show the modal for device selection
-      $('#callSetupModal').modal('show');
-    });
-  } else {
-    console.log('Open Call Setup button not found');
-  }
-});
-
-// Call the function to populate devices when the page loads
-document.addEventListener('DOMContentLoaded', populateAudioDevices);
-
-document.addEventListener('DOMContentLoaded', function () {
-    var callSetupModal = document.getElementById('callSetupModal');
-
-    callSetupModal.addEventListener('show.bs.modal', async function () {
-        await populateDeviceOptions();
-    });
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-// Request permission from the user to access media devices
-navigator.mediaDevices.getUserMedia({ audio: true, video: true })
-    .then(stream => {
-        // The user has granted permission to access the media devices
-        // You can now call enumerateDevices()
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-            // Enumerate devices and populate the dropdowns
-            navigator.mediaDevices.enumerateDevices().then(devices => {
-                const audioSelect = document.getElementById('audioSourceSelect');
-                const videoSelect = document.getElementById('videoSourceSelect');
-
-                devices.forEach(device => {
-                    let option = document.createElement('option');
-                    option.value = device.deviceId;
-                    option.text = device.label || `${device.kind}: ${device.deviceId}`;
-                    if (device.kind === 'audioinput') {
-                        audioSelect.appendChild(option);
-                    } else if (device.kind === 'videoinput') {
-                        videoSelect.appendChild(option);
-                    }
-                });
-            });
-        } else {
-            // The user has denied permission to access the media devices
-            // or the browser does not support the API
-            alert('This browser does not support the Media Devices API. Please use a different browser.');
-        }
-    })
-    .catch(error => {
-        // The user has denied permission to access the media devices
-        console.error('Error accessing media devices.', error);
-    });
-
-
-});
-
-document.addEventListener('DOMContentLoaded', () => {
-    const closeModalButton = document.getElementById('closeModalButton');
-    const callEndedModal = document.getElementById('callEndedModal');
-
-    closeModalButton.addEventListener('click', () => {
-        callEndedModal.style.display = 'none';
-    });
-});
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    const videoContainer = document.getElementById('videoContainer');
-    let startX, startY, startWidth, startHeight;
-
-    // Function to handle the drag start
-    function dragMouseDown(e) {
-        if (e.target.className.includes('resize-handle')) {
-            // If the mousedown event is on a resize handle, we don't want to drag
-            return;
-        }
-        e.preventDefault();
-        startX = e.clientX;
-        startY = e.clientY;
-        document.addEventListener('mousemove', elementDrag);
-        document.addEventListener('mouseup', closeDragElement);
-    }
-
-    // Function to handle dragging
-    function elementDrag(e) {
-        e.preventDefault();
-        const dx = startX - e.clientX;
-        const dy = startY - e.clientY;
-        startX = e.clientX;
-        startY = e.clientY;
-        videoContainer.style.top = `${Math.max(0, videoContainer.offsetTop - dy)}px`;
-        videoContainer.style.left = `${Math.max(0, videoContainer.offsetLeft - dx)}px`;
-    }
-
-    // Function to stop dragging
-    function closeDragElement() {
-        document.removeEventListener('mousemove', elementDrag);
-        document.removeEventListener('mouseup', closeDragElement);
-    }
-
-    // Add drag functionality to the video container
-    videoContainer.addEventListener('mousedown', dragMouseDown);
-
-    // Query all resize handles and add mousedown event listener to them for resize functionality
-    document.querySelectorAll('.resize-handle').forEach(handle => {
-        handle.addEventListener('mousedown', resizeMouseDown);
-    });
-
-    function resizeMouseDown(e) {
-        e.preventDefault();
-        // Get the initial cursor position
-        startX = e.clientX;
-        startY = e.clientY;
-
-        // Get the initial size of the video container
-        startWidth = parseInt(document.defaultView.getComputedStyle(videoContainer).width, 10);
-        startHeight = parseInt(document.defaultView.getComputedStyle(videoContainer).height, 10);
-
-        document.addEventListener('mousemove', resizeMouseMove);
-        document.addEventListener('mouseup', resizeMouseUp);
-    }
-
-    function resizeMouseMove(e) {
-        let width = startWidth + (e.clientX - startX);
-        let height = startHeight + (e.clientY - startY);
-
-        // Set minimum size to prevent negative width/height
-        width = Math.max(100, width);
-        height = Math.max(60, height);
-
-        videoContainer.style.width = `${width}px`;
-        videoContainer.style.height = `${height}px`;
-    }
-
-    function resizeMouseUp() {
-        document.removeEventListener('mousemove', resizeMouseMove);
-        document.removeEventListener('mouseup', resizeMouseUp);
-    }
-});
-
-
-function handleBeforeUnload(e) {
-    e.preventDefault();
-    e.returnValue = '';
-}
-
-// To add the listener
-window.addEventListener('beforeunload', handleBeforeUnload);
-
-// To remove the listener once the operation is complete
-window.removeEventListener('beforeunload', handleBeforeUnload);
-
-
-function showNotification(message) {
-    const notificationContainer = document.getElementById('notificationContainer');
-    const notificationMessage = document.getElementById('notificationMessage');
-    notificationMessage.textContent = message; // Set the message text
-    notificationContainer.classList.remove('hidden'); // Show the notification
-
-    // Hide the notification after 4 seconds
-    setTimeout(() => {
-        notificationContainer.classList.add('hidden');
-    }, 3000);
-}
-
-window.addEventListener('beforeunload', function(event) {
-    // Check if your WebRTC connection is active
-    // This condition is just an example, replace it with your actual condition to detect an active connection
-    if (peerConnection && peerConnection.iceConnectionState !== 'closed') {
-        // Most modern browsers ignore custom messages and display a standard message for beforeunload events
-        // However, setting returnValue to a non-empty string triggers the prompt
-        event.returnValue = 'Are you sure you want to leave? Leaving this page will end your active call.';
-    }
-});
-
-function endCall() {
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null; // Ensure the reference is cleared
-    }
-
-    if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null; // Clear the reference
-    }
-
-    // Optionally, emit an event to notify the other party that the call has ended
-    socket.emit('declineCall', { reason: 'user hung up'});
-
-    // Update the UI accordingly
-    document.getElementById('webCallingUI').style.display = 'none';
-    const callSetupModal = document.getElementById('callSetupModal'); // Ensure this is correctly referenced
-    if (callSetupModal) callSetupModal.style.display = 'none';
-}
-
-
-
-// Bind endCall to the window's beforeunload event
-window.addEventListener('beforeunload', function() {
-    endCall(); // End call when the page is about to be unloaded (e.g., due to refresh or navigation)
-});
-
 
 async function populateDeviceOptions() {
     try {
@@ -3445,8 +2277,1105 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Error populating video devices:', error);
     }
 });
+socket.on('server_typing', function(data) {
+    console.log('Server is typing:', data.message); // Check if this logs correctly
+
+    const chatContainer = document.getElementById('chat-container');
+    if (!chatContainer) {
+        console.error("chat-container not found"); // Check if chatContainer is found
+        return;
+    }
+
+    let liveMessageElement = document.getElementById('live-message');
+
+    // If the liveMessageElement doesn't exist, use createMessageElement to create it and append it
+    if (!liveMessageElement) {
+        liveMessageElement = createMessageElement(`Server: ${data.message}`, 'server-message');
+        liveMessageElement.id = 'live-message';
+        chatContainer.appendChild(liveMessageElement);
+    } else {
+        // Update the text of the live typing message if it already exists
+        const textSpan = liveMessageElement.querySelector('span:not(.clipboard-icon):not(.timestamp)');
+        if (textSpan) {
+            textSpan.innerHTML = `Server: ${data.message}`;
+        } else {
+            console.error("textSpan not found inside liveMessageElement"); // If textSpan isn't found
+        }
+    }
+
+    chatContainer.scrollTop = chatContainer.scrollHeight; // Scroll to the bottom of the chat container
+});
+
+socket.on('server_stop_typing', function() {
+    console.log('Server stopped typing.');
+
+    // Remove the live message element from the chatbox when server stops typing
+    const liveMessageElement = document.getElementById('live-message');
+    if (liveMessageElement) {
+        liveMessageElement.remove();
+    }
+});
+
+socket.on('set_background', function(data) {
+        console.log(data)
+        document.body.style.backgroundColor = data;
+    });
 
 
+document.getElementById('clear-chat').addEventListener('click', function() {
+    chatContainer.innerHTML = '';
+    socket.emit('clear_chat');
+});
+
+document.getElementById('upload-file').addEventListener('click', function() {
+document.getElementById('file-input').click();
+});
+
+socket.on('receive_notification', function(data) {
+    console.log(data)
+    const notificationMessage = data.message || 'You have a new notification!';
+    const timestamp = new Date().toLocaleString(); // You can adjust the locale and options as needed
+    const sender = "Server";  // This is the sender's name
+
+    // Play the notification sound
+    document.getElementById("notificationSound").play();
+
+    // Append the notification message to the chat box
+    const chatContainer = document.getElementById('chat-container');
+    const notificationElement = document.createElement('div');
+    notificationElement.className = 'chat-message animate__fadeIn animate__animated server-message';
+    notificationElement.innerHTML = `
+        <span class="clipboard-icon" title="Copy to Clipboard">📋</span>
+        <span class="timestamp">${timestamp}</span>
+        <span>${sender}: ${notificationMessage}</span>
+    `;
+    // If you want to initially hide the timestamp, you can set the style directly here
+    // notificationElement.querySelector('.timestamp').style.display = 'none';
+
+    chatContainer.appendChild(notificationElement);
+
+    // Ensure the latest message is always in view
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+});
+
+socket.on('new_audio_message_to_device', function(data) {
+    console.log('New audio message received:', data);
+    const chatContainer = document.getElementById('chat-container');
+
+    // Ensure the chatContainer exists
+    if (!chatContainer) {
+        console.error('Chat container not found');
+        return;
+    }
+
+    // Create the audio message container
+    const audioMsgContainer = document.createElement('div');
+    audioMsgContainer.className = 'chat-message server-message'; // Use the same class as other device messages for consistency
+
+    // Create a label for the audio message
+    const audioLabel = document.createElement('div');
+    audioLabel.textContent = 'Voice Message:'; // Customize this text as needed
+    audioLabel.className = 'audio-message-label'; // Add a class for potential styling
+    audioMsgContainer.appendChild(audioLabel);
+
+    // Create the audio element
+    const audioElement = document.createElement('audio');
+    audioElement.src = data.url; // Ensure the URL is correct and the server is properly serving the audio file
+    audioElement.controls = true;
+    audioElement.style.width = '100%'; // This ensures the audio player fits within the message container
+
+    // Append the audio element to the message container
+    audioMsgContainer.appendChild(audioElement);
+
+    // Append the complete message container to the chat box
+    chatContainer.appendChild(audioMsgContainer);
+
+    // Scroll to the latest message
+    chatContainer.scrollTop = chatContainer.scrollHeight;
+});
+
+socket.on('message', async message => {
+        console.log('Received the call', message)
+        if (!peerConnection) {
+            initPeerConnection();
+        }
+
+        try {
+            if (message.offer) {
+                $('#call-modal-div').modal('show');
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+                socket.emit('message', { 'answer': answer });
+
+                document.getElementById('call-controls').style.display = 'block';
+            } else if (message.iceCandidate) {
+                await peerConnection.addIceCandidate(new RTCIceCandidate(message.iceCandidate));
+            }
+        } catch (error) {
+            console.error('Failed to handle message:', error);
+        }
+    })
+
+socket.on('receive_file', function(data) {
+    console.log(data)
+    if (!data) {
+        console.error('Received null or undefined data on receive_file event.');
+        return;
+    }
+
+    const { file_path, filename } = data;
+
+    // Ensure file_path and filename are strings and non-empty
+    if (typeof file_path !== 'string' || file_path.trim() === '' || 
+        typeof filename !== 'string' || filename.trim() === '') {
+        console.error('Invalid file data received:', data);
+        return;
+    }
+
+    // Optional: Basic script check to prevent potential XSS (you can make this stricter)
+    if (/<script/i.test(filename)) {
+        console.error('Potential malicious filename detected:', filename);
+        return;
+    }
+
+    // Display the modal and filename
+    document.getElementById('fileName').innerText = filename;
+    document.getElementById('fileModal').style.display = 'block';
+
+    // Event listener for the "Accept" link
+    document.getElementById('downloadLink').addEventListener('click', (e) => {
+        e.preventDefault(); // Prevent default behavior
+        
+        console.log("Fetching:", file_path); // Log the URL you're fetching
+        fetch(file_path)
+        .then(response => {
+            if (!response.ok) {
+                return response.text().then(text => {
+                    throw new Error('Network response was not ok. Status: ' + response.status + '. Message: ' + text);
+                });
+            }
+            return response.blob();
+        })
+        .then(blob => {
+            const blobURL = window.URL.createObjectURL(blob);
+
+            // Download the file
+            const link = document.createElement("a");
+            link.href = blobURL;
+            link.download = filename;
+            link.click();
+
+            // Optional: Clean up blob URL after usage to release memory
+            setTimeout(() => {
+                window.URL.revokeObjectURL(blobURL);
+            }, 100);
+
+            // Close the modal
+            document.getElementById('fileModal').style.display = 'none';
+        })
+        .catch(error => {
+            console.error("Error fetching:", file_path, "Error:", error);
+            alert("Sorry, the download failed. Please try again later.");
+        });
+    });
+
+    // Event listener for the "Reject" button
+    document.getElementById('rejectFile').addEventListener('click', () => {
+        // Close the modal without downloading the file
+        document.getElementById('fileModal').style.display = 'none';
+    });
+});
+
+document.getElementById('file-input').addEventListener('change', function() {
+    if (this.files.length > 0) {
+        uploadFile(this.files[0]);
+    }
+});
+
+async function fillAudioDeviceSelection() {
+    const microphones = document.getElementById('microphoneSelect');
+    const speakers = document.getElementById('speakerSelect');
+
+    try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const audioInputDevices = devices.filter(device => device.kind === 'audioinput');
+        const audioOutputDevices = devices.filter(device => device.kind === 'audiooutput');
+
+        microphones.innerHTML = audioInputDevices.map(device => `<option value="${device.deviceId}">${device.label}</option>`).join('');
+        speakers.innerHTML = audioOutputDevices.map(device => `<option value="${device.deviceId}">${device.label}</option>`).join('');
+    } catch (error) {
+        console.error('Error populating audio devices:', error);
+    }
+}
+
+async function setSpeaker(deviceId) {
+    try {
+        const audio = new Audio();
+        await audio.setSinkId(deviceId);
+    } catch (error) {
+        console.error('Error setting audio output device:', error);
+    }
+}
+
+document.getElementById('send-notification').addEventListener('click', function() {
+    console.log('clicked the send_notification button!');
+
+    // Emit a notification message to the server
+    socket.emit('send_notification_to_server', { target_device: deviceName, notification: 'Sent a notification!' });
+
+    // Create and display the notification log message in the chatbox with timestamp
+    const notificationLogMessage = "Sent a notification to the server!";
+    const msgElement = createMessageElement(notificationLogMessage, 'device-message');
+
+    document.getElementById('chat-container').appendChild(msgElement);
+    msgElement.style.opacity = 1; // Trigger the transition animation
+
+    scrollToBottom(); // Assuming you have a scrollToBottom function to keep the chatbox scrolled to the most recent message
+});
+
+document.getElementById("toggle-timestamps").addEventListener("click", toggleTimestamps);
+
+document.addEventListener("DOMContentLoaded", function() {
+    let messageOptions = document.querySelectorAll('.message-options-icon');
+
+    // For each message options icon
+    messageOptions.forEach(function(icon) {
+        icon.addEventListener('click', function(e) {
+            let optionsMenu = e.target.nextElementSibling;
+            
+            // Toggle the display of the message options menu
+            if(optionsMenu.style.display === "none" || optionsMenu.style.display === "") {
+                optionsMenu.style.display = "block";
+            } else {
+                optionsMenu.style.display = "none";
+            }
+        });
+    });
+
+    // Close the menu if clicked outside
+    window.addEventListener('click', function(e) {
+        if(!e.target.classList.contains('message-options-icon')) {
+            let allOptionsMenus = document.querySelectorAll('.message-options');
+            allOptionsMenus.forEach(function(menu) {
+                menu.style.display = "none";
+            });
+        }
+    });
+});
+
+document.addEventListener("DOMContentLoaded", function() {
+    let messageOptionsIcons = document.querySelectorAll('.message-options-icon');
+
+    // For each message options icon
+    messageOptionsIcons.forEach(function(icon) {
+        icon.addEventListener('click', function(e) {
+            let optionsMenu = e.target.nextElementSibling;
+            
+            // Toggle the display of the message options menu
+            if(optionsMenu.style.display === "none" || optionsMenu.style.display === "") {
+                optionsMenu.style.display = "block";
+            } else {
+                optionsMenu.style.display = "none";
+            }
+        });
+    });
+
+    document.addEventListener("DOMContentLoaded", function() {
+    const clipboardIcons = document.querySelectorAll('.clipboard-icon');
+
+    clipboardIcons.forEach(icon => {
+        icon.addEventListener('click', function() {
+            const messageText = this.nextElementSibling.nextElementSibling.innerText;
+
+            // Create a textarea element to use for copying
+            const textarea = document.createElement('textarea');
+            textarea.value = messageText;
+            document.body.appendChild(textarea);
+
+            // Select the text and copy it
+            textarea.select();
+            document.execCommand('copy');
+
+            // Clean up by removing the textarea
+            document.body.removeChild(textarea);
+            
+            // Optional: Show a notification or feedback to the user
+            alert('Message copied to clipboard!');
+        });
+    });
+});
+
+
+    // Close the menu if clicked outside
+    window.addEventListener('click', function(e) {
+        if(!e.target.classList.contains('message-options-icon')) {
+            let allOptionsMenus = document.querySelectorAll('.message-options');
+            allOptionsMenus.forEach(function(menu) {
+                menu.style.display = "none";
+            });
+        }
+    });
+});
+// Add event listener for when the DOM has fully loaded
+document.addEventListener('DOMContentLoaded', (event) => {
+    // Function to emit the color change to the server
+    var confirmColorBtn = document.getElementById('confirmColor');
+    confirmColorBtn.addEventListener('click', function() {
+        var chosenColor = document.getElementById('colorPicker').value;
+
+        // Emit the color change event to the server
+        socket.emit('change_server_color', { color: chosenColor });
+
+        // Close the modal
+        var colorPickerModal = document.getElementById('colorPickerModal');
+        colorPickerModal.style.display = 'none';
+    });
+});
+
+document.getElementById('message-input').addEventListener('focus', function() {
+    if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
+        // Hide buttons when input receives focus
+        document.getElementById('toggle-timestamps').style.display = 'none';
+        document.getElementById('upload-file').style.display = 'none';
+        document.getElementById('send-notification').style.display = 'none';
+    }
+});
+
+document.getElementById('message-input').addEventListener('blur', function() {
+    if (window.innerWidth <= 768) { // Check for device mode (e.g., width <= 768px)
+        // Show buttons when input loses focus
+        document.getElementById('toggle-timestamps').style.display = '';
+        document.getElementById('upload-file').style.display = '';
+        document.getElementById('send-notification').style.display = '';
+    }
+});
+
+document.getElementById('audio-input').addEventListener('change', function(event) {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('audio/')) {
+        // Process and display the audio
+        const audioElement = document.createElement('audio');
+        audioElement.controls = true;
+        audioElement.src = URL.createObjectURL(file);
+
+        // Use your existing createMessageElement function to create a message container
+        const msg = createMessageElement('Voice Message:', 'device-message');
+        
+        // Append the audio element to the message container
+        msg.appendChild(audioElement);
+
+        // Append the message container to the chatbox
+        document.getElementById('chat-container').appendChild(msg);
+        
+        // Trigger the transition and scroll to the bottom
+        msg.style.opacity = 1;
+        scrollToBottom();
+    }
+});
+
+document.addEventListener('DOMContentLoaded', (event) => {
+    // Add the event listener to the button that should open the color picker modal
+    var changeServerColorBtn = document.getElementById('changeServerColorBtn');
+    changeServerColorBtn.addEventListener('click', openColorPicker);
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    
+    const toggleRecordButton = document.getElementById('toggleRecordButton');
+    let isRecording = false;
+    let recorder;
+    let audioChunks = [];
+
+    toggleRecordButton.addEventListener('click', async function() {
+        if (isRecording) {
+            // Stop the recording
+            if (recorder) {
+                recorder.stop();
+            }
+
+            // Change the button's appearance and text
+            toggleRecordButton.textContent = "Start Recording";
+            toggleRecordButton.classList.remove('btn-danger');
+            toggleRecordButton.classList.add('btn-primary');
+
+            isRecording = false;
+        } else {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+                if (stream) {
+                    recorder = new MediaRecorder(stream);
+
+                    recorder.ondataavailable = event => {
+                        audioChunks.push(event.data);
+                    };
+
+                    recorder.onstop = () => {
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const formData = new FormData();
+                        const deviceName = document.getElementById('deviceSelectChat').value; // Assuming this is your device selector
+
+                        // Check if a device is selected
+                        if (!deviceName || deviceName === "Select a device") {
+                            alert("Please select a device to send the recording.");
+                            return;
+                        }
+
+                        formData.append('audio', audioBlob, 'recording.wav');
+
+                        // Send the audio file to the server
+                        fetch(`/send_audio_to_device?device=${encodeURIComponent(deviceName)}`, {
+                            method: 'POST',
+                            body: formData
+                        }).then(response => response.json())
+                          .then(data => {
+                              console.log(data.message); // Log success or failure message
+                          }).catch(error => {
+                              console.error("Error sending audio:", error);
+                          });
+
+                        // Append the recording to the server's chatbox
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audioElement = document.createElement('audio');
+                        audioElement.controls = true;
+                        audioElement.src = audioUrl;
+
+                        const msg = createMessageElement('', 'device-message');
+                        msg.appendChild(audioElement);
+                        document.getElementById('chat-container').appendChild(msg);
+                        msg.style.opacity = 1;
+                        scrollToBottom();
+                    };
+
+                    audioChunks = [];
+                    recorder.start();
+
+                    // Change the button's appearance and text
+                    toggleRecordButton.classList.remove('btn-primary');
+                    toggleRecordButton.classList.add('btn-danger');
+
+                    isRecording = true;
+                }
+            } catch (error) {
+                console.error("Error accessing the microphone:", error);
+            }
+        }
+    });
+
+});
+
+document.addEventListener('mousedown', function(e) {
+    if (e.target && e.target.classList.contains('chat-message')) {
+        // Start enlarging effect
+        e.target.classList.add('enlarging');
+
+        pressTimer = setTimeout(function() {
+            e.target.classList.remove('enlarging');  // Stop enlarging effect
+            startEditMode(e.target);
+        }, 1000);  // Detect a long press of 1 second
+    }
+})
+
+document.addEventListener('mouseup', function() {
+    clearTimeout(pressTimer);
+    // Ensure the enlarging effect is stopped if the mouse button is released before the timer completes
+    let messages = document.querySelectorAll('.chat-message.enlarging');
+    messages.forEach(msg => msg.classList.remove('enlarging'));
+});
+// Gracefully close the peer connection on window unload/close
+window.onunload = window.onbeforeunload = () => {
+    if (peerConnection) {
+        peerConnection.close();
+    }
+
+    // Check if the socket is connected before closing
+    if (socket && socket.connected) {
+        socket.close();
+    }
+};
+
+function emitIfSocketConnected(event, data) {
+    if (socket && socket.connected) {
+        socket.emit(event, data);
+    } else {
+        console.error('Socket is not connected. Cannot emit:', event);
+    }
+}
+recordButton.addEventListener('click', () => {
+    $('#audioRecordingModal').modal({
+        backdrop: 'static',
+        keyboard: false
+    });
+});
+
+// Function to list audio input and output devices
+async function updateAudioStream() {
+    try {
+        if (isMicOn) {
+            const audioSource = document.getElementById('microphoneSelect').value;
+            // Only request the audio track
+            const audioConstraints = { audio: { deviceId: audioSource ? { exact: audioSource } : undefined } };
+
+            // Request only the audio stream
+            const audioStream = await navigator.mediaDevices.getUserMedia(audioConstraints);
+            const newAudioTrack = audioStream.getAudioTracks()[0];
+
+            // Find the sender corresponding to the audio track
+            const audioSender = peerConnection.getSenders().find(sender => sender.track && sender.track.kind === 'audio');
+            if (audioSender) {
+                await audioSender.replaceTrack(newAudioTrack);
+            }
+
+            // Replace the audio track in the localStream without affecting the video tracks
+            if (localStream) {
+                const oldAudioTracks = localStream.getAudioTracks();
+                oldAudioTracks.forEach(track => {
+                    track.stop(); // Stop the old audio tracks
+                    // Check if the track exists in the localStream before removing it
+                    if (localStream.getTrackById(track.id)) {
+                        localStream.removeTrack(track);
+                    }
+                });
+
+                localStream.addTrack(newAudioTrack); // Add the new audio track to the localStream
+            }
+        } else {
+            // Mute or stop the audio track if the microphone is turned off
+            if (localStream) {
+                const audioTracks = localStream.getAudioTracks();
+                audioTracks.forEach(track => {
+                    track.stop(); // Stop each audio track
+                    // Check if the track exists in the localStream before removing it
+                    if (localStream.getTrackById(track.id)) {
+                        localStream.removeTrack(track);
+                    }
+                });
+            }
+        }
+    } catch (error) {
+        console.error('Error updating audio stream:', error);
+    }
+};
+
+async function updateVideoStream() {
+    try {
+        if (isVideoOn) {
+            const videoSource = document.getElementById('cameraSelect').value;
+            const videoConstraints = { video: { deviceId: videoSource ? { exact: videoSource } : undefined } };
+
+            // Get new video stream
+            const newStream = await navigator.mediaDevices.getUserMedia(videoConstraints);
+            const newVideoTrack = newStream.getVideoTracks()[0];
+
+            // Replace video track in the peer connection
+            const videoSender = peerConnection.getSenders().find(sender => sender.track.kind === 'video');
+            if (videoSender) {
+                await videoSender.replaceTrack(newVideoTrack);
+            }
+
+            // Update localStream with new video track
+            if (localStream) {
+            // Stop and remove the old video track
+            const oldVideoTracks = localStream.getVideoTracks();
+            if (oldVideoTracks.length > 0) {
+                oldVideoTracks.forEach(track => {
+                    track.stop();
+                    localStream.removeTrack(track); // Ensure track is a MediaStreamTrack
+                });
+            }
+
+            // Add new video track
+            localStream.addTrack(newVideoTrack);
+
+            // Update local video display
+            const localVideo = document.getElementById('localVideo');
+            if (localVideo) {
+                localVideo.srcObject = localStream;
+            }
+        }
+        } else {
+            // Stop and remove the video track if the camera is turned off
+            if (localStream) {
+                const videoTracks = localStream.getVideoTracks();
+                videoTracks.forEach(track => {
+                    track.stop();
+                    localStream.removeTrack(track);
+                });
+
+                // Clear the local video display
+                document.getElementById('localVideo').srcObject = null;
+            }
+        }
+    } catch (error) {
+        console.error('Error updating video stream:', error);
+    }
+}
+
+function handleNewStream(stream) {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+
+    localStream = stream;
+    const localVideo = document.getElementById('localVideo');
+    localVideo.srcObject = localStream;
+};
+
+function setAudioOutputDevice(deviceId) {
+    // Assuming 'remoteAudio' is the audio element for the remote stream
+    const remoteAudio = document.getElementById('remoteAudio');
+    if (remoteAudio.setSinkId) {
+        remoteAudio.setSinkId(deviceId)
+            .then(() => {
+                console.log(`Audio output device set to ${deviceId}`);
+            })
+            .catch((error) => {
+                console.warn('Error setting audio output device:', error);
+            });
+    }
+};
+// Function to monitor microphone volume
+async function monitorMicrophoneVolume(micId) {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: micId } });
+    const audioContext = new AudioContext();
+    const microphone = audioContext.createMediaStreamSource(stream);
+    const analyser = audioContext.createAnalyser();
+    analyser.fftSize = 512;
+    microphone.connect(analyser);
+
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+
+    const updateVolume = () => {
+        analyser.getByteFrequencyData(dataArray);
+        let sum = 0;
+        for(let i = 0; i < bufferLength; i++) {
+            sum += dataArray[i];
+        }
+        let average = sum / bufferLength;
+        let volumePercent = (average / 128) * 100;
+        document.getElementById('micVolume').style.width = `${volumePercent}%`;
+        requestAnimationFrame(updateVolume);
+    };
+    updateVolume();
+};
+// Event listener for microphone selection
+document.getElementById('microphoneSelect').addEventListener('change', (event) => {
+    monitorMicrophoneVolume(event.target.value);
+});
+
+socket.on('connection', (socket) => {
+    socket.on('camera_toggle', (data) => {
+        // Broadcast the camera state to other participants in the room
+        socket.broadcast.to(room).emit('camera_state_changed', data);
+    });
+});
+
+socket.on('camera_state_changed', (data) => {
+    const remoteVideo = document.getElementById('remoteVideo');
+    const remoteVideoContainer = remoteVideo.parentElement;
+
+    if (data.cameraOn) {
+        // If there's a video set, show the video element
+        remoteVideo.style.display = 'block';
+        // Remove loading state classes if present
+        remoteVideoContainer.classList.remove('loading-state');
+    } else {
+        // If there's no video set, show loading state
+        remoteVideo.style.display = 'none';
+        // Add loading state classes
+        remoteVideoContainer.classList.add('loading-state');
+        console.log('Camera is off');
+    }
+});
+
+// Function to update the microphone source
+async function updateMicrophoneSource() {
+    const audioSource = document.getElementById('microphoneSelect').value;
+    const constraints = {
+        audio: { deviceId: { exact: audioSource } },
+        video: false // Keep the current video stream if any
+    };
+
+    try {
+        const audioStream = await navigator.mediaDevices.getUserMedia(constraints);
+        handleNewStream(audioStream, 'audio');
+    } catch (error) {
+        console.error('Error updating microphone source:', error);
+    }
+}
+
+// Function to update the camera source
+async function updateCameraSource() {
+    const videoSource = document.getElementById('cameraSelect').value;
+    const constraints = {
+        audio: false, // Keep the current audio stream if any
+        video: { deviceId: { exact: videoSource } }
+    };
+
+    try {
+        const videoStream = await navigator.mediaDevices.getUserMedia(constraints);
+        handleNewStream(videoStream, 'video');
+    } catch (error) {
+        console.error('Error updating camera source:', error);
+    }
+}
+
+// Function to replace the audio track in the peer connection
+function replaceAudioTrack(stream) {
+    const audioTrack = stream.getAudioTracks()[0];
+    const sender = peerConnection.getSenders().find(s => s.track.kind === 'audio');
+    if (sender) {
+        sender.replaceTrack(audioTrack);
+    }
+}
+
+// Function to replace the video track in the peer connection
+async function replaceVideoTrack(deviceId) {
+    try {
+        // Check if the deviceId is among the enumerated devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDeviceIds = devices.filter(d => d.kind === 'videoinput').map(d => d.deviceId);
+        
+        if (!videoDeviceIds.includes(deviceId)) {
+            console.error('Specified video device ID not found among available devices.');
+            // Fallback or notify the user
+            return;
+        }
+
+        // Attempt to get the stream with the specified deviceId
+        const constraints = { video: { deviceId: { exact: deviceId } } };
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        const track = stream.getVideoTracks()[0];
+        const sender = peerConnection.getSenders().find(s => s.track.kind === 'video');
+        await sender.replaceTrack(track);
+    } catch (error) {
+        if (error.name === 'OverconstrainedError') {
+            console.error('Cannot replace video track:', error.message);
+            // Handle the error (fallback or notify the user)
+        } else {
+            console.error('Unexpected error replacing video track:', error);
+        }
+    }
+};
+
+// Event listeners for device selection changes
+document.getElementById('microphoneSelect').addEventListener('change', updateMicrophoneSource);
+document.getElementById('cameraSelect').addEventListener('change', updateCameraSource);
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing resize functionality
+    const localVideoContainer = document.querySelector('.resizableVideoContainer');
+
+    let isResizing = false;
+
+
+
+    // Function to apply the size to the localVideo div
+    window.setSize = function() {
+    let width = document.getElementById('videoWidth').value;
+    let height = document.getElementById('videoHeight').value;
+
+    // Ensure width ends with 'px'
+    if (!width.endsWith('px')) {
+        width += 'px';
+    }
+
+    // Ensure height ends with 'px'
+    if (!height.endsWith('px')) {
+        height += 'px';
+    }
+
+    const video = document.getElementById('localVideo');
+    video.style.width = width;
+    video.style.height = height;
+// Close the modal after setting the size
+};
+
+
+
+});
+
+document.addEventListener('keydown', function(event) {
+    // Check if 'm' key is pressed for microphone toggle
+    if (event.key === 'm') {
+        toggleMicrophone();
+    }
+    // Check if 'c' key is pressed for camera toggle
+    else if (event.key === 'c') {
+        toggleCamera();
+    }
+});
+
+function saveDeviceSelection() {
+    const audioSource = document.getElementById('audioSourceSelect').value;
+    const videoSource = document.getElementById('videoSourceSelect').value;
+    localStorage.setItem('selectedAudioDeviceId', audioSource);
+    localStorage.setItem('selectedVideoDeviceId', videoSource);
+}
+
+document.addEventListener('DOMContentLoaded', (event) => {
+document.getElementById('microphoneSelect').addEventListener('change', updateAudioStream);
+document.getElementById('speakerSelect').addEventListener('change', updateAudioStream);
+document.getElementById('cameraSelect').addEventListener('change', updateVideoStream);
+    });
+function toggleMicrophone() {
+    isMicOn = !isMicOn; // Toggle microphone state
+    console.log(`Toggling microphone, isMicOn: ${isMicOn}`); // Log the current state
+    updateMicrophoneToggleUI(); 
+    updateAudioStream().catch(error => console.error('Error updating media stream:', error));
+}
+
+function updateMicrophoneToggleUI() {
+    const micToggleIcon = document.getElementById('micToggleIcon');
+    const onClasses = "bg-green-500"; // Class for mic on
+    const offClasses = "bg-red-500"; // Class for mic off
+
+
+    // Clear previous state classes
+    micToggleIcon.classList.remove(onClasses, offClasses);
+
+    if (isMicOn) {
+        // Update to 'microphone is on' UI
+        micToggleIcon.classList.add(onClasses);
+        micToggleIcon.innerHTML = '<svg class="w-[27px] h-[27px] text-gray-800 dark:text-white"  viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" stroke="#ffffff"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M19 10V12C19 15.866 15.866 19 12 19M5 10V12C5 15.866 8.13401 19 12 19M12 19V22M8 22H16M15 6H13M15 10H13M12 15C10.3431 15 9 13.6569 9 12V5C9 3.34315 10.3431 2 12 2C13.6569 2 15 3.34315 15 5V12C15 13.6569 13.6569 15 12 15Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>'; // Insert 'microphone is on' SVG here
+    } else {
+        // Update to 'microphone is off' UI
+        micToggleIcon.classList.add(offClasses);
+        micToggleIcon.innerHTML = '<svg width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15 9.4V5C15 3.34315 13.6569 2 12 2C10.8224 2 9.80325 2.67852 9.3122 3.66593M12 19V22M8 22H16M3 3L21 21M5.00043 10C5.00043 10 3.50062 19 12.0401 19C14.51 19 16.1333 18.2471 17.1933 17.1768M19.0317 13C19.2365 11.3477 19 10 19 10M12 15C10.3431 15 9 13.6569 9 12V9L14.1226 14.12C13.5796 14.6637 12.8291 15 12 15Z" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M1 1L23 23" stroke="red" stroke-width="2"></path> </g></svg>'; // Insert 'microphone is off' SVG here
+    }
+};
+
+function toggleCamera() {
+    isVideoOn = !isVideoOn; // Toggle camera state
+    updateCameraToggleUI(); // Update UI to reflect the change
+    updateVideoStream().catch(error => console.error('Error updating media stream:', error)); // Adjust the actual stream
+}
+
+function updateCameraToggleUI() {
+    const videoToggleIcon = document.getElementById('videoToggleIcon');
+    if (isVideoOn) {
+        // Update to 'camera is on' UI
+        videoToggleIcon.innerHTML = '<svg class="text-gray-800 dark:text-white" width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M16 10L18.5768 8.45392C19.3699 7.97803 19.7665 7.74009 20.0928 7.77051C20.3773 7.79703 20.6369 7.944 20.806 8.17433C21 8.43848 21 8.90095 21 9.8259V14.1741C21 15.099 21 15.5615 20.806 15.8257C20.6369 16.056 20.3773 16.203 20.0928 16.2295C19.7665 16.2599 19.3699 16.022 18.5768 15.5461L16 14M6.2 18H12.8C13.9201 18 14.4802 18 14.908 17.782C15.2843 17.5903 15.5903 17.2843 15.782 16.908C16 16.4802 16 15.9201 16 14.8V9.2C16 8.0799 16 7.51984 15.782 7.09202C15.5903 6.71569 15.2843 6.40973 14.908 6.21799C14.4802 6 13.9201 6 12.8 6H6.2C5.0799 6 4.51984 6 4.09202 6.21799C3.71569 6.40973 3.40973 6.71569 3.21799 7.09202C3 7.51984 3 8.07989 3 9.2V14.8C3 15.9201 3 16.4802 3.21799 16.908C3.40973 17.2843 3.71569 17.5903 4.09202 17.782C4.51984 18 5.07989 18 6.2 18Z" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>'; // SVG or icon indicating the camera is on
+        videoToggleIcon.classList.remove('bg-gray-500');
+    } else {
+        // Update to 'camera is off' UI
+        videoToggleIcon.innerHTML = '<svg width="27px" height="27px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M11.65 6H12.8C13.9201 6 14.4802 6 14.908 6.21799C15.2843 6.40973 15.5903 6.71569 15.782 7.09202C16 7.51984 16 8.0799 16 9.2V10L18.5768 8.45392C19.3699 7.97803 19.7665 7.74009 20.0928 7.77051C20.3773 7.79703 20.6369 7.944 20.806 8.17433C21 8.43848 21 8.90095 21 9.8259V14.1741C21 14.679 21 15.0462 20.9684 15.3184M3 3L6.00005 6.00005M21 21L15.9819 15.9819M6.00005 6.00005C5.01167 6.00082 4.49359 6.01337 4.09202 6.21799C3.71569 6.40973 3.40973 6.71569 3.21799 7.09202C3 7.51984 3 8.07989 3 9.2V14.8C3 15.9201 3 16.4802 3.21799 16.908C3.40973 17.2843 3.71569 17.5903 4.09202 17.782C4.51984 18 5.07989 18 6.2 18H12.8C13.9201 18 14.4802 18 14.908 17.782C15.2843 17.5903 15.5903 17.2843 15.782 16.908C15.9049 16.6668 15.9585 16.3837 15.9819 15.9819M6.00005 6.00005L15.9819 15.9819" stroke="#000000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M1 1L23 23" stroke="red" stroke-width="2"></path></g></svg>'; // SVG or icon indicating the camera is off
+        videoToggleIcon.classList.add('bg-gray-500');
+    }
+}
+
+document.getElementById('micToggleIcon').addEventListener('click', () => {
+    console.log('clicked the micToggleIcon!');
+    toggleMicrophone();
+    updateAudioStream(); // Reflect changes in the live stream
+});
+
+document.getElementById('videoToggleIcon').addEventListener('click', () => {
+    toggleCamera();
+    updateVideoStream(); // Reflect changes in the live stream
+});
+
+async function populateAudioDevices() {
+    try {
+        // Get the list of available devices
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        
+        // Filter out audio input and output devices
+        const audioInputs = devices.filter(device => device.kind === 'audioinput');
+        const audioOutputs = devices.filter(device => device.kind === 'audiooutput');
+
+        // Get the select elements
+        const microphoneSelect = document.getElementById('microphoneSelect');
+        const speakerSelect = document.getElementById('speakerSelect');
+
+        // Function to create option elements
+        const createOption = (device) => {
+            const option = document.createElement('option');
+            option.value = device.deviceId;
+            // The label property may be empty if the device label is not accessible due to browser security settings (e.g., without user permission)
+            option.text = device.label || `Device ${device.deviceId.substring(0, 8)}...`;
+            return option;
+        };
+
+        // Populate the microphone select
+        audioInputs.forEach(mic => {
+            microphoneSelect.appendChild(createOption(mic));
+        });
+
+        // Populate the speaker select
+        audioOutputs.forEach(speaker => {
+            speakerSelect.appendChild(createOption(speaker));
+        });
+    } catch (err) {
+        console.error('Could not populate audio devices:', err);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const openCallSetupButton = document.getElementById('openCallSetup');
+  if (openCallSetupButton) {
+    openCallSetupButton.addEventListener('click', function() {
+      // Show the modal for device selection
+      $('#callSetupModal').modal('show');
+    });
+  } else {
+    console.log('Open Call Setup button not found');
+  }
+});
+
+// Call the function to populate devices when the page loads
+document.addEventListener('DOMContentLoaded', populateAudioDevices);
+
+document.addEventListener('DOMContentLoaded', function () {
+    var callSetupModal = document.getElementById('callSetupModal');
+
+    callSetupModal.addEventListener('show.bs.modal', async function () {
+        await populateDeviceOptions();
+    });
+});
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const closeModalButton = document.getElementById('closeModalButton');
+    const callEndedModal = document.getElementById('callEndedModal');
+
+    closeModalButton.addEventListener('click', () => {
+        callEndedModal.style.display = 'none';
+    });
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const videoContainer = document.getElementById('videoContainer');
+    let startX, startY, startWidth, startHeight;
+
+    // Function to handle the drag start
+    function dragMouseDown(e) {
+        if (e.target.className.includes('resize-handle')) {
+            // If the mousedown event is on a resize handle, we don't want to drag
+            return;
+        }
+        e.preventDefault();
+        startX = e.clientX;
+        startY = e.clientY;
+        document.addEventListener('mousemove', elementDrag);
+        document.addEventListener('mouseup', closeDragElement);
+    }
+
+    // Function to handle dragging
+    function elementDrag(e) {
+        e.preventDefault();
+        const dx = startX - e.clientX;
+        const dy = startY - e.clientY;
+        startX = e.clientX;
+        startY = e.clientY;
+        videoContainer.style.top = `${Math.max(0, videoContainer.offsetTop - dy)}px`;
+        videoContainer.style.left = `${Math.max(0, videoContainer.offsetLeft - dx)}px`;
+    }
+
+    // Function to stop dragging
+    function closeDragElement() {
+        document.removeEventListener('mousemove', elementDrag);
+        document.removeEventListener('mouseup', closeDragElement);
+    }
+
+    // Add drag functionality to the video container
+    videoContainer.addEventListener('mousedown', dragMouseDown);
+
+    // Query all resize handles and add mousedown event listener to them for resize functionality
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+        handle.addEventListener('mousedown', resizeMouseDown);
+    });
+
+    function resizeMouseDown(e) {
+        e.preventDefault();
+        // Get the initial cursor position
+        startX = e.clientX;
+        startY = e.clientY;
+
+        // Get the initial size of the video container
+        startWidth = parseInt(document.defaultView.getComputedStyle(videoContainer).width, 10);
+        startHeight = parseInt(document.defaultView.getComputedStyle(videoContainer).height, 10);
+
+        document.addEventListener('mousemove', resizeMouseMove);
+        document.addEventListener('mouseup', resizeMouseUp);
+    }
+
+    function resizeMouseMove(e) {
+        let width = startWidth + (e.clientX - startX);
+        let height = startHeight + (e.clientY - startY);
+
+        // Set minimum size to prevent negative width/height
+        width = Math.max(100, width);
+        height = Math.max(60, height);
+
+        videoContainer.style.width = `${width}px`;
+        videoContainer.style.height = `${height}px`;
+    }
+
+    function resizeMouseUp() {
+        document.removeEventListener('mousemove', resizeMouseMove);
+        document.removeEventListener('mouseup', resizeMouseUp);
+    }
+});
+
+function handleBeforeUnload(e) {
+    e.preventDefault();
+    e.returnValue = '';
+}
+// To add the listener
+window.addEventListener('beforeunload', handleBeforeUnload);
+
+// To remove the listener once the operation is complete
+window.removeEventListener('beforeunload', handleBeforeUnload);
+
+function showNotification(message) {
+    const notificationContainer = document.getElementById('notificationContainer');
+    const notificationMessage = document.getElementById('notificationMessage');
+    notificationMessage.textContent = message; // Set the message text
+    notificationContainer.classList.remove('hidden'); // Show the notification
+
+    // Hide the notification after 4 seconds
+    setTimeout(() => {
+        notificationContainer.classList.add('hidden');
+    }, 3000);
+}
+
+window.addEventListener('beforeunload', function(event) {
+    // Check if your WebRTC connection is active
+    // This condition is just an example, replace it with your actual condition to detect an active connection
+    if (peerConnection && peerConnection.iceConnectionState !== 'closed') {
+        // Most modern browsers ignore custom messages and display a standard message for beforeunload events
+        // However, setting returnValue to a non-empty string triggers the prompt
+        event.returnValue = 'Are you sure you want to leave? Leaving this page will end your active call.';
+    }
+});
+
+function endCall() {
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null; // Ensure the reference is cleared
+    }
+
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null; // Clear the reference
+    }
+
+    // Optionally, emit an event to notify the other party that the call has ended
+    socket.emit('declineCall', { reason: 'user hung up'});
+
+    // Update the UI accordingly
+    document.getElementById('webCallingUI').style.display = 'none';
+    const callSetupModal = document.getElementById('callSetupModal'); // Ensure this is correctly referenced
+    if (callSetupModal) callSetupModal.style.display = 'none';
+}
+
+// Bind endCall to the window's beforeunload event
+window.addEventListener('beforeunload', function() {
+    endCall(); // End call when the page is about to be unloaded (e.g., due to refresh or navigation)
+});
 
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('chatToggle').addEventListener('click', function() {
