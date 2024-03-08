@@ -1,0 +1,15 @@
+Flask
+Flask-SocketIO
+Flask-Cors
+Werkzeug
+psutil
+eventlet
+gunicorn
+gevent
+requests
+Flask-Login
+Flask-Sqlalchemy
+Flask-Bcrypt
+Python-Dotenv
+Flask-Migrate
+Flask-JWT-Extended

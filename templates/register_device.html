@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Register Device</title>
+    <link rel="stylesheet" href="{{url_for('static', filename='dist/css/output.css')}}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Additional styles for background blur */
+        .backdrop-blur {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+</head>
+<body class="dark">
+    <section class="bg-gray-800 h-screen backdrop-blur">
+        <div class="flex flex-col items-center justify-center px-4 py-8 mx-auto h-screen lg:py-0">
+            <div class="w-full max-w-sm bg-gray-700 rounded-lg shadow dark:border md:mt-0 xl:p-0 dark:bg-gray-800 dark:border-gray-700">
+                <div class="p-6 space-y-4 md:space-y-6 sm:p-8">
+                    <h1 class="text-xl font-bold leading-tight tracking-tight text-white md:text-2xl text-center">
+                        Register Device
+                    </h1>
+                    <!-- Flash Messages from Flask -->
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                <div class="bg-{{ category }}-600 border-l-4 border-{{ category }}-700 text-white p-4 mb-4" role="alert">
+                                    <p>{{ message }}</p>
+                                </div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+                    <form class="space-y-4 md:space-y-6" method="POST" action="{{ url_for('register_device') }}">
+                        <div>
+                            <label for="deviceName" class="block mb-2 text-sm font-medium text-white text-center">Device Name</label>
+                            <input type="text" id="deviceName" name="device_name" class="bg-gray-600 border border-gray-500 text-white rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:placeholder-gray-400 text-center" placeholder="Enter device name" required>
+                        </div>
+                        <button type="submit" class="w-full text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">Register</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+</body>
+</html>

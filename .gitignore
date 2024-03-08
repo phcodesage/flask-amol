@@ -1,0 +1,29 @@
+node_modules
+# Environment files
+.env
+myenv/
+mynewenv/
+venv/
+package-lock.json
+
+# Database files
+mydatabase.db
+migrations/
+instance/
+
+# Generated files
+__pycache__/
+venv/
+
+# IDE and development tool settings
+.idea/
+.vscode/
+
+# Optional ignores
+static/
+uploaded_audios/
+uploads/
+
+# Source code (optional for closed-source projects)
+src/
+flask_server_1.7.6.zip
