@@ -791,7 +791,7 @@ def send_audio_to_device():
 @socketio.on('offer')
 def handle_offer(data):
     # Forward the offer to the receiver
-    emit('offer', data, broadcast=True, include_self=False)
+    socketio.emit('offer', data, include_self=False)
 
 @socketio.on('file_received')
 def handle_file_received(data):
@@ -828,12 +828,19 @@ def handle_message(data):
 @socketio.on('answer')
 def handle_answer(data):
     # Forward the answer to the caller
-    emit('answer', data, broadcast=True, include_self=False)
+    socketio.emit('answer', data, include_self=False)
 
 @socketio.on('ice_candidate')
 def handle_ice_candidate(data):
     # Forward the ICE candidate to the other peer
+    print(data)
     emit('ice_candidate', data, broadcast=True, include_self=False)
+
+@socketio.on('device_ice_candidate')
+def handle_ice_candidate(data):
+    # Forward the ICE candidate to the other peer
+    print(data)
+    emit('device_ice_candidate', data, broadcast=True, include_self=False)
 
 @app.route('/send_message_to_device', methods=['POST'])
 def send_message_to_device():
@@ -1104,14 +1111,15 @@ def clear_allowed_ips():
 
 atexit.register(clear_allowed_ips)
 
+@socketio.on('startCall')
+def handle_start_call(data):
+    emit('joinCall', data, broadcast=True, include_self=False)
+
 if __name__ == '__main__':
     with app.app_context():    
         db.create_all()
         add_admin_user()  # Ensure this doesn't log sensitive information.
         users = User.query.all()
-        # Safely print user details without exposing sensitive information.
-        for user in users:
-            print(f'User ID: {user.id}, Username: {user.username}')
 
         # Set debug mode based on environment (or keep it False in production).
         app.debug = os.getenv('FLASK_DEBUG', 'False').lower() in ['true', '1', 't']

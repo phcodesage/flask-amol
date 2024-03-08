@@ -36,9 +36,19 @@ else
     echo "requirements.txt file not found"
 fi
 
+
+
+echo "Setting up firewall rules..."
+sudo ufw allow 3478/tcp
+sudo ufw allow 3478/udp
+sudo ufw allow 5349/tcp
+sudo ufw allow 5349/udp
+sudo ufw allow 5000/tcp  # Allow traffic on port 5000 for the Flask app
+sudo ufw enable
+sudo ufw status 
 # Kill processes running on port 5000 to free it up
-echo "Attempting to kill processes running on port 5000..."
-sudo lsof -ti:5000 | sudo xargs kill -9
+echo "Attempting to kill processes running on port 8000..."
+sudo lsof -ti:8000 | sudo xargs kill -9
 
 # Initialize, migrate, and upgrade the database
 # Note: Ensure that your Flask application is configured to use Flask-Migrate correctly for these commands to work

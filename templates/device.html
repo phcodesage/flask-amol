@@ -13,6 +13,7 @@
     <script src="https://unpkg.com/@popperjs/core@2"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdn.socket.io/3.1.3/socket.io.js"></script>
+    <script src="https://sdk.videosdk.live/js-sdk/0.0.78/videosdk.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>  
         <!-- Flowbite JS -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@1.6.0/dist/flowbite.min.js"></script>
@@ -911,14 +912,14 @@ body {
             <div class="upload-status" id="uploadStatusDisplay"></div>
         </div>
     </div>
+
 <!-- Audio element -->
 <audio id="notificationSound" src="{{ url_for('static', filename='notif-sound.wav', _external=True) }}" preload="auto" playsinline></audio>
 <audio id="remoteAudio" autoplay></audio>
 <script src="https://cdn.WebRTC-Experiment.com/RecordRTC.js"></script>
+
 <script>
-const socket = io(location.origin, {
-    path: '/socket.io',  // Ensure this path is correct; it's the default for Flask-SocketIO
-});
+const socket = io(location.origin)
 
     socket.on('connect', function() {
         console.log('Connected to server');
@@ -994,6 +995,7 @@ const socket = io(location.origin, {
         console.error('Error changing video source:', error);
     }
 });
+
 
 
 
@@ -1642,6 +1644,8 @@ function handleDeclineCall() {
         localStream = null;
     }
     $('#callSetupModal').modal('hide');
+    emit('decl')
+    
 }
 
 
@@ -1711,6 +1715,7 @@ function handleFileUpload(file) {
 
 socket.on('endCall', function(data) {
     resetCallState(); // Call the function to reset call state and UI
+    callSetupModal.style.display = 'none';
 });
 
 function resetCallState() {
@@ -1763,15 +1768,19 @@ function resetCallState() {
     }, 0);
 });
 
-socket.on('ice_candidate', async (data) => {
-        try {
-            if (data.iceCandidate) {
-                await peerConnection.addIceCandidate(new RTCIceCandidate(data.iceCandidate));
-            }
-        } catch (error) {
-            console.error('Failed to add ice candidate:', error);
+socket.on('ice_candidate', async data => {
+    try {
+        if (peerConnection.remoteDescription) {
+            // If remote description is set, add the candidate
+            await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        } else {
+            // Otherwise, queue the candidate
+            iceCandidateQueue.push(data.candidate);
         }
-    });
+    } catch (e) {
+        console.error('Error adding received ice candidate:', e);
+    }
+});
 
     socket.on('server_color_changed', function(data) {
     var newColor = data.color;
@@ -1794,89 +1803,94 @@ socket.on('ice_candidate', async (data) => {
     }
 });
 
-function setupPeerConnection() {
+
+
+
+async function setupPeerConnection() {
     try {
         const iceConfiguration = {
-            iceServers: [
-        {
-                    urls: 'STUN:freeturn.net:3478'
-                },
-                {
-                    urls: 'TURNS:freeturn.net:5349', // Replace with your TURN server address
-                    username: 'free',         // Replace with your TURN server username
-                    credential: 'free'     // Replace with your TURN server credential
-                },
-                {
-                    urls: 'turn:relay1.expressturn.com:3478', // Replace with your TURN server address
-                    username: 'efR4WZU7FHW3B0ON24',         // Replace with your TURN server username
-                    credential: '28lkTxddQRNMtyAh'     // Replace with your TURN server credential
-                }, 
-                {
-                    urls: 'turn:relay1.expressturn.com:3478', // Replace with your TURN server address
-                    username: 'efR4WZU7FHW3B0ON24',         // Replace with your TURN server username
-                    credential: '28lkTxddQRNMtyAh'     // Replace with your TURN server credential
-                }
-            ]
-        };
+       iceServers: [
+            // Test some STUN server
+            {
+                urls: 'stun:freestun.net:5350',
+            },
+            // Test some TURN server
+            {
+                urls: 'turn:freestun.net:5350',
+                username: 'free',
+                credential: 'free',
+            },
+        ]// Valid value within range.
+        }
 
-        peerConnection = new RTCPeerConnection(iceConfiguration);
+        if (!validateIceServers(iceConfiguration.iceServers)) { 
+            console.error('Invalid ICE Servers configuration.');
+            return null; // Prevent proceeding with the call setup
+        }
+
+        const PCConstructor = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+if (!PCConstructor) {
+    console.error('WebRTC is not supported by this browser.');
+    return null;
+}
+    peerConnection = new PCConstructor(iceConfiguration);
+
         console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
 
         // Handling ICE candidates
         peerConnection.onicecandidate = event => {
-            if (event.candidate) {
-                console.log('New ICE candidate:', event.candidate);
-                socket.emit('ice_candidate', { candidate: event.candidate });
-            }
-        };
-
-        // Handling track received
-        peerConnection.ontrack = event => {
-        console.log('New track received:', event.track.kind);
-        if (event.streams && event.streams[0]) {
-            const stream = event.streams[0];
-            const remoteVideo = document.getElementById('remoteVideo');
-            if (event.track.kind === 'video') {
-                remoteVideo.srcObject = stream;
-                remoteVideo.style.display = 'block';
-            }
+    if (event.candidate) {
+        console.log('New ICE candidate:', event.candidate);
+        // Extract IP address from the candidate string
+        const ipMatch = event.candidate.candidate.match(/([0-9]{1,3}(\.[0-9]{1,3}){3})/);
+        if (ipMatch) {
+            console.log('Candidate IP Address:', ipMatch[1]);
         }
-    };
-
-
-        // Monitoring ICE connection state changes
-
-        peerConnection.oniceconnectionstatechange = () => {
-    console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
-
-    // Directly end the call if the ICE connection state is 'disconnected'
-    if (peerConnection.iceConnectionState === 'disconnected') {
-        console.log('Server disconnected, ending call...');
-        endCall(); // Call your function to end the call
+        socket.emit('device_ice_candidate', { candidate: event.candidate });
     }
 };
 
-// Function to end the call
-function endCall() {
-    // Close the peer connection
-    if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-        console.log('Peer connection closed.');
-    }
 
-    // Optionally, handle UI changes or notifications to indicate the call has ended
-    // For example, hiding call UI elements or displaying a message to the user
-    document.getElementById('webCallingUI').style.display = 'none';
-    alert('Call ended due to server disconnection.');
+        // Handling track received
+        peerConnection.ontrack = event => {
+            console.log('New track received:', event.track.kind);
+            if (event.streams && event.streams[0]) {
+                const stream = event.streams[0];
+                const remoteVideo = document.getElementById('remoteVideo');
+                if (event.track.kind === 'video') {
+                    remoteVideo.srcObject = stream;
+                    remoteVideo.style.display = 'block';
+                }
+            }
+        };
 
-    // Add any other clean-up logic you need, such as stopping local media streams
-    if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
-        localStream = null;
-        console.log('Local stream stopped.');
-    }
-}
+                // Validate ICE server configuration
+        function validateIceServers(iceServers) {
+            if (!Array.isArray(iceServers) || iceConfiguration.length === 0) {
+                console.error('ICE Servers configuration is empty or not an array.');
+                return false;
+            }
+
+            // Further validation logic can be added here
+            return true;
+        }
+
+        // Monitoring ICE connection state changes
+        peerConnection.oniceconnectionstatechange = () => {
+            console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
+            const reconnectingOverlay = document.getElementById('reconnectingOverlay'); // Make sure this element exists in your HTML
+            
+            if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
+                console.log('WebRTC connection lost. Trying to reconnect...');
+                reconnectingOverlay.style.display = 'block';
+                reconnectingOverlay.textContent = 'Connection Lost. Trying to reconnect...'; // Update this message as needed
+
+                // Here you can implement logic for automatic reconnect or to wait for ICE to recover
+                
+            } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+                reconnectingOverlay.style.display = 'none';
+            }
+        };
 
         // Additional setup as needed...
         return peerConnection;
@@ -1887,6 +1901,15 @@ function endCall() {
     }
 };
 
+function validateIceServers(iceServers) {
+    if (!Array.isArray(iceServers) || iceConfiguration.length === 0) {
+        console.error('ICE Servers configuration is empty or not an array.');
+        return false;
+    }
+
+    // Further validation logic can be added here, such as checking each server's URL format
+    return true;
+}
 
 // Socket event listener for offers
 socket.on('offer', async (data) => {
@@ -1911,7 +1934,7 @@ socket.on('offer', async (data) => {
         const callSetupModal = document.getElementById('callSetupModal');
         callSetupModal.style.display = 'block'; // Show the call setup modal to let the user accept or decline the call
 
-document.getElementById('answerCall').addEventListener('click', async () => {
+            document.getElementById('answerCall').addEventListener('click', async () => {
     try {
         // Fetch the selected video device ID from localStorage
         const savedVideoDeviceId = localStorage.getItem('selectedVideoDevice');
@@ -1978,6 +2001,7 @@ document.getElementById('answerCall').addEventListener('click', async () => {
             // Reset UI visibility
             document.getElementById('webCallingUI').style.display = 'none';
             callSetupModal.style.display = 'none';
+            socket.emit('declineCall', { reason: 'User declined the call' });
         });
 
 
@@ -2755,55 +2779,6 @@ document.getElementById('microphoneSelect').addEventListener('change', (event) =
 });
 
 
-function initializePeerConnection() {
-    // Configuration for the RTCPeerConnection
-    const config = {
-        iceServers: [
-                {
-                    urls: "stun:global.stun.twilio.com:3478" // You can keep this STUN server or replace it as needed
-                },
-                {
-                    urls: "turn:relay1.expressturn.com:3478", // Your TURN server URL
-                    username: "efR4WZU7FHW3B0ON24", // Your TURN server username
-                    credential: "28lkTxddQRNMtyAh" // Your TURN server credential
-                }
-            ]
-    };
-
-    // Create a new RTCPeerConnection with the config
-    window.peerConnection = new RTCPeerConnection(config);
-
-    // Event handler for ICE candidates
-    window.peerConnection.onicecandidate = event => {
-        if (event.candidate) {
-            // Send the candidate to the peer through your signaling mechanism
-            console.log('New ICE candidate:', event.candidate);
-            // Here, implement your mechanism to send the ICE candidate to the remote peer
-        }
-    };
-
-    // Event handler for receiving remote stream
-    window.peerConnection.ontrack = event => {
-        const [remoteStream] = event.streams;
-        document.getElementById('remoteVideo').srcObject = remoteStream; // Display the remote stream in the 'remoteVideo' element
-    };
-
-    // Handle connection state changes
-    window.peerConnection.onconnectionstatechange = () => {
-        switch(window.peerConnection.connectionState) {
-            case "connected":
-                console.log("Call connected");
-                break;
-            case "disconnected":
-            case "failed":
-                console.error("Call failed");
-                break;
-            case "closed":
-                console.log("Call ended");
-                break;
-        }
-    };
-};
 
 
 socket.on('connection', (socket) => {

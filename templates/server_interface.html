@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Device Interface</title>
+    <title>Server</title>
 
     <!-- CSS -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
@@ -16,7 +16,8 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script src="https://cdn.socket.io/4.7.4/socket.io.min.js" integrity="sha384-Gr6Lu2Ajx28mzwyVR8CFkULdCU7kMlZ9UthllibdOSo6qAiN+yXNHqtgdTvFXMT4" crossorigin="anonymous"></script>
+    <script src="https://sdk.videosdk.live/js-sdk/0.0.78/videosdk.js"></script>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>  
 
     
@@ -649,7 +650,7 @@ fill: #2B641E;
           <button type="button" id="startCallButton" onclick="startCall()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm">
             Start Call
           </button>
-          <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-base font-medium text-gray-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="toggleModalVisibility('callSetupModal')">
+          <button type="button" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-600 shadow-sm px-4 py-2 bg-gray-700 text-base font-medium text-gray-300 hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm" onclick="toggleModalVisibility()">
             Cancel
           </button>
         </div>
@@ -728,11 +729,10 @@ fill: #2B641E;
             </div>
 
         </div>
+     
 <script>
-const socket = io(location.origin, {
-    path: '/socket.io',  // Ensure this path is correct; it's the default for Flask-SocketIO
-});
-
+    
+const socket = io(location.origin)
 
 let warningElement = document.getElementById('deviceWarning');
 let typingTimeout;
@@ -747,7 +747,8 @@ const sendMessageButton = document.getElementById('send-message');
 const chatContainer = document.getElementById('chat-container');
 const deviceName = document.getElementById('deviceSelectChat').value;
 
-
+let offerSdp = null; // Initialize at a higher scope if necessary
+let answerSdp = null; // Initialize at a higher scope if necessary
 let iceCandidateQueue = [];
 let localPeer;
 let call;
@@ -772,7 +773,10 @@ let selectedDevice = null;
     let isMicOn = true; 
     let isVideoOn = true;
     let videoStream = null;
+    let receivedStreams = [];
 
+
+    
 window.onload = function() {
     // Check if the success message exists
     var successMessage = document.querySelector('.success');
@@ -784,6 +788,117 @@ window.onload = function() {
     }
 };
 
+
+
+async function setupPeerConnection() {
+try {
+        const iceConfiguration = {
+        iceServers: [
+                // Test some STUN server
+                {
+                    urls: 'STUN:freestun.net:5350',
+                },
+                // Test some TURN server
+                {
+                    urls: 'TURNS:freestun.net:5350',
+                    username: 'free',
+                    credential: 'free',
+                },
+            ]// Valid value within range.
+
+            }
+        // Validate ICE configuration
+        if (!validateIceServers(iceConfiguration.iceServers)) {
+            console.error('Invalid ICE Servers configuration.');
+            return null; 
+        }
+
+        const PCConstructor = window.RTCPeerConnection || window.webkitRTCPeerConnection || window.mozRTCPeerConnection;
+if (!PCConstructor) {
+    console.error('WebRTC is not supported by this browser.');
+    return null;
+}
+    peerConnection = new PCConstructor(iceConfiguration);
+    console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
+
+    // Handling ICE candidates
+    peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+            console.log('New ICE candidate:', event.candidate);
+            socket.emit('ice_candidate', { candidate: event.candidate });
+        }
+    };
+
+    peerConnection.ontrack = event => {
+            console.log('New track received:', event.track.kind);
+            if (event.streams && event.streams[0]) {
+                const stream = event.streams[0];
+                if (!receivedStreams.includes(stream)) {
+                    receivedStreams.push(stream);
+                }
+                if (event.track.kind === 'video') {
+                    document.getElementById('remoteVideo').srcObject = stream;
+                    document.getElementById('remoteVideo').style.display = 'block';
+                }
+            }
+        };
+
+    // Monitoring ICE connection state changes
+    peerConnection.oniceconnectionstatechange = () => {
+            console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
+            const reconnectingOverlay = document.getElementById('reconnectingOverlay'); // Ensure this element exists in your HTML
+
+            if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
+                console.log('WebRTC connection lost. Trying to reconnect...');
+                // Show some overlay or message to inform the user that the connection is trying to reconnect
+                reconnectingOverlay.style.display = 'block';
+                reconnectingOverlay.textContent = 'Connection Lost. Trying to reconnect...'; // Update this as needed
+
+                // Here, instead of ending the call, you can try to implement reconnect logic or wait for automatic ICE restart
+            } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
+                // If the connection state recovers to 'connected' or 'completed', hide the overlay
+                reconnectingOverlay.style.display = 'none';
+            }
+        };
+
+    peerConnection.createOffer().then(offer => {
+            return peerConnection.setLocalDescription(offer);
+        }).then(() => {
+            // Here, peerConnection.localDescription contains the offer SDP
+            const offerSdp = peerConnection.localDescription.sdp;
+            console.log("Offer SDP:", offerSdp);
+        }).catch(error => {
+            console.error("Error creating offer:", error);
+        });
+    // Obtain media stream and add it to the peer connection
+    const stream = await getMediaStream();
+        if (stream) {
+            stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
+        }
+
+    // Additional setup as needed...
+    return peerConnection;
+
+
+} catch (error) {
+    console.error('Failed to set up peer connection:', error);
+    return null;
+}
+}
+
+function validateIceServers(iceServers) {
+    return iceServers.every(server => {
+        if (!server.urls) return false; // 'urls' is required
+
+        if (server.urls.startsWith('turn:') || server.urls.startsWith('turns:')) {
+            return server.username && server.credential; // TURN servers require 'username' and 'credential'
+        }
+
+        return true; // STUN servers do not require 'username' or 'credential'
+    });
+}
+
+    
 async function updateMediaStream() {
     const audioSource = isMicOn ? document.getElementById('microphoneSelect').value : null;
     const videoSource = isVideoOn ? document.getElementById('cameraSelect').value : null;
@@ -842,49 +957,6 @@ if (peerConnection) {
 
 
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Request permission from the user to access media devices with specific constraints for Full HD video
-    navigator.mediaDevices.getUserMedia({ 
-        audio: true, // Request audio without specific constraints, assuming default device and settings
-        video: {
-            width: { ideal: 1920 }, // Request Full HD video
-            height: { ideal: 1080 }
-        }
-    })
-    .then(stream => {
-        // The user has granted permission to access the media devices
-        
-        // Handle the stream, for example by attaching it to a video element
-        const videoElement = document.getElementById('localVideo');
-        if (videoElement) {
-            videoElement.srcObject = stream;
-        }
-
-        // You can now call enumerateDevices() to populate device selection dropdowns
-        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
-            // Enumerate devices and populate the dropdowns
-            navigator.mediaDevices.enumerateDevices().then(devices => {
-                const audioSelect = document.getElementById('audioSourceSelect');
-                const videoSelect = document.getElementById('videoSourceSelect');
-
-                devices.forEach(device => {
-                    let option = document.createElement('option');
-                    option.value = device.deviceId;
-                    option.text = device.label || `${device.kind}: ${device.deviceId}`;
-                    if (device.kind === 'audioinput') {
-                        audioSelect.appendChild(option);
-                    } else if (device.kind === 'videoinput') {
-                        videoSelect.appendChild(option);
-                    }
-                });
-            });
-        }
-    })
-    .catch(error => {
-        // Handle the error if the user denies permission or if there are no media devices
-        console.error('Error accessing media devices.', error);
-    });
-});
 
 document.addEventListener('DOMContentLoaded', () => {
     // Listen for click events on elements with the data-modal-toggle attribute
@@ -904,22 +976,6 @@ document.getElementById('deviceSelectChat').addEventListener('change', function(
 selectedDevice = this.value;
 // Other necessary logic...
 });
-
-
-function initWebRTC() {
-navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-    .then(stream => {
-        localStream = stream;
-        document.getElementById('localVideo').srcObject = stream;
-        document.getElementById('localVideo').style.display = 'block';
-    })
-    .catch(error => {
-        console.error('MediaStream error:', error);
-        warningElement.innerText = "Error accessing media devices: " + error.message;
-        warningElement.style.display = "block";
-    });
-}
-
 
 
 
@@ -1120,16 +1176,60 @@ async function startCall() {
 
     if (!peerConnection) setupPeerConnection(); // Ensure the peerConnection is initialized
 
+    // Request permission from the user to access media devices with specific constraints for Full HD video
+    navigator.mediaDevices.getUserMedia({ 
+        audio: true, // Request audio without specific constraints, assuming default device and settings
+        video: {
+            width: { ideal: 1920 }, // Request Full HD video
+            height: { ideal: 1080 }
+        }
+    })
+    .then(stream => {
+        // The user has granted permission to access the media devices
+        
+        // Handle the stream, for example by attaching it to a video element
+        const videoElement = document.getElementById('localVideo');
+        if (videoElement) {
+            videoElement.srcObject = stream;
+        }
+
+        // You can now call enumerateDevices() to populate device selection dropdowns
+        if (navigator.mediaDevices && navigator.mediaDevices.enumerateDevices) {
+            // Enumerate devices and populate the dropdowns
+            navigator.mediaDevices.enumerateDevices().then(devices => {
+                const audioSelect = document.getElementById('audioSourceSelect');
+                const videoSelect = document.getElementById('videoSourceSelect');
+
+                devices.forEach(device => {
+                    let option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `${device.kind}: ${device.deviceId}`;
+                    if (device.kind === 'audioinput') {
+                        audioSelect.appendChild(option);
+                    } else if (device.kind === 'videoinput') {
+                        videoSelect.appendChild(option);
+                    }
+                });
+            });
+        }
+    })
+    .catch(error => {
+        // Handle the error if the user denies permission or if there are no media devices
+        console.error('Error accessing media devices.', error);
+    });
+
+
+
     try {
         // Display the call setup modal allowing users to select devices before starting the call
-        $('#callSetupModal').modal('show');
+        document.getElementById('callSetupModal').style.display = 'block';
 
         // Listener for the "Start Call" button within the modal
         document.getElementById('startCallButton').addEventListener('click', async () => {
             // Retrieve saved device selections from localStorage or current selection
             const savedAudioDevice = localStorage.getItem('selectedAudioDevice');
             const savedVideoDevice = localStorage.getItem('selectedVideoDevice');
-            const audioSourceSelect = document.getElementById('audioSourceSelect');
+            const audioSourceSelect = document.getElementById('audioSourceSelect'); 
             const videoSourceSelect = document.getElementById('videoSourceSelect');
             const audioSource = savedAudioDevice || audioSourceSelect.value;
             const videoSource = savedVideoDevice || videoSourceSelect.value;
@@ -1146,7 +1246,7 @@ async function startCall() {
 
             document.getElementById('localVideo').style.display = 'block';
             document.getElementById('webCallingUI').style.display = 'block';
-            $('#callSetupModal').modal('hide'); // Hide the modal after starting the call
+            document.getElementById('callSetupModal').style.display = 'none' // Hide the modal after starting the call
 
             // Create an offer and set it as the local description
             const offer = await peerConnection.createOffer();
@@ -1155,13 +1255,7 @@ async function startCall() {
             // Send the offer to the remote peer using your signaling mechanism
             socket.emit('offer', { offer });
 
-            // Listen for ICE candidates from STUN/TURN servers and send them to the remote peer
-            peerConnection.onicecandidate = event => {
-                if (event.candidate) {
-                    socket.emit('iceCandidate', { candidate: event.candidate });
-                }
-            };
-        }, { once: true }); // Ensures this event listener is only triggered once per page load
+        }); // Ensures this event listener is only triggered once per page load
 
     } catch (error) {
         console.error('Failed to start call:', error);
@@ -1178,21 +1272,7 @@ function displayLocalStream(localStream) {
     }
 }
 
-function initializePeerConnection() {
-    // Initialize your peerConnection here with ICE servers, event handlers, etc.
-    window.peerConnection = new RTCPeerConnection(/* Configuration */);
 
-    // Setup event listeners for peerConnection (e.g., onicecandidate, ontrack)
-    // Example: Setup event listener for ICE candidates
-    window.peerConnection.onicecandidate = event => {
-        if (event.candidate) {
-            console.log('New ICE candidate:', event.candidate);
-            // Here you would send the candidate to the peer via your signaling server
-            // Example using socket.io:
-            socket.emit('ice_candidate', { candidate: event.candidate, to: selectedDevice });
-        }
-    };
-};
 
 
 function addTracksToPeerConnection(stream) {
@@ -1243,29 +1323,37 @@ populateDeviceSelection().then(() => {
 });
 
 function endCall() {
-if (selectedDevice) {
-    socket.emit('end_call', { target_device: selectedDevice });
-}
-// Close the peer connection if it exists
-if (peerConnection) {
-    peerConnection.getTracks().forEach(track => track.stop()); // Stop all tracks
-    peerConnection.close(); // Close the peer connection
-    peerConnection = null; // Set the peerConnection to null
-}
+    if (selectedDevice) {
+        socket.emit('end_call', { target_device: selectedDevice });
+    }
 
-// Stop all tracks on the local stream
-if (localStream) {
-        localStream.getTracks().forEach(track => track.stop());
+    // Correctly stop all tracks associated with the peer connection
+    if (peerConnection) {
+        // If there are any sender tracks, stop them
+        peerConnection.getSenders().forEach(sender => {
+            if (sender.track) {
+                sender.track.stop();
+            }
+        });
+
+        // Close the peer connection
+        peerConnection.close();
+        peerConnection = null; // Reset the peerConnection variable
+    }
+
+    // Stop all tracks on the local stream
+    if (localStream) {
+        localStream.getTracks().forEach(track => {
+            track.stop();
+        });
         localStream = null; // Clear the localStream reference
     }
 
-// Emit an event to inform the client that the call has ended
-socket.emit('end_call', { message: 'Call ended by server' });
+    // Emit an event to inform the client that the call has ended
+    socket.emit('end_call', { message: 'Call ended by server' });
 
-// Update UI if necessary
-document.getElementById('endCallButton').disabled = true;
-// Additional UI updates can be made here
-};
+
+}
 
 
 
@@ -1355,167 +1443,6 @@ if (alertElement) {
 }
 }
 
-async function setupPeerConnection() {
-try {
-    const iceConfiguration = {
-        iceServers: [
-        {
-                    urls: 'STUN:freeturn.net:3478'
-                },
-                {
-                    urls: 'TURNS:freeturn.net:5349', // Replace with your TURN server address
-                    username: 'free',         // Replace with your TURN server username
-                    credential: 'free'     // Replace with your TURN server credential
-                },
-                {
-                    urls: 'turn:relay1.expressturn.com:3478', // Replace with your TURN server address
-                    username: 'efR4WZU7FHW3B0ON24',         // Replace with your TURN server username
-                    credential: '28lkTxddQRNMtyAh'     // Replace with your TURN server credential
-                }, 
-                {
-                    urls: 'turn:relay1.expressturn.com:3478', // Replace with your TURN server address
-                    username: 'efR4WZU7FHW3B0ON24',         // Replace with your TURN server username
-                    credential: '28lkTxddQRNMtyAh'     // Replace with your TURN server credential
-                }
-            ]
-    };
-
-
-    peerConnection = new RTCPeerConnection(iceConfiguration);
-    console.log('PeerConnection setup with predefined TURN server configuration:', peerConnection);
-
-    // Handling ICE candidates
-    peerConnection.onicecandidate = event => {
-        if (event.candidate) {
-            console.log('New ICE candidate:', event.candidate);
-            socket.emit('ice_candidate', { candidate: event.candidate });
-        }
-    };
-
-
-    peerConnection.ontrack = event => {
-console.log('New track received:', event.track.kind);
-if (event.streams && event.streams[0]) {
-    const stream = event.streams[0];
-    if (event.track.kind === 'video') {
-        document.getElementById('remoteVideo').srcObject = stream;
-        document.getElementById('remoteVideo').style.display = 'block';
-    }
-}
-};
-
-
-
-
-
-peerConnection.oniceconnectionstatechange = async () => {
-    console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
-
-    const reconnectingOverlay = document.getElementById('reconnectingOverlay');
-    if (!reconnectingOverlay) {
-        console.error('Reconnecting overlay element is missing.');
-        return; // Exit if the overlay element is not found
-    }
-
-    if (peerConnection.iceConnectionState === 'disconnected') {
-        console.log('Attempting to reconnect...');
-        reconnectingOverlay.style.display = 'block'; // Make the overlay visible
-
-        try {
-            // Ensure peerConnection is in a stable signaling state before creating a new offer
-            if (peerConnection.signalingState === 'stable') {
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-
-                // Check the WebSocket connection state before emitting the offer
-                if (socket && socket.connected) {
-                    socket.emit('offer', { offer, reconnecting: true });
-                } else {
-                    console.error('WebSocket is not connected.');
-                }
-            } else {
-                console.error('Signaling state is not stable:', peerConnection.signalingState);
-            }
-        } catch (reconnectError) {
-            console.error('Reconnection attempt failed:', reconnectError);
-            displayErrorMessage('Reconnection attempt failed.'); // Display error to the user
-        } finally {
-            reconnectingOverlay.style.display = 'none'; // Hide the overlay after attempting to reconnect
-        }
-    } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
-        reconnectingOverlay.style.display = 'none'; // Hide the overlay once reconnected
-        displaySuccessMessage('Reconnected successfully.'); // Notify the user about successful reconnection
-    }
-};
-
-// Check and handle changes in the ICE connection state
-peerConnection.oniceconnectionstatechange = async () => {
-    console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
-
-    const reconnectingOverlay = document.getElementById('reconnectingOverlay');
-    if (!reconnectingOverlay) {
-        console.error('Reconnecting overlay element is missing.');
-        return; // Exit if the overlay element is not found
-    }
-
-    if (peerConnection.iceConnectionState === 'disconnected') {
-        console.log('Attempting to reconnect...');
-        reconnectingOverlay.style.display = 'block'; // Make the overlay visible
-
-        try {
-            // Ensure peerConnection is in a stable signaling state before creating a new offer
-            if (peerConnection.signalingState === 'stable') {
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
-
-                // Check the WebSocket connection state before emitting the offer
-                if (socket && socket.connected) {
-                    socket.emit('offer', { offer, reconnecting: true });
-                } else {
-                    console.error('WebSocket is not connected.');
-                }
-            } else {
-                console.error('Signaling state is not stable:', peerConnection.signalingState);
-            }
-        } catch (reconnectError) {
-            console.error('Reconnection attempt failed:', reconnectError);
-            displayErrorMessage('Reconnection attempt failed.'); // Display error to the user
-        } finally {
-            reconnectingOverlay.style.display = 'none'; // Hide the overlay after attempting to reconnect
-        }
-    } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
-        reconnectingOverlay.style.display = 'none'; // Hide the overlay once reconnected
-        displaySuccessMessage('Reconnected successfully.'); // Notify the user about successful reconnection
-    }
-};
-
-// Function to display error messages to the user
-function displayErrorMessage(message) {
-    // Implement this according to your application's UI
-    alert("Error: " + message);
-}
-
-// Function to display success messages to the user
-function displaySuccessMessage(message) {
-    // Implement this according to your application's UI
-    alert("Success: " + message);
-}
-
-    // Obtain media stream and add it to the peer connection
-    const stream = await getMediaStream();
-    if (stream) {
-        stream.getTracks().forEach(track => peerConnection.addTrack(track, stream));
-    }
-
-    // Additional setup as needed...
-    return peerConnection;
-
-} catch (error) {
-    console.error('Failed to set up peer connection:', error);
-    return null;
-}
-};
-
 
 
 
@@ -1552,23 +1479,28 @@ socket.on('answer', async data => {
     try {
         const remoteDesc = new RTCSessionDescription(data.answer);
         await peerConnection.setRemoteDescription(remoteDesc);
-        console.log("Remote description set successfully.");
 
-        // Now add all queued ICE candidates (if any)
-        while (iceCandidateQueue.length > 0) {
+        // Process queued candidates
+        while (iceCandidateQueue.length) {
             const candidate = iceCandidateQueue.shift();
-            console.log("Adding ice candidate from queue:", candidate);
-            await peerConnection.addIceCandidate(candidate);
+            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
         }
     } catch (e) {
-        console.error('Error setting remote description or adding ICE candidate:', e);
+        console.error('Error setting remote description from answer:', e);
     }
 });
 
 
 
 
-socket.on('ice_candidate', async data => {
+console.log("Offer SDP:", offerSdp);
+console.log("Answer SDP:", answerSdp);
+
+
+
+
+socket.on('device_ice_candidate', async data => {
+    console.log(data)
     try {
         if (peerConnection.remoteDescription) {
             // If remote description is set, add the candidate
@@ -2826,6 +2758,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 });
+
+function toggleModalVisibility() {
+    callSetupModal.style.display = 'none';
+}
 
 
 socket.on('offer', async (data) => {
