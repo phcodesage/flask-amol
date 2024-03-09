@@ -366,67 +366,66 @@ fill: #2B641E;
 
 <body>
     <div class="mx-auto max-w-full">
-        <!-- Color Picker Modal -->
-        <div id="colorPickerModal" class="fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center hidden z-50" aria-labelledby="colorPickerModalLabel" aria-modal="true" role="dialog">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content bg-gray-800 text-white rounded-lg mx-auto" style="width: fit-content;">
-                    <div class="modal-header border-b border-gray-700 p-4">
-                        <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
-                        <button type="button" class="close text-gray-400 hover:text-white" onclick="toggleModal('colorPickerModal', false)" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body bg-gray-700 p-4 grid grid-cols-6 gap-4 justify-center">
-                        <!-- Predefined color options -->
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FF5733;" onclick="selectColor('#FF5733')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FF57;" onclick="selectColor('#33FF57')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #3357FF;" onclick="selectColor('#3357FF')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #F333FF;" onclick="selectColor('#F333FF')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FFFF33;" onclick="selectColor('#FFFF33')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FFFF;" onclick="selectColor('#33FFFF')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FF33FF;" onclick="selectColor('#FF33FF')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FFAA;" onclick="selectColor('#33FFAA')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #AA33FF;" onclick="selectColor('#AA33FF')"></div>
-                        <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FFAA33;" onclick="selectColor('#FFAA33')"></div>
-                        <!-- Add more colors as needed -->
-                    </div>
-                    <div class="modal-footer border-t border-gray-700 p-4">
-                        <button type="button" class="btn btn-secondary" onclick="toggleModal('colorPickerModal', false)">Close</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        
-        <!-- Full-Screen Overlay for File Upload Progress -->
-        <div class="full-screen-overlay" id="fileUploadOverlay" style="display: none;">
-            <div class="progress-bar-container">
-                <div class="file-name" id="fileNameDisplay"></div>
-                <div class="progress-bar">
-                    <div class="progress-bar-fill" id="progressBarFill"></div>
-                </div>
-                <div class="upload-status" id="uploadStatusDisplay"></div>
-            </div>
-        </div>
-    <!-- This example requires Tailwind CSS and Flowbite. Place the script tag before your closing </body> tag. -->
-    <div id="callEndedModal" data-modal-target="callEndedModal" tabindex="-1" class="hidden fixed inset-0 z-50 overflow-y-auto overflow-x-hidden h-modal md:h-full justify-center items-center flex bg-black bg-opacity-50 backdrop-blur-[2px] animate-fadeIn">
-        <div class="relative p-4 w-full max-w-md h-full md:h-auto animate-scaleUp">
-            <div class="relative bg-gray-800 bg-opacity-95 rounded-lg shadow dark:bg-gray-700 border border-gray-600">
-                <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-600 hover:text-white rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800" data-modal-toggle="callEndedModal">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>  
-                </button>
-                <div class="p-6 text-center">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-4 w-14 h-14 text-gray-400 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <!-- SVG content for call-ended icon -->
-                    </svg>
-                    <h3 class="mb-5 text-lg font-normal text-gray-400 dark:text-gray-200">The user ended the call</h3>
-                    <button data-modal-toggle="callEndedModal" type="button" class="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                        Close
+    <!-- Color Picker Modal -->
+    <div id="colorPickerModal" class="fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center hidden z-50" aria-labelledby="colorPickerModalLabel" aria-modal="true" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content bg-gray-800 text-white rounded-lg mx-auto" style="width: fit-content;">
+                <div class="modal-header border-b border-gray-700 p-4">
+                    <h5 class="modal-title" id="colorPickerModalLabel">Choose Color</h5>
+                    <button type="button" class="close text-gray-400 hover:text-white" onclick="toggleModal('colorPickerModal', false)" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
                     </button>
+                </div>
+                <div class="modal-body bg-gray-700 p-4 grid grid-cols-6 gap-4 justify-center">
+                    <!-- Predefined color options -->
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FF5733;" onclick="selectColor('#FF5733')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FF57;" onclick="selectColor('#33FF57')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #3357FF;" onclick="selectColor('#3357FF')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #F333FF;" onclick="selectColor('#F333FF')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FFFF33;" onclick="selectColor('#FFFF33')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FFFF;" onclick="selectColor('#33FFFF')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FF33FF;" onclick="selectColor('#FF33FF')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #33FFAA;" onclick="selectColor('#33FFAA')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #AA33FF;" onclick="selectColor('#AA33FF')"></div>
+                    <div class="color-swatch cursor-pointer rounded-full h-12 w-12" style="background-color: #FFAA33;" onclick="selectColor('#FFAA33')"></div>
+                    <!-- Add more colors as needed -->
+                </div>
+                <div class="modal-footer border-t border-gray-700 p-4">
+                    <button type="button" class="btn btn-secondary" onclick="toggleModal('colorPickerModal', false)">Close</button>
                 </div>
             </div>
         </div>
     </div>
+            
+    <!-- Full-Screen Overlay for File Upload Progress -->
+    <div class="full-screen-overlay" id="fileUploadOverlay" style="display: none;">
+        <div class="progress-bar-container">
+            <div class="file-name" id="fileNameDisplay"></div>
+            <div class="progress-bar">
+                <div class="progress-bar-fill" id="progressBarFill"></div>
+            </div>
+            <div class="upload-status" id="uploadStatusDisplay"></div>
+        </div>
+    </div>
+<!-- This example requires Tailwind CSS and Flowbite. Place the script tag before your closing </body> tag. -->
+<div id="callEndedModal" data-modal-target="callEndedModal" tabindex="-1" class="hidden fixed inset-0 z-50 overflow-y-auto overflow-x-hidden h-modal md:h-full justify-center items-center flex bg-black bg-opacity-50 backdrop-blur-[2px] animate-fadeIn">
+    <div class="relative p-4 w-full max-w-md h-full md:h-auto animate-scaleUp">
+        <div class="relative bg-gray-800 bg-opacity-95 rounded-lg shadow dark:bg-gray-700 border border-gray-600">
+            <button type="button" class="absolute top-3 right-2.5 text-gray-400 bg-transparent hover:bg-gray-600 hover:text-white rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-800" data-modal-toggle="callEndedModal">
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>  
+            </button>
+            <div class="p-6 text-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="mx-auto mb-4 w-14 h-14 text-gray-400 dark:text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <!-- SVG content for call-ended icon -->
+                </svg>
+                <h3 class="mb-5 text-lg font-normal text-gray-400 dark:text-gray-200">The user ended the call</h3>
+                <button data-modal-toggle="callEndedModal" type="button" class="text-white bg-blue-600 hover:bg-blue-800 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center mr-2 mb-2 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
     <div class="flex flex-wrap bg-gray-900 text-white">
         <div class="w-full">
@@ -770,6 +769,34 @@ fill: #2B641E;
             </div>
 
         </div>
+            <!-- Modal Container -->
+    <div id="recordingModal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-80 overflow-y-auto h-full w-full backdrop-blur-sm">
+        <!-- Modal -->
+        <div class="relative top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 p-6 w-full max-w-lg shadow-lg rounded-md bg-gray-800 border border-gray-700 z-50">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center pb-3 text-gray-100">
+                <p class="text-2xl font-bold">Audio Recorder</p>
+                <div class="modal-close cursor-pointer" onclick="toggleRecordModal(false)">
+                    <svg class="fill-current text-gray-100 hover:text-gray-400" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 18 18"><path d="M14.53 4.53l-1.06-1.06L9 7.94 4.53 3.47 3.47 4.53 7.94 9l-4.47 4.47 1.06 1.06L9 10.06l4.47 4.47 1.06-1.06L10.06 9z"/></svg>
+                </div>
+            </div>
+    
+            <!-- Recording Controls -->
+            <div class="flex flex-col items-center space-y-4">
+                <button id="startStopRecording" class="transition-colors duration-200 ease-in-out bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50">Start Recording</button>
+                <button id="deleteRecording" class="transition-colors duration-200 ease-in-out bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded hidden focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50">Delete Recording</button>
+            </div>
+    
+            <!-- Audio Preview -->
+            <div id="audioPreview" class="py-4"></div>
+    
+            <!-- Modal Footer -->
+            <div class="flex justify-end space-x-2 pt-4">
+                <button class="transition-colors duration-200 ease-in-out px-4 bg-gray-600 p-3 rounded-lg text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50" onclick="toggleRecordModal(false)">Cancel</button>
+                <button id="sendRecording" class="transition-colors duration-200 ease-in-out px-4 bg-green-600 p-3 rounded-lg text-white hover:bg-green-500 hidden focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">Send</button>
+            </div>
+        </div>
+    </div>
      
 <script>
     
@@ -2229,7 +2256,7 @@ document.getElementById('colorPicker-btn').addEventListener('click', function() 
     colorPickerModal.style.display = 'block';
 });
 
-
+/*
 document.addEventListener('DOMContentLoaded', function() {
     const toggleRecordButton = document.getElementById('toggleRecordButton');
     let isRecording = false;
@@ -2245,8 +2272,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
             // Change the button's appearance and text
             toggleRecordButton.textContent = "Start Recording";
-            toggleRecordButton.classList.remove('btn-danger');
-            toggleRecordButton.classList.add('btn-primary');
+            toggleRecordButton.classList.remove('bg-red-500', 'hover:bg-red-700');
+            toggleRecordButton.classList.add('bg-blue-500', 'hover:bg-blue-700');
             isRecording = false;
         } else {
             try {
@@ -2301,8 +2328,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Change the button's appearance and text
                     toggleRecordButton.textContent = "Stop Recording";
-                    toggleRecordButton.classList.remove('btn-primary');
-                    toggleRecordButton.classList.add('btn-danger');
+                    toggleRecordButton.classList.remove('bg-blue-500', 'hover:bg-blue-700');
+                    toggleRecordButton.classList.add('bg-red-500', 'hover:bg-red-700');
 
                     isRecording = true;
                 }
@@ -2312,6 +2339,142 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+*/
+
+document.addEventListener('DOMContentLoaded', function() {
+    const startRecordingButton = document.getElementById('toggleRecordButton'); // Assuming this is your button outside the modal
+    const toggleRecordButton = document.getElementById('toggleRecordButton');
+    const deleteRecordingBtn = document.getElementById('deleteRecording');
+    const sendRecordingBtn = document.getElementById('sendRecording');
+    const audioPreview = document.getElementById('audioPreview');
+
+    // Open modal and start recording
+    startRecordingButton.addEventListener('click', async () => {
+        toggleRecordModal(true); // Open modal
+        
+    });
+
+    startStopRecording.addEventListener('click', function() {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    });
+
+    deleteRecordingBtn.addEventListener('click', function() {
+        audioPreview.innerHTML = '';
+        audioBlob = null; // Clear the blob
+        deleteRecordingBtn.classList.add('hidden'); // Hide delete button
+        sendRecordingBtn.classList.add('hidden'); // Hide send button
+        toggleRecordButton.textContent = "Start Recording"; // Reset record button text
+        toggleRecordButton.classList.remove('hidden'); // Show start recording button
+    });
+
+    sendRecordingBtn.addEventListener('click', function() {
+        sendRecording();
+    });
+});
+
+function startRecording() {
+    // Access the microphone and start recording
+    navigator.mediaDevices.getUserMedia({ audio: true })
+    .then(stream => {
+        recorder = new MediaRecorder(stream);
+        audioChunks = [];
+        recorder.ondataavailable = e => audioChunks.push(e.data);
+        recorder.start();
+        isRecording = true;
+        startStopRecording.textContent = "Stop Recording";
+        startStopRecording.classList.replace('bg-green-500', 'bg-red-500');
+    })
+    .catch(error => console.error("Error accessing the microphone:", error));
+}
+
+function stopRecording() {
+    // Stop recording and handle the recording preview
+    if (recorder) {
+        recorder.stop();
+        recorder.onstop = handleRecordingStop;
+        isRecording = false;
+    }
+};
+
+function handleRecordingStop() {
+    // Function to handle what happens when recording stops
+    audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+    const audioUrl = URL.createObjectURL(audioBlob);
+    const audioElement = document.createElement('audio');
+    audioElement.src = audioUrl;
+    audioElement.controls = true;
+    audioPreview.innerHTML = '';
+    audioPreview.appendChild(audioElement);
+    deleteRecordingBtn.classList.remove('hidden');
+    sendRecordingBtn.classList.remove('hidden');
+    startStopRecording.textContent = "Start Recording";
+    startStopRecording.classList.replace('bg-red-500', 'bg-blue-500');
+}
+
+function sendRecording() {
+    if (!audioBlob) {
+        alert("No recording to send.");
+        return;
+    }
+    const deviceName = document.getElementById('deviceSelectChat').value;
+    if (!deviceName || deviceName === "Select a device") {
+        alert("Please select a device to send the recording.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('audio', audioBlob, 'recording.wav');
+    // Implement the fetch request to send formData to your server
+    fetch(`/send_audio_to_device?device=${encodeURIComponent(deviceName)}`, {
+                            method: 'POST',
+                            body: formData
+                        }).then(response => response.json())
+                        .then(data => {
+                            console.log(data.message); // Log success or failure message
+                            
+                            // Append the recording to the server's chatbox as a server message
+                            const audioUrl = URL.createObjectURL(audioBlob);
+                            const audioElement = document.createElement('audio');
+                            audioElement.controls = true;
+                            audioElement.src = audioUrl;
+
+                            const msg = createMessageElement('Server: Voice Message', 'server-message');
+                            msg.appendChild(audioElement);
+                            document.getElementById('chat-container').appendChild(msg);
+                            msg.style.opacity = 1;
+                            scrollToBottom();
+                            document.getElementById('audioPreview').innerHTML = '';
+                            document.getElementById('sendRecording').classList.add('hidden');
+                            document.getElementById('deleteRecording').classList.add('hidden');
+                        }).catch(error => {
+                            console.error("Error sending audio:", error);
+                        });
+                    
+                    };
+
+function toggleRecordModal(show) {
+    const modal = document.getElementById('recordingModal');
+    show ? modal.classList.remove('hidden') : modal.classList.add('hidden');
+}
+const deleteRecordingBtn = document.getElementById('deleteRecording');
+const sendRecordingBtn = document.getElementById('sendRecording');
+const audioPreview = document.getElementById('audioPreview');
+
+
+function toggleRecordModal(show) {
+    const modal = document.getElementById('recordingModal');
+    if (show) {
+        modal.classList.remove('hidden');
+    } else {
+        modal.classList.add('hidden');
+    }
+};
+
+
 
 document.addEventListener('DOMContentLoaded', function() {
   const openCallSetupButton = document.getElementById('openCallSetup');
