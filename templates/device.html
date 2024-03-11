@@ -17,6 +17,7 @@
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>  
         <!-- Flowbite JS -->
     <script src="https://cdn.jsdelivr.net/npm/flowbite@1.6.0/dist/flowbite.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
 
     <style>
 
@@ -3070,8 +3071,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     let isResizing = false;
 
-
-
     // Function to apply the size to the localVideo div
     window.setSize = function() {
     let width = document.getElementById('videoWidth').value;
@@ -3091,9 +3090,7 @@ document.addEventListener('DOMContentLoaded', function() {
     video.style.width = width;
     video.style.height = height;
 // Close the modal after setting the size
-};
-
-
+}
 
 });
 

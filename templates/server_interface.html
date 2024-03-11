@@ -360,6 +360,34 @@ fill: #2B641E;
 .p-2 {
     padding: 0.5rem;
 }
+
+.resize-handle {
+    position: absolute;
+    background: var(--info);
+    z-index: 10;
+}
+
+/* Horizontal handles */
+.resize-handle-n, .resize-handle-s {
+    left: 0;
+    right: 0;
+    height: 10px;
+    cursor: ns-resize;
+}
+.resize-handle-n { top: -5px; }
+.resize-handle-s { bottom: -5px; }
+
+/* Vertical handles */
+.resize-handle-e, .resize-handle-w {
+    top: 0;
+    bottom: 0;
+    width: 10px;
+    cursor: ew-resize;
+}
+.resize-handle-e { right: -5px; }
+.resize-handle-w { left: -5px; }
+
+
     </style>
 
 </head>
@@ -431,7 +459,7 @@ fill: #2B641E;
         <div class="w-full">
             <!-- Connected Devices Header -->
             <div class="max-w-screen-lg mx-auto text-center">
-                <h2 id="devices" class="mb-4 text-2xl font-bold text-gray-100">Connected Devices:</h2>
+                <h2 id="devices" class="mb-4 text-2xl font-bold text-gray-100">Connected Devices</h2>
                 <!-- Place where the dynamic list will be rendered -->
                 <div class="mt-4 bg-gray-800 p-5 rounded-lg shadow-md">
                     <ul id="deviceList" class="list-disc list-inside text-gray-300">
@@ -451,11 +479,12 @@ fill: #2B641E;
         <div class="absolute inset-0 flex justify-center pb-3 md:pb-20 lg:pb-24">
             <video id="remoteVideo" class="w-full h-auto max-h-[calc(100%-4rem)] md:max-h-[calc(100%-5rem)] lg:max-h-[calc(100%-6rem)] object-cover border-4 border-violet-600" autoplay></video> <!-- Added border classes -->
         </div>
-        <!-- Local Video (Top Right) -->
-        <div class="absolute top-4 right-4 w-full max-w-xs" id="resizableVideoContainer"> <!-- Adjust max-width as needed -->
-            <video id="localVideo" class="w-full aspect-video rounded-lg object-cover border-4 border-violet-600" autoplay muted></video> <!-- Uses aspect-video for 16:9 aspect ratio -->
-            <!-- Resizing handle (optional if you want resizing functionality) -->
-            <div id="dragHandle" class="absolute bottom-0 right-0 bg-violet-600 cursor-se-resize p-2"></div>
+
+        <!-- Local Video Container -->
+        <div id="videoContainer" class="resizable-container" style="position: absolute; top: 4rem; right: 4rem; width: 250px; height: 150px; background: rgba(0,0,0,0.5); cursor: move;">
+            <video id="localVideo" autoplay muted style="width: 100%; height: 100%;"></video>
+            <!-- Resize Handles -->
+            <div class="resize-handle resize-handle-se" style="position: absolute; bottom: -5px; right: -5px; width: 10px; height: 10px; cursor: nwse-resize;"></div>
         </div>
         
                     <!-- Reconnecting Overlay as a Modal -->
@@ -540,7 +569,7 @@ fill: #2B641E;
     
             <!-- Toggle Chat Button -->
             
-            <button class="inline-flex items-center justify-center bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-full p-3" type="button">
+            <button id="chatToggle" class="inline-flex items-center justify-center bg-gray-800 hover:bg-gray-900 text-white font-bold rounded-full p-3" type="button">
                 <svg class="w-[22px] h-[22px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 18" fill="currentColor">
                     <path d="M18 4H16V9C16 10.0609 15.5786 11.0783 14.8284 11.8284C14.0783 12.5786 13.0609 13 12 13H9L6.846 14.615C7.17993 14.8628 7.58418 14.9977 8 15H11.667L15.4 17.8C15.5731 17.9298 15.7836 18 16 18C16.2652 18 16.5196 17.8946 16.7071 17.7071C16.8946 17.5196 17 17.2652 17 17V15H18C18.5304 15 19.0391 14.7893 19.4142 14.4142C19.7893 14.0391 20 13.5304 20 13V6C20 5.46957 19.7893 4.96086 19.4142 4.58579C19.0391 4.21071 18.5304 4 18 4Z" fill="currentColor"/>
                     <path d="M12 0H2C1.46957 0 0.960859 0.210714 0.585786 0.585786C0.210714 0.960859 0 1.46957 0 2V9C0 9.53043 0.210714 10.0391 0.585786 10.4142C0.960859 10.7893 1.46957 11 2 11H3V13C3 13.1857 3.05171 13.3678 3.14935 13.5257C3.24698 13.6837 3.38668 13.8114 3.55279 13.8944C3.71889 13.9775 3.90484 14.0126 4.08981 13.996C4.27477 13.9793 4.45143 13.9114 4.6 13.8L8.333 11H12C12.5304 11 13.0391 10.7893 13.4142 10.4142C13.7893 10.0391 14 9.53043 14 9V2C14 1.46957 13.7893 0.960859 13.4142 0.585786C13.0391 0.210714 12.5304 0 12 0Z" fill="currentColor"/>
@@ -555,6 +584,28 @@ fill: #2B641E;
             </button>
     </div>
     
+    <!-- Chat UI Container -->
+    <div id="chatUIContainer" class="hidden" style="width: 33.33%; min-width: 250px;"> <!-- Adjust this as needed -->
+        <!-- Chat UI will be dynamically inserted here or you can include it directly -->
+                    <!-- Modified Input and Button Group -->
+                    <div class="input-group mb-3">
+                        <div id="message-input" contenteditable="true" class="form-control" placeholder="Type a message..." aria-label="Type a message" tabindex="0"></div>
+                        <div class="input-group-append">
+                            <button id="send-message" class="btn btn-primary" type="button">Send</button>
+                            <button id="clear-chat" class="btn btn-secondary" type="button">Clear</button>
+                        </div>
+                    </div>
+                    <!-- Button Row -->
+                    <div class="d-flex flex-column flex-md-row justify-content-between mb-3">
+                        <button id="toggle-timestamps" class="btn btn-secondary mb-2 mb-md-0" type="button" style="background-color: green;">Toggle Timestamps</button>
+                        <input type="file" id="file-input" style="display:none;">
+                        <button id="upload-file" class="btn btn-info mb-2 mb-md-0" type="button">Upload File</button>
+                        <button id="send-notification" class="btn btn-warning" type="button">Send Notification</button>
+                        <button id="changeServerColorBtn" class="btn btn-primary" onclick="openColorPicker()">Change Server Color</button>
+                        <input type="file" id="audio-input" style="display:none;" accept="audio/*">
+                        <button id="toggleRecordButton" class="btn btn-primary" type="button">Send Voice Message</button>
+                    </div>
+    </div>
     </div>
      
 
@@ -562,12 +613,12 @@ fill: #2B641E;
         <div class="flex justify-center items-center">
             <div class="col-lg-10">
                 <div class="flex justify-center align-center">
-                    <select id="deviceSelectChat" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                    <select id="deviceSelectChat" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500 transition duration-300 ease-in-out">
                         <option value="Select a device" selected disabled>Select a device</option>
                         <!-- Options will be dynamically added here by JavaScript -->
                     </select>
                 </div>
-            </div>
+                
             <div class="flex justify-center m-5">
                 <div class="list-group">
                     <div id="clipboardAlert" class="alert alert-success alert-dismissible fade show mt-3 text-center" role="alert" style="display:none;">
@@ -599,7 +650,7 @@ fill: #2B641E;
     </div>
 
         </div>
-    </div>
+    
     <!-- Warning Message -->
     <div id="deviceWarning" class="alert alert-warning">
     </div>
@@ -678,7 +729,7 @@ fill: #2B641E;
     
                     <!-- Chat Section -->
                     
-                    <div class="card text-white mb-3">
+                    <div id="chat-ui-primary" class="card text-white mb-3">
                         <div class="card-header">Chat</div>
                         <div id="alert-message" class="alert alert-primary d-none" role="alert"></div>
                         <div class="card-body">
@@ -763,37 +814,43 @@ fill: #2B641E;
         </div>
     </div>
                      <!-- Modal for file preview and confirmation -->
-                     <div id="filePreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content bg-gray-800 text-white rounded-lg mx-auto p-4">
-                                <div class="modal-header border-b border-gray-700 p-4 flex justify-between items-center">
-                                    <h5 class="modal-title">File Preview</h5>
-                                    <button type="button" class="close text-gray-400 hover:text-white" onclick="toggleModal('filePreviewModal', false); cancelUpload()">
-                                        &times;
-                                    </button>
-                                </div>
-                                <div class="modal-body bg-gray-700 p-4 space-y-4">
-                                    <div id="file-preview" class="file-preview flex justify-center items-center">
-                                    <!-- SVG Add File icon will be programmatically shown or hidden -->
-                                    <label for="file-input" class="cursor-pointer">
-                                        <svg fill="#000000" width="64px" height="64px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M4,23H20a1,1,0,0,0,1-1V6a1,1,0,0,0-.293-.707l-4-4A1,1,0,0,0,16,1H4A1,1,0,0,0,3,2V22A1,1,0,0,0,4,23ZM5,3H15.586L19,6.414V21H5Zm11,9a1,1,0,0,1-1,1H13v2a1,1,0,0,1-2,0V13H9a1,1,0,0,1,0-2h2V9a1,1,0,0,1,2,0v2h2A1,1,0,0,1,16,12Z"></path>
-                                        </svg>
-                                    </label>
-                                     </div>
-                                    <p id="file-info" class="text-sm text-gray-300"></p> <!-- Place for file information -->
-                                    <input type="file" id="file-input" class="hidden" onchange="previewFile()">
-                                    <button type="button" class="btn btn-red-500" onclick="removeSelectedFile()">Remove File</button>
-                                    <div class="progress mb-3 hidden">
-                                        <div class="progress-bar mb-3 bg-blue-600" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer border-t border-gray-700 p-4">
-                                    <button type="button" class="btn btn-red-500" onclick="toggleModal('filePreviewModal', false); cancelUpload()">Cancel</button>
-                                    <button type="button" class="btn btn-primary" onclick="sendFileToDevicePreview()">Send File</button>
+                     <!-- Modal for file preview and confirmation -->
+            <div id="filePreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content bg-gray-800 text-white rounded-lg mx-auto p-4">
+                        <div class="modal-header border-b border-gray-700 p-4 flex justify-between items-center">
+                            <h5 class="modal-title">File Preview</h5>
+                            <button type="button" class="close text-gray-400 hover:text-white" onclick="toggleModal('filePreviewModal', false); cancelUpload()">
+                                &times;
+                            </button>
+                        </div>
+                        <div class="modal-body bg-gray-700 p-4 space-y-4">
+                            <div id="file-preview" class="file-preview flex justify-center items-center">
+                                <!-- SVG Add File icon will be programmatically shown or hidden -->
+                                <label for="file-input" class="cursor-pointer">
+                                    <svg fill="#000000" width="64px" height="64px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M4,23H20a1,1,0,0,0,1-1V6a1,1,0,0,0-.293-.707l-4-4A1,1,0,0,0,16,1H4A1,1,0,0,0,3,2V22A1,1,0,0,0,4,23ZM5,3H15.586L19,6.414V21H5Zm11,9a1,1,0,0,1-1,1H13v2a1,1,0,0,1-2,0V13H9a1,1,0,0,1,0-2h2V9a1,1,0,0,1,2,0v2h2A1,1,0,0,1,16,12Z"></path>
+                                    </svg>
+                                </label>
+                            </div>
+                            <p id="file-info" class="text-sm text-gray-300"></p> <!-- Place for file information -->
+                            <input type="file" id="file-input" class="hidden" onchange="previewFile()">
+                            <button type="button" class="btn btn-red-500" onclick="removeSelectedFile()">Remove File</button>
+                            <div class="progress w-full bg-gray-200 rounded h-6 mb-3" style="display:none;">
+                                <div class="progress-bar bg-blue-600 h-6 rounded" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="flex justify-center items-center h-full text-white" id="progress-text">0%</div>
                                 </div>
                             </div>
                         </div>
+                        <div class="modal-footer border-t border-gray-700 p-4">
+                            <button type="button" class="btn btn-red-500" onclick="toggleModal('filePreviewModal', false); cancelUpload()">Cancel</button>
+                            <button type="button" class="btn btn-primary" onclick="sendFileToDevicePreview()">Send File</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
                     </div>
 <script>
     
@@ -804,7 +861,7 @@ let typingTimeout;
 let showTimestamps = false;  // Initially set to false, meaning timestamps are hidden
 let localStream = null;
 let callWindow = null;
-let xhr
+let xhr;
 const remoteAudio = document.getElementById('remoteAudio');
 const MAX_FILE_SIZE = 1024 * 1024 * 1024 * 1024; // 1 Terabyte
 const notificationAudio = document.getElementById('notificationSound');
@@ -1937,25 +1994,7 @@ function changeBackgroundColor() {
     });
 };
 
-function showProgressBar(fileName) {
-    document.getElementById('fileUploadOverlay').style.display = 'flex';
-    document.getElementById('fileNameDisplay').textContent = fileName;
-    updateProgressBar(0);
-};
 
-function updateProgressBar(percent, complete = false, message = '') {
-    var progressBarFill = document.getElementById('progressBarFill');
-    var uploadStatusDisplay = document.getElementById('uploadStatusDisplay');
-
-    progressBarFill.style.width = percent + '%';
-    uploadStatusDisplay.textContent = complete ? message : 'Uploading... ' + Math.round(percent) + '%';
-
-    if (complete) {
-        setTimeout(() => {
-            document.getElementById('fileUploadOverlay').style.display = 'none';
-        }, 3000); // Hide after 3 seconds
-    }
-};
 
 const fileInput = document.getElementById('file-input');
 
@@ -1963,24 +2002,34 @@ function previewFile() {
     if (fileInput.files.length > 0) {
         const file = fileInput.files[0];
         const fileInfo = document.getElementById('file-info');
-        fileInfo.textContent = `File name: ${file.name}, File type: ${file.type}, File size: ${(file.size / 1024 / 1024).toFixed(2)} MB`; // Update file information in the modal
+        const fileSizeDisplay = document.getElementById('file-size-display'); // Assuming this element exists for showing remaining size
 
-        // Attempt to preview the file if it's an image
+        // Update file information
+        fileInfo.textContent = `File name: ${file.name}, File type: ${file.type}, File size: ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+
+        // Update remaining file size (optional, if you have such a display)
+        if (fileSizeDisplay) {
+            fileSizeDisplay.textContent = `${(file.size / 1024 / 1024).toFixed(2)} MB remaining`;
+        }
+
+        // File preview logic
         const filePreview = document.getElementById('file-preview');
-        filePreview.innerHTML = ''; // Clear existing preview
+        filePreview.innerHTML = ''; // Clear existing content
+
         if (file.type.startsWith('image/')) {
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
-            img.onload = () => { URL.revokeObjectURL(img.src); };  // Clean up after loading
-            img.classList.add('max-w-full', 'h-[100px]', 'rounded-lg'); // Tailwind classes
+            img.onload = () => { URL.revokeObjectURL(img.src); }; // Free memory when the blob is no longer needed
+            img.classList.add('max-w-full', 'h-auto'); // Adjust these classes as per your styling requirements
             filePreview.appendChild(img);
         } else {
             filePreview.textContent = 'Preview not available for this file type';
         }
 
-        toggleModal('filePreviewModal', true); // Show the modal
+        // Show the file preview modal
+        toggleModal('filePreviewModal', true);
     }
-}
+};
 
 function removeSelectedFile() {
     // Clear file input
@@ -2019,82 +2068,140 @@ function sendFileToDevicePreview() {
 }}
 // Function to send the file to the server
 function sendFileToDevice(file) {
-    
-    // Check if the File APIs are supported in the browser
+    const MAX_FILE_SIZE = 90 * 1024 * 1024; // 90MB
+    const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB
+    const deviceName = document.getElementById('deviceSelectChat').value;
+    const progressBar = document.querySelector('.progress-bar'); // Ensure this selector matches your HTML
+
     if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
         alert('The File APIs are not fully supported in this browser.');
         return;
     }
-    
-    if (xhr) {
-        xhr.abort();  // Abort any ongoing request
-        xhr = null;  // Reset the xhr variable
-    }
 
-    const deviceName = document.getElementById('deviceSelectChat').value;
     if (!deviceName || deviceName === "Select a device") {
         alert("Select a device first!");
         return;
     }
 
-    const formData = new FormData();
-    formData.append('file', file);
-    xhr = new XMLHttpRequest();
-    xhr.open('POST', `/send_file_to_device?device=${deviceName}`, true);
+    const updateProgressBar = (percentComplete) => {
+        progressBar.style.width = percentComplete + '%';
+        progressBar.textContent = `${Math.round(percentComplete)}%`;
+    };
 
-    xhr.upload.onprogress = function(event) {
-        if (event.lengthComputable) {
-            const percentComplete = (event.loaded / event.total) * 100;
-            const progressBar = document.querySelector('.modal-body .progress-bar');
-            progressBar.style.width = percentComplete + '%';
-            progressBar.textContent = Math.round(percentComplete) + '%';
+    // Function to upload a file directly without chunking
+    const directUpload = () => {
+        const formData = new FormData();
+        formData.append('file', file);
+        xhr = new XMLHttpRequest(); // Use xhr from outer scope
+        xhr.open('POST', `/send_file_to_device?device=${deviceName}`, true);
+
+        xhr.upload.onprogress = function(event) {
+            if (event.lengthComputable) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                updateProgressBar(percentComplete); // Update progress bar
+            }
+        };
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                updateProgressBar(100); // Ensure 100% is shown at completion
+                document.getElementById('file-info').textContent += ' - Upload complete'; // Update file info with upload status
+                setTimeout(() => {
+                    progressBar.style.width = '0%';
+                    progressBar.textContent = '0%';
+                }, 2000);
+            } else {
+                console.error("Server returned an error:", xhr.responseText);
+                progressBar.textContent = 'Upload failed'; // Update progress bar
+                document.getElementById('file-info').textContent += ' - Upload failed'; // Update file info with upload status
+            }
+        };
+
+        xhr.onerror = function() {
+            console.error('Upload failed due to a network error.');
+            progressBar.textContent = 'Upload failed'; // Update progress bar
+            document.getElementById('file-info').textContent += ' - Upload failed'; // Update file info with upload status
+        };
+
+        xhr.send(formData);
+    };
+
+    // Function to handle the upload of each chunk
+    const uploadChunk = (chunk, chunkNumber, totalChunks) => {
+        return new Promise((resolve, reject) => {
+            const xhrChunk = new XMLHttpRequest();
+            const formData = new FormData();
+            formData.append('file', chunk);
+            formData.append('chunkNumber', chunkNumber);
+            formData.append('totalChunks', totalChunks);
+            formData.append('deviceName', deviceName);
+            formData.append('filename', file.name);
+
+            xhrChunk.open('POST', `/send_file_chunk?device=${deviceName}`, true);
+
+            xhrChunk.onload = function() {
+                if (xhrChunk.status === 200) {
+                    resolve(xhrChunk.responseText);
+                } else {
+                    reject(xhrChunk.responseText);
+                }
+            };
+
+            xhrChunk.onerror = function() {
+                reject('Upload failed due to a network error.');
+            };
+
+            xhrChunk.send(formData);
+        });
+    };
+
+    // Function to handle splitting and uploading file in chunks
+    const uploadInChunks = async () => {
+        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+        let uploadedChunks = 0;
+        
+        for (let i = 0; i < totalChunks; i++) {
+            const start = i * CHUNK_SIZE;
+            const end = Math.min(file.size, start + CHUNK_SIZE);
+            const chunk = file.slice(start, end);
+
+            try {
+                await uploadChunk(chunk, i + 1, totalChunks);
+                uploadedChunks++;
+                const percentComplete = (uploadedChunks / totalChunks) * 100;
+                updateProgressBar(percentComplete); // Update progress bar
+            } catch (error) {
+                console.error(`Error uploading chunk ${i + 1}: ${error}`);
+                progressBar.textContent = `Error uploading chunk ${i + 1}`; // Update progress bar
+                break; // Stop uploading further chunks on error
+            }
+        }
+        if (uploadedChunks === totalChunks) {
+            console.log('All chunks uploaded successfully.');
+            updateProgressBar(100); // Ensure 100% is shown at completion
         }
     };
 
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            const progressBar = document.querySelector('.modal-body .progress-bar');
-            progressBar.style.width = '100%';
-            progressBar.textContent = 'Upload complete';
-            appendMessageToChat("Server", `File "${file.name}" sent to ${deviceName}.`, 'server-message');
-            setTimeout(() => {
-                document.querySelector('.progress').style.display = 'none';
-                progressBar.style.width = '0%';
-                progressBar.textContent = '0%';
-            }, 2000);
-
-            // Append a message to the chatbox indicating the file has been sent
-            
-            toggleModal('filePreviewModal', false);
-
-        } else {
-            console.error("Server returned an error:", xhr.responseText);
-            resetFilePreviewAndInput();
-        }
-    };
-
-    xhr.onerror = function() {
-        console.error('Upload failed due to a network error.');
-    };
-
-    xhr.send(formData);
-    document.querySelector('.progress').style.display = 'block';
-};
+    // Decide to upload directly or in chunks based on file size
+    if (file.size > MAX_FILE_SIZE) {
+        console.log('File is large, uploading in chunks.');
+        uploadInChunks();
+    } else {
+        console.log('File within limit, uploading directly.');
+        directUpload();
+    }
+}
 
 function cancelUpload() {
     if (xhr) {
-        xhr.abort();  // This stops the request
+        xhr.abort();  // This stops the current request
         const progressBar = document.querySelector('.modal-body .progress-bar');
         progressBar.style.width = '0%';
         progressBar.textContent = 'Upload canceled';
-        document.querySelector('.progress').style.display = 'none';
-
-        // Close the modal and reset relevant UI elements if necessary
-        toggleModal('filePreviewModal', false);
-        resetFilePreviewAndInput();  // Assuming this resets the input form
+        document.getElementById('file-info').textContent += ' - Upload canceled'; // Update file info with upload status
         xhr = null;  // Reset the xhr variable
     }
-}
+};
 
 // Event listener for the file input change event
 document.getElementById('file-input').addEventListener('change', function(e) {
@@ -3197,6 +3304,164 @@ function displayErrorMessage(message) {
     // Example: Update an element's text and show it as a pop-up or in a specific section of your webpage
     alert("Error: " + message); // This is a simple example, you might want to use something more user-friendly
 }
+
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Existing resize functionality
+    const localVideoContainer = document.querySelector('.resizableVideoContainer');
+
+    let isResizing = false;
+
+    // Function to apply the size to the localVideo div
+    window.setSize = function() {
+    let width = document.getElementById('videoWidth').value;
+    let height = document.getElementById('videoHeight').value;
+
+    // Ensure width ends with 'px'
+    if (!width.endsWith('px')) {
+        width += 'px';
+    }
+
+    // Ensure height ends with 'px'
+    if (!height.endsWith('px')) {
+        height += 'px';
+    }
+
+    const video = document.getElementById('localVideo');
+    video.style.width = width;
+    video.style.height = height;
+// Close the modal after setting the size
+}
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+    const videoContainer = document.getElementById('videoContainer');
+    let startX, startY, startWidth, startHeight;
+
+    // Function to handle the drag start
+    function dragMouseDown(e) {
+        if (e.target.className.includes('resize-handle')) {
+            // If the mousedown event is on a resize handle, we don't want to drag
+            return;
+        }
+        e.preventDefault();
+        startX = e.clientX;
+        startY = e.clientY;
+        document.addEventListener('mousemove', elementDrag);
+        document.addEventListener('mouseup', closeDragElement);
+    }
+
+    // Function to handle dragging
+    function elementDrag(e) {
+        e.preventDefault();
+        const dx = startX - e.clientX;
+        const dy = startY - e.clientY;
+        startX = e.clientX;
+        startY = e.clientY;
+        videoContainer.style.top = `${Math.max(0, videoContainer.offsetTop - dy)}px`;
+        videoContainer.style.left = `${Math.max(0, videoContainer.offsetLeft - dx)}px`;
+    }
+
+    // Function to stop dragging
+    function closeDragElement() {
+        document.removeEventListener('mousemove', elementDrag);
+        document.removeEventListener('mouseup', closeDragElement);
+    }
+
+    // Add drag functionality to the video container
+    videoContainer.addEventListener('mousedown', dragMouseDown);
+
+    // Query all resize handles and add mousedown event listener to them for resize functionality
+    document.querySelectorAll('.resize-handle').forEach(handle => {
+        handle.addEventListener('mousedown', resizeMouseDown);
+    });
+
+    function resizeMouseDown(e) {
+        e.preventDefault();
+        // Get the initial cursor position
+        startX = e.clientX;
+        startY = e.clientY;
+
+        // Get the initial size of the video container
+        startWidth = parseInt(document.defaultView.getComputedStyle(videoContainer).width, 10);
+        startHeight = parseInt(document.defaultView.getComputedStyle(videoContainer).height, 10);
+
+        document.addEventListener('mousemove', resizeMouseMove);
+        document.addEventListener('mouseup', resizeMouseUp);
+    }
+
+    function resizeMouseMove(e) {
+        let width = startWidth + (e.clientX - startX);
+        let height = startHeight + (e.clientY - startY);
+
+        // Set minimum size to prevent negative width/height
+        width = Math.max(100, width);
+        height = Math.max(60, height);
+
+        videoContainer.style.width = `${width}px`;
+        videoContainer.style.height = `${height}px`;
+    }
+
+    function resizeMouseUp() {
+        document.removeEventListener('mousemove', resizeMouseMove);
+        document.removeEventListener('mouseup', resizeMouseUp);
+    }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('chatToggle').addEventListener('click', function() {
+        var chatUIContainer = document.getElementById('chatUIContainer');
+        var originalChatUI = document.getElementById('chat-ui-primary');
+        var cloneChatUI;
+
+        if (originalChatUI) {
+            cloneChatUI = originalChatUI.cloneNode(true);
+            chatUIContainer.innerHTML = '';
+            chatUIContainer.appendChild(cloneChatUI);
+        } else {
+            cloneChatUI = originalChatUI; // In case there's no original, use the existing one.
+        }
+
+        cloneChatUI.style.display = 'block';
+        chatUIContainer.classList.toggle('hidden');
+
+        // Reattach event listeners directly to the active chat interface
+        var messageInput = chatUIContainer.querySelector('#message-input');
+        var sendMessageButton = chatUIContainer.querySelector('#send-message');
+        var clearChatButton = chatUIContainer.querySelector('#clear-chat');
+
+        // Function to handle sending messages
+        function sendMessage() {
+            var chatContainer = chatUIContainer.querySelector('#chat-container');
+            var messageContent = messageInput.textContent.trim(); // Get message text, trimming any whitespace
+
+            if (messageContent) { // Only send if there's content
+                var newMessage = document.createElement('div');
+                newMessage.className = 'chat-message device-message';
+                newMessage.textContent = messageContent; // Set text of new message
+                chatContainer.appendChild(newMessage);
+                messageInput.textContent = ''; // Clear input field after sending
+                chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the latest message
+            }
+        }
+
+        // Event listeners for sending a message
+        sendMessageButton.addEventListener('click', sendMessage);
+
+        messageInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) { // Check if Enter is pressed without Shift key
+                event.preventDefault(); // Prevent default to avoid line breaks in contenteditable div
+                sendMessage();
+            }
+        });
+
+        clearChatButton.addEventListener('click', function() {
+            // Logic for clearing the chat
+            var chatContainer = chatUIContainer.querySelector('#chat-container');
+            chatContainer.innerHTML = ''; // Clear chat container
+        });
+    });
+});
 
 
 </script>

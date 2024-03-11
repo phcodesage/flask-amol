@@ -20,6 +20,7 @@ import hashlib
 import base64
 import requests
 import atexit
+import shutil
 from eventlet import wsgi
 
 from eventlet.green import ssl
@@ -52,6 +53,7 @@ load_dotenv()
 # Initialize Flaskctre
 app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = 'uploads'
+app.config['TEMP_FOLDER'] = 'temp'
 app.config['JWT_SECRET_KEY'] = '!!Bird123'
 project_root = os.path.dirname(os.path.abspath(__file__))
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(project_root, 'mydatabase.db')
@@ -722,6 +724,49 @@ def handle_clear_chat():
 def start_video_call(data):
     room_name = data.get('room_name', 'defaultRoom')  # Use a default room name if none provided
     emit('initiate_video_call', {'room_name': room_name}, broadcast=True)
+
+def ensure_folder_exists(folder_path):
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+
+@app.route('/send_file_chunk', methods=['POST'])
+def handle_file_chunk():
+    device_name = request.form.get('deviceName')
+    chunk_number = request.form.get('chunkNumber')
+    total_chunks = request.form.get('totalChunks')
+    original_filename = request.form.get('filename')
+    chunk_file = request.files.get('file')
+
+    if not chunk_file:
+        return jsonify(status='fail', message='No chunk file provided'), 400
+
+    temp_storage_path = os.path.join(app.config['UPLOAD_FOLDER'], app.config['TEMP_FOLDER'], device_name)
+
+    if not os.path.exists(temp_storage_path):
+        os.makedirs(temp_storage_path)
+
+    chunk_filename = f"{original_filename}_part_{chunk_number}"
+    chunk_file.save(os.path.join(temp_storage_path, chunk_filename))
+
+    if len(os.listdir(temp_storage_path)) == int(total_chunks):
+        final_path = os.path.join(app.config['UPLOAD_FOLDER'], original_filename)
+        with open(final_path, 'wb') as outfile:
+            for i in range(1, int(total_chunks) + 1):
+                part_filename = os.path.join(temp_storage_path, f"{original_filename}_part_{i}")
+                with open(part_filename, 'rb') as infile:
+                    shutil.copyfileobj(infile, outfile)
+                os.remove(part_filename)
+        
+        shutil.rmtree(temp_storage_path)  # Clean up the temporary storage directory
+
+        download_url = url_for('download_file', filename=original_filename, _external=True)
+
+        # Emit file information to the targeted device after the file has been reassembled
+        if device_name in device_socket_map:
+            socket_id = device_socket_map[device_name]
+            socketio.emit('receive_file', {'file_path': download_url, 'filename': original_filename}, room=socket_id)
+
+    return jsonify(status='success', message=f'Chunk {chunk_number} of {total_chunks} received'), 200
 
 @app.route('/send_file_to_device', methods=['POST'])
 def send_file_to_device():
