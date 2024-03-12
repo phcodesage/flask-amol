@@ -2466,6 +2466,8 @@ socket.on('receive_file', function(data) {
             link.href = blobURL;
             link.download = filename;
             link.click();
+            // Emit the file received event to the server
+            socket.emit('file_received', {device_name: deviceName, filename: filename});
 
             // Optional: Clean up blob URL after usage to release memory
             setTimeout(() => {

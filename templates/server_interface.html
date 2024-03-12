@@ -805,16 +805,16 @@ fill: #2B641E;
             </div>
     
             <!-- Audio Preview -->
-            <div id="audioPreview" class="py-4"></div>
+            <div id="audioPreview" class="py-4 flex justify-center"></div>
     
             <!-- Modal Footer -->
-            <div class="flex justify-end space-x-2 pt-4">
+            <div class="flex justify-center space-x-2 pt-4">
                 <button class="transition-colors duration-200 ease-in-out px-4 bg-gray-600 p-3 rounded-lg text-white hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-50" onclick="toggleRecordModal(false)">Cancel</button>
                 <button id="sendRecording" class="transition-colors duration-200 ease-in-out px-4 bg-green-600 p-3 rounded-lg text-white hover:bg-green-500 hidden focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50">Send</button>
             </div>
         </div>
     </div>
-                     <!-- Modal for file preview and confirmation -->
+                     
                      <!-- Modal for file preview and confirmation -->
             <div id="filePreviewModal" class="hidden fixed inset-0 bg-black bg-opacity-30 backdrop-filter backdrop-blur-sm flex justify-center items-center">
                 <div class="modal-dialog modal-dialog-centered">
@@ -2021,7 +2021,7 @@ function previewFile() {
             const img = document.createElement('img');
             img.src = URL.createObjectURL(file);
             img.onload = () => { URL.revokeObjectURL(img.src); }; // Free memory when the blob is no longer needed
-            img.classList.add('max-w-full', 'h-auto'); // Adjust these classes as per your styling requirements
+            img.classList.add('max-w-full', 'h-[150px]'); // Adjust these classes as per your styling requirements
             filePreview.appendChild(img);
         } else {
             filePreview.textContent = 'Preview not available for this file type';
@@ -2047,9 +2047,25 @@ function removeSelectedFile() {
     }
 };
 
+socket.on('file_received_ack', function(data) {
+    console.log('Received file_received_ack:', data);  // Additional logging
+    if (data && data.device && data.filename) {
+        const message = `${data.device} has received the file: ${data.filename}`;
+        console.log(message); // Logging the message
+
+        document.getElementById('file-info').textContent = message;
+        
+        setTimeout(() => {
+            toggleModal('filePreviewModal', false);
+        }, 3000);
+    } else {
+        console.error('Invalid data received in file_received_ack:', data);
+    }
+});
+
+
 // Bind click event to file preview area to allow selecting a new file
 document.getElementById('file-preview').addEventListener('click', function() {
-    
     previewFile()
 
 });
@@ -2117,16 +2133,13 @@ function sendFileToDevice(file) {
                 document.getElementById('file-info').textContent += ' - Upload failed'; // Update file info with upload status
             }
         };
-
         xhr.onerror = function() {
             console.error('Upload failed due to a network error.');
             progressBar.textContent = 'Upload failed'; // Update progress bar
             document.getElementById('file-info').textContent += ' - Upload failed'; // Update file info with upload status
         };
-
         xhr.send(formData);
     };
-
     // Function to handle the upload of each chunk
     const uploadChunk = (chunk, chunkNumber, totalChunks) => {
         return new Promise((resolve, reject) => {

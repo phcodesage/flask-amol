@@ -840,20 +840,11 @@ def handle_offer(data):
 
 @socketio.on('file_received')
 def handle_file_received(data):
-    print(f"File {data['filename']} was received by {data['deviceName']}")
-    filename = data['filename']
-    device_name = data['deviceName']
-    original_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    new_path = os.path.join(app.config['UPLOAD_FOLDER'], 'client_uploads', filename)
+    print("Received file_received event:", data)  # Add this line for debugging
+    device_name = data.get('device_name')
+    filename = data.get('filename')
+    emit('file_received_ack', {'device': device_name, 'filename': filename}, broadcast=True)
 
-    ensure_client_upload_folder_exists()
-
-    # Move the file to 'client_uploads' only if it exists in the original path
-    if os.path.exists(original_path):
-        os.rename(original_path, new_path)
-        app.logger.info(f"File {filename} moved to client_uploads after confirmed by {device_name}")
-    else:
-        app.logger.error(f"Failed to move {filename} to client_uploads: file does not exist in the expected directory")
 
 
 @socketio.on('message')
