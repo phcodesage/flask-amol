@@ -265,6 +265,7 @@ a:hover {
 }
 
 .progress {
+    
     background-color: var(--muted);
     transition: background-color 0.5s ease; /* Smooth background transition */
 }
@@ -576,7 +577,7 @@ fill: #2B641E;
                             </select>
                         </li>
                         <li class="px-4 py-2 font-bold">Speaker</li>
-                            <div class="px-4 py-2 w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                            <div class="px-4 py-2 w-full bg-gray-800 rounded-full h-2.5 dark:bg-gray-700">
                                 <div id="micVolume" class="bg-violet-600 h-2.5 rounded-full" style="width: 0%"></div>
                             </div>
                         </li>
@@ -827,12 +828,13 @@ fill: #2B641E;
                             <p id="file-info" class="text-sm text-gray-300"></p> <!-- Place for file information -->
                             <input type="file" id="file-input" class="hidden" onchange="previewFile()">
                             <button type="button" class="btn btn-red-500" onclick="removeSelectedFile()">Remove File</button>
-                            <div class="progress w-full bg-gray-200 rounded h-6 mb-3">
-                                <div class="progressbar bg-purple-700 transition-width duration-500 ease-in-out h-full rounded-full flex justify-center items-center text-center" style="width: 0%;" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                    <div class="text-white" id="progress-text">0%</div>
+                            <div class="progress w-full bg-gray-800 rounded-full h-6 mb-3 relative">
+                                <div class="progressbar bg-purple-700 h-full rounded-full" style="width: 0%; transition: width 0.5s ease;" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="absolute inset-0 flex justify-center items-center">
+                                    <div class="text-white" id="progress-text"></div>
                                 </div>
-                                
                             </div>
+                            
                         </div>
                         <div class="modal-footer border-t border-gray-700 p-4">
                             <button type="button" class="btn btn-red-500" onclick="toggleModal('filePreviewModal', false); cancelUpload()">Cancel</button>
@@ -856,7 +858,8 @@ let localStream = null;
 let callWindow = null;
 let xhr;
 const remoteAudio = document.getElementById('remoteAudio');
-const MAX_FILE_SIZE = 1024 * 1024 * 1024 * 1024; // 1 Terabyte
+const MAX_FILE_SIZE = 90 * 1024 * 1024; // 1 Terabyte
+const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
 const notificationAudio = document.getElementById('notificationSound');
 const messageInput = document.getElementById('message-input');
 const sendMessageButton = document.getElementById('send-message');
@@ -1936,11 +1939,14 @@ function openColorPickerModal() {
 function toggleModal(modalId, show) {
     const modal = document.getElementById(modalId);
     if (show) {
-        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
     } else {
-        modal.style.display = 'none';
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
     }
-}
+};
+
 
 function selectColor(color) {
     // Assuming 'deviceSelectChat' is a selector for choosing a target device
@@ -2077,7 +2083,7 @@ socket.on('file_received_ack', function(data) {
 
 // Bind click event to file preview area to allow selecting a new file
 document.getElementById('file-preview').addEventListener('click', function() {
-    previewFile()
+    previewFile();
 
 });
 
@@ -2096,11 +2102,9 @@ function sendFileToDevicePreview() {
 }}
 // Function to send the file to the server
 function sendFileToDevice(file) {
-    const MAX_FILE_SIZE = 90 * 1024 * 1024; // 90MB
-    const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB
     const deviceName = document.getElementById('deviceSelectChat').value;
     const progressBar = document.querySelector('.progressbar'); // Ensure this selector matches your HTML
-
+    const progressText = document.getElementById('progress-text');
     if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
         alert('The File APIs are not fully supported in this browser.');
         return;
@@ -2111,10 +2115,13 @@ function sendFileToDevice(file) {
         return;
     }
 
-    const updateProgressBar = (percentComplete) => {
-        progressBar.style.width = percentComplete + '%';
-        progressBar.textContent = `${Math.round(percentComplete)}%`;
-    };
+    const updateProgressBar = (percentComplete, remainingMB) => {
+    const progressBar = document.querySelector('.progressbar');
+    const progressText = document.getElementById('progress-text');
+    progressBar.style.width = `${percentComplete}%`; // Update progress bar width
+    progressText.textContent = `${Math.round(percentComplete)}% - ${remainingMB} MB remaining`; // Update text content
+};
+
 
     // Function to upload a file directly without chunking
     const directUpload = () => {
@@ -2124,11 +2131,15 @@ function sendFileToDevice(file) {
         xhr.open('POST', `/send_file_to_device?device=${deviceName}`, true);
 
         xhr.upload.onprogress = function(event) {
-            if (event.lengthComputable) {
-                const percentComplete = (event.loaded / event.total) * 100;
-                updateProgressBar(percentComplete); // Update progress bar
-            }
-        };
+    if (event.lengthComputable) {
+        const percentComplete = (event.loaded / event.total) * 100;
+        const remainingMB = ((event.total - event.loaded) / (1024 * 1024)).toFixed(2);
+        updateProgressBar(percentComplete); // Update progress bar width
+        // Update text to show both percentage and remaining MBs
+        document.getElementById('progress-text').textContent = `${Math.round(percentComplete)}% - ${remainingMB} MB remaining`;
+    }
+};
+
 
         xhr.onload = function() {
             if (xhr.status === 200) {
@@ -2153,59 +2164,69 @@ function sendFileToDevice(file) {
     };
     // Function to handle the upload of each chunk
     const uploadChunk = (chunk, chunkNumber, totalChunks) => {
-        return new Promise((resolve, reject) => {
-            const xhrChunk = new XMLHttpRequest();
-            const formData = new FormData();
-            formData.append('file', chunk);
-            formData.append('chunkNumber', chunkNumber);
-            formData.append('totalChunks', totalChunks);
-            formData.append('deviceName', deviceName);
-            formData.append('filename', file.name);
+    return new Promise((resolve, reject) => {
+        const xhrChunk = new XMLHttpRequest();
+        const formData = new FormData();
+        formData.append('file', chunk);
+        formData.append('chunkNumber', chunkNumber);
+        formData.append('totalChunks', totalChunks);
+        formData.append('deviceName', deviceName);
+        formData.append('filename', file.name);
 
-            xhrChunk.open('POST', `/send_file_chunk?device=${deviceName}`, true);
+        xhrChunk.open('POST', `/send_file_chunk?device=${deviceName}`, true);
 
-            xhrChunk.onload = function() {
-                if (xhrChunk.status === 200) {
-                    resolve(xhrChunk.responseText);
-                } else {
-                    reject(xhrChunk.responseText);
-                }
-            };
+        xhrChunk.onload = function() {
+            if (xhrChunk.status === 200) {
+                resolve(xhrChunk.responseText);
+            } else {
+                reject(xhrChunk.responseText);
+            }
+        };
 
-            xhrChunk.onerror = function() {
-                reject('Upload failed due to a network error.');
-            };
+        xhrChunk.onerror = function() {
+            reject('Upload failed due to a network error.');
+        };
 
-            xhrChunk.send(formData);
-        });
-    };
+        xhrChunk.send(formData);
+    });
+};
 
     // Function to handle splitting and uploading file in chunks
     const uploadInChunks = async () => {
-        const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
-        let uploadedChunks = 0;
-        
-        for (let i = 0; i < totalChunks; i++) {
-            const start = i * CHUNK_SIZE;
-            const end = Math.min(file.size, start + CHUNK_SIZE);
-            const chunk = file.slice(start, end);
+    const totalChunks = Math.ceil(file.size / CHUNK_SIZE);
+    let uploadedChunks = 0;
+    let uploadedBytes = 0; // Keep track of the total uploaded bytes
 
-            try {
-                await uploadChunk(chunk, i + 1, totalChunks);
-                uploadedChunks++;
-                const percentComplete = (uploadedChunks / totalChunks) * 100;
-                updateProgressBar(percentComplete); // Update progress bar
-            } catch (error) {
-                console.error(`Error uploading chunk ${i + 1}: ${error}`);
-                progressBar.textContent = `Error uploading chunk ${i + 1}`; // Update progress bar
-                break; // Stop uploading further chunks on error
-            }
+    console.log(`Starting upload in chunks. Total chunks: ${totalChunks}`);
+
+    for (let i = 0; i < totalChunks; i++) {
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(file.size, start + CHUNK_SIZE);
+        const chunk = file.slice(start, end);
+        console.log(`Uploading chunk ${i + 1} of ${totalChunks} (Size: ${(end - start) / 1024 / 1024} MB)`);
+
+        try {
+            await uploadChunk(chunk, i + 1, totalChunks);
+            uploadedChunks++;
+            uploadedBytes += chunk.size; // Update total uploaded bytes
+            const percentComplete = (uploadedBytes / file.size) * 100; // Calculate percent based on total uploaded bytes
+            const remainingMB = ((file.size - uploadedBytes) / (1024 * 1024)).toFixed(2);
+            console.log(`Chunk ${i + 1} uploaded successfully. Total uploaded: ${uploadedChunks}/${totalChunks}. Progress: ${percentComplete.toFixed(2)}%, ${remainingMB} MB remaining`);
+            updateProgressBar(percentComplete, remainingMB); // Update progress bar and remaining MBs
+        } catch (error) {
+            console.error(`Error uploading chunk ${i + 1}: ${error}`);
+            progressBar.textContent = `Error uploading chunk ${i + 1}`; // Update progress bar text with error message
+            break; // Stop uploading further chunks on error
         }
-        if (uploadedChunks === totalChunks) {
-            console.log('All chunks uploaded successfully.');
-            updateProgressBar(100); // Ensure 100% is shown at completion
-        }
-    };
+    }
+
+    if (uploadedChunks === totalChunks) {
+        console.log('All chunks uploaded successfully.');
+        updateProgressBar(100, 0); // Ensure 100% is shown at completion and no MB remaining
+    } else {
+        console.log(`Upload incomplete. Total uploaded chunks: ${uploadedChunks}/${totalChunks}.`);
+    }
+};
 
     // Decide to upload directly or in chunks based on file size
     if (file.size > MAX_FILE_SIZE) {
@@ -2215,7 +2236,7 @@ function sendFileToDevice(file) {
         console.log('File within limit, uploading directly.');
         directUpload();
     }
-}
+};
 
 function cancelUpload() {
     if (xhr) {

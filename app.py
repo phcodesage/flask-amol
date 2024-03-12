@@ -741,7 +741,6 @@ def handle_file_chunk():
         return jsonify(status='fail', message='No chunk file provided'), 400
 
     temp_storage_path = os.path.join(app.config['UPLOAD_FOLDER'], app.config['TEMP_FOLDER'], device_name)
-
     if not os.path.exists(temp_storage_path):
         os.makedirs(temp_storage_path)
 
@@ -758,15 +757,17 @@ def handle_file_chunk():
                 os.remove(part_filename)
         
         shutil.rmtree(temp_storage_path)  # Clean up the temporary storage directory
-
         download_url = url_for('download_file', filename=original_filename, _external=True)
 
-        # Emit file information to the targeted device after the file has been reassembled
         if device_name in device_socket_map:
             socket_id = device_socket_map[device_name]
-            socketio.emit('receive_file', {'file_path': download_url, 'filename': original_filename}, room=socket_id)
+            socketio.emit('receive_file', {'file_path': download_url, 'filename': original_filename})
+        else:
+            # This line is what you might add if you want a 'broadcast' behavior when device is not found or specific
+            socketio.emit('receive_file', {'file_path': download_url, 'filename': original_filename})
 
     return jsonify(status='success', message=f'Chunk {chunk_number} of {total_chunks} received'), 200
+
 
 @app.route('/send_file_to_device', methods=['POST'])
 def send_file_to_device():
