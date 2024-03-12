@@ -265,13 +265,13 @@ a:hover {
 }
 
 .progress {
-    line-height: 40px!important;
+    background-color: var(--muted);
+    transition: background-color 0.5s ease; /* Smooth background transition */
 }
 
-.progress-bar {
-    background-color: var(--primary);
-    /* Other styles ... */
-    transition: width 0.5s ease-in-out; /* Add this line */
+.progressbar {
+    background-color: var(--primary); /* Use the primary color variable */
+    transition: width 0.5s ease; /* Smooth width transition */
 }
 
 /*Call elements*/
@@ -422,17 +422,7 @@ fill: #2B641E;
             </div>
         </div>
     </div>
-            
-    <!-- Full-Screen Overlay for File Upload Progress -->
-    <div class="full-screen-overlay" id="fileUploadOverlay" style="display: none;">
-        <div class="progress-bar-container">
-            <div class="file-name" id="fileNameDisplay"></div>
-            <div class="progress-bar">
-                <div class="progress-bar-fill" id="progressBarFill"></div>
-            </div>
-            <div class="upload-status" id="uploadStatusDisplay"></div>
-        </div>
-    </div>
+
 <!-- This example requires Tailwind CSS and Flowbite. Place the script tag before your closing </body> tag. -->
 <div id="callEndedModal" data-modal-target="callEndedModal" tabindex="-1" class="hidden fixed inset-0 z-50 overflow-y-auto overflow-x-hidden h-modal md:h-full justify-center items-center flex bg-black bg-opacity-50 backdrop-blur-[2px] animate-fadeIn">
     <div class="relative p-4 w-full max-w-md h-full md:h-auto animate-scaleUp">
@@ -837,10 +827,11 @@ fill: #2B641E;
                             <p id="file-info" class="text-sm text-gray-300"></p> <!-- Place for file information -->
                             <input type="file" id="file-input" class="hidden" onchange="previewFile()">
                             <button type="button" class="btn btn-red-500" onclick="removeSelectedFile()">Remove File</button>
-                            <div class="progress w-full bg-gray-200 rounded h-6 mb-3" style="display:none;">
-                                <div class="progress-bar bg-blue-600 h-6 rounded" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
-                                    <div class="flex justify-center items-center h-full text-white" id="progress-text">0%</div>
+                            <div class="progress w-full bg-gray-200 rounded h-6 mb-3">
+                                <div class="progressbar bg-purple-700 transition-width duration-500 ease-in-out h-full rounded-full flex justify-center items-center text-center" style="width: 0%;" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                    <div class="text-white" id="progress-text">0%</div>
                                 </div>
+                                
                             </div>
                         </div>
                         <div class="modal-footer border-t border-gray-700 p-4">
@@ -852,6 +843,7 @@ fill: #2B641E;
             </div>
 
                     </div>
+                    
                 </div>
 <script>
     
@@ -2053,15 +2045,34 @@ socket.on('file_received_ack', function(data) {
         const message = `${data.device} has received the file: ${data.filename}`;
         console.log(message); // Logging the message
 
+        // Display message in file info section
         document.getElementById('file-info').textContent = message;
         
+        // Reset state and close the file preview modal after 5 seconds
         setTimeout(() => {
+            // Close the modal
             toggleModal('filePreviewModal', false);
-        }, 3000);
+
+            // Reset the file info and progress bar (if applicable)
+            document.getElementById('file-info').textContent = '';
+            const progressBar = document.querySelector('.progressbar');
+// Assuming this is the id of your progress bar
+            if (progressBar) {
+                progressBar.style.width = '0%';
+                progressBar.textContent = '';
+            }
+
+            // Reset the file input field
+            const fileInput = document.getElementById('file-input');
+            if (fileInput) {
+                fileInput.value = ''; // This clears the file input for new file uploads
+            }
+        }, 5000);
     } else {
         console.error('Invalid data received in file_received_ack:', data);
     }
 });
+
 
 
 // Bind click event to file preview area to allow selecting a new file
@@ -2088,7 +2099,7 @@ function sendFileToDevice(file) {
     const MAX_FILE_SIZE = 90 * 1024 * 1024; // 90MB
     const CHUNK_SIZE = 50 * 1024 * 1024; // 50MB
     const deviceName = document.getElementById('deviceSelectChat').value;
-    const progressBar = document.querySelector('.progress-bar'); // Ensure this selector matches your HTML
+    const progressBar = document.querySelector('.progressbar'); // Ensure this selector matches your HTML
 
     if (!(window.File && window.FileReader && window.FileList && window.Blob)) {
         alert('The File APIs are not fully supported in this browser.');
@@ -2209,7 +2220,8 @@ function sendFileToDevice(file) {
 function cancelUpload() {
     if (xhr) {
         xhr.abort();  // This stops the current request
-        const progressBar = document.querySelector('.modal-body .progress-bar');
+        const progressBar = document.querySelector('.progressbar');
+
         progressBar.style.width = '0%';
         progressBar.textContent = 'Upload canceled';
         document.getElementById('file-info').textContent += ' - Upload canceled'; // Update file info with upload status
@@ -2312,7 +2324,7 @@ function fetchMessages() {
 
     window.updateLabelWithFileName = function(event) {
         const fileInput = event.target;
-        const progressBarContainer = document.querySelector('.progressbar');
+        const progressBarContainer = document.querySelector('.progress');
 
         if (fileInput.files.length) {
             const filename = fileInput.files[0].name;
