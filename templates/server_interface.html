@@ -479,10 +479,10 @@ fill: #2B641E;
                 <video id="remoteVideo" class="w-full h-auto max-h-[calc(100%-4rem)] md:max-h-[calc(100%-5rem)] lg:max-h-[calc(100%-6rem)] object-cover border-4 border-violet-600" autoplay></video> <!-- Added border classes -->
             </div>
             <!-- Local Video (Top Right) -->
-            <div class="absolute top-4 right-4 w-full max-w-xs" id="resizableVideoContainer"> <!-- Adjust max-width as needed -->
-                <video id="localVideo" class="w-full aspect-video rounded-lg object-cover border-4 border-violet-600" autoplay muted></video> <!-- Uses aspect-video for 16:9 aspect ratio -->
-                <!-- Resizing handle (optional if you want resizing functionality) -->
-                <div id="dragHandle" class="absolute bottom-0 right-0 bg-violet-600 cursor-se-resize p-2"></div>
+            <div id="videoContainer" class="resizable-container" style="position: absolute; top: 4rem; right: 4rem; width: 250px; height: 150px; background: rgba(0,0,0,0.5); cursor: move;">
+                <video id="localVideo" autoplay muted style="width: 100%; height: 100%;"></video>
+                <!-- Resize Handles -->
+                <div class="resize-handle resize-handle-se" style="position: absolute; bottom: -5px; right: -5px; width: 10px; height: 10px; cursor: nwse-resize;"></div>
             </div>
             
                         <!-- Reconnecting Overlay as a Modal -->
@@ -811,9 +811,12 @@ fill: #2B641E;
                                         <p id="file-info" class="text-sm text-gray-300"></p> <!-- Place for file information -->
                                         <input type="file" id="file-input" class="hidden" onchange="previewFile()">
                                         <button type="button" class="btn btn-red-500" onclick="removeSelectedFile()">Remove File</button>
-                                        <div class="progress mb-3 hidden">
-                                            <div class="progress-bar mb-3 bg-blue-600" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
-                                        </div>
+                                        <div class="progress w-full bg-gray-800 rounded-full h-6 mb-3 relative">
+                                            <div class="progressbar bg-purple-700 h-full rounded-full" style="width: 0%; transition: width 0.5s ease;" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                            <div class="absolute inset-0 flex justify-center items-center">
+                                                <div class="text-white" id="progress-text"></div>
+                                            </div>
+                                        </div>                                     
                                     </div>
                                     <div class="modal-footer border-t border-gray-700 p-4">
                                         <button type="button" class="btn btn-red-500" onclick="toggleModal('filePreviewModal', false); cancelUpload()">Cancel</button>
@@ -822,6 +825,7 @@ fill: #2B641E;
                                 </div>
                             </div>
                         </div>
+                        
 <script>
     
 const socket = io(location.origin)
@@ -1273,14 +1277,10 @@ document.getElementById('message-input').addEventListener('blur', function() {
 
 
 async function startCall() {
+    document.getElementById('callSetupModal').style.display = 'block';
     console.log('clicked startCall!');
-
     if (!peerConnection) setupPeerConnection(); // Ensure the peerConnection is initialized
-
-
     try {
-        // Display the call setup modal allowing users to select devices before starting the call
-          // Request permission from the user to access media devices with specific constraints for Full HD video
     navigator.mediaDevices.getUserMedia({ 
         audio: true, // Request audio without specific constraints, assuming default device and settings
         video: {
@@ -1289,8 +1289,7 @@ async function startCall() {
         }
     })
     .then(stream => {
-        // The user has granted permission to access the media devices
-        
+        // The user has granted permission to access the media devices       
         // Handle the stream, for example by attaching it to a video element
         const videoElement = document.getElementById('localVideo');
         if (videoElement) {
@@ -1304,7 +1303,7 @@ async function startCall() {
                 const audioSelect = document.getElementById('audioSourceSelect');
                 const videoSelect = document.getElementById('videoSourceSelect');
 
-                devices.forEach(device => {
+       devices.forEach(device => {
                     let option = document.createElement('option');
                     option.value = device.deviceId;
                     option.text = device.label || `${device.kind}: ${device.deviceId}`;
@@ -1323,7 +1322,7 @@ async function startCall() {
     });
 
 
-        document.getElementById('callSetupModal').style.display = 'block';
+        
 
         // Listener for the "Start Call" button within the modal
         document.getElementById('startCallButton').addEventListener('click', async () => {
@@ -2090,7 +2089,7 @@ function sendFileToDevice(file) {
         return;
     }
 
-    const updateProgressBar = (percentComplete, remainingMB) => {
+    const updateProgressBar = (percentComplete, remainingMB = 0) => {
     const progressBar = document.querySelector('.progressbar');
     const progressText = document.getElementById('progress-text');
     progressBar.style.width = `${percentComplete}%`; // Update progress bar width
@@ -3430,6 +3429,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+/*
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('chatToggle').addEventListener('click', function() {
         var chatUIContainer = document.getElementById('chatUIContainer');
@@ -3485,7 +3485,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-
+*/
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
 </body>
