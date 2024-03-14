@@ -1907,6 +1907,7 @@ function validateIceServers(iceServers) {
 
 // Socket event listener for offers
 socket.on('offer', async (data) => {
+    
     try {
         if (!peerConnection) {
             setupPeerConnection(); // Initialize peerConnection without acquiring media
@@ -3397,39 +3398,69 @@ document.addEventListener('DOMContentLoaded', function() {
         var messageInput = chatUIContainer.querySelector('#message-input');
         var sendMessageButton = chatUIContainer.querySelector('#send-message');
         var clearChatButton = chatUIContainer.querySelector('#clear-chat');
+        var chatContainer = chatUIContainer.querySelector('#chat-container');
 
         // Function to handle sending messages
         function sendMessage() {
-            var chatContainer = chatUIContainer.querySelector('#chat-container');
             var messageContent = messageInput.textContent.trim(); // Get message text, trimming any whitespace
 
-            if (messageContent) { // Only send if there's content
-                var newMessage = document.createElement('div');
-                newMessage.className = 'chat-message device-message';
-                newMessage.textContent = messageContent; // Set text of new message
-                chatContainer.appendChild(newMessage);
-                messageInput.textContent = ''; // Clear input field after sending
-                chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the latest message
+            if (!messageContent) {
+                // Check if a warning already exists
+                let existingWarning = chatUIContainer.querySelector('.alert-warning');
+                if (existingWarning) {
+                    existingWarning.remove(); // Remove the existing warning
+                }
+
+                // Display a Bootstrap warning if the textarea is empty
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'alert alert-warning mt-2';
+                warningDiv.innerText = 'Message content cannot be empty!';
+                messageInput.parentNode.insertAdjacentElement('afterend', warningDiv);
+
+                // Optional: Auto-hide the warning after a few seconds
+                setTimeout(() => {
+                    warningDiv.remove();
+                }, 3000);
+
+                return; // Do not proceed with sending empty messages
             }
+
+            // Simulating device name retrieval and message sending
+            const nameOfDevice = "{{ device_name }}"; // Replace with actual device name retrieval logic
+            const messageClass = 'device-message';
+
+            // Emitting the message to the server
+            socket.emit('chat_message_to_server', {
+                name: nameOfDevice,
+                message: messageContent,
+                message_class: messageClass
+            });
+
+            // Append message to chat
+            var newMessage = document.createElement('div');
+            newMessage.className = 'chat-message ' + messageClass;
+            newMessage.textContent = messageContent;
+            chatContainer.appendChild(newMessage);
+            messageInput.textContent = ''; // Clear input field after sending
+            chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the latest message
         }
 
         // Event listeners for sending a message
         sendMessageButton.addEventListener('click', sendMessage);
 
         messageInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter' && !event.shiftKey) { // Check if Enter is pressed without Shift key
-                event.preventDefault(); // Prevent default to avoid line breaks in contenteditable div
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
                 sendMessage();
             }
         });
 
         clearChatButton.addEventListener('click', function() {
-            // Logic for clearing the chat
-            var chatContainer = chatUIContainer.querySelector('#chat-container');
             chatContainer.innerHTML = ''; // Clear chat container
         });
     });
 });
+
 
 
 

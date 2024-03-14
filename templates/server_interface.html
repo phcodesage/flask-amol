@@ -750,13 +750,15 @@ fill: #2B641E;
                                     <!-- Messages will be appended here by JavaScript -->
                                 </div>
                             </div>
-                        </div>
-                        <div class="input-group mb-3"> <!-- Use Bootstrap's input group for a better mobile experience -->
-                            <div id="message-input" contenteditable="true" class="form-control" placeholder="Type a message..." aria-label="Type a message" tabindex="0" style="color: rgb(255, 251, 251);"></div>
-                            <div class="input-group-append">
-                                <button id="send-message" class="btn btn-primary" type="button">Send</button>
-                                <button id="clear-chat" class="btn btn-secondary" type="button">Clear</button>
+                            <div class="input-group mb-3"> <!-- Use Bootstrap's input group for a better mobile experience -->
+                                <div id="message-input" contenteditable="true" class="form-control" placeholder="Type a message..." aria-label="Type a message" tabindex="0" contenteditable="true"></div>
+                                <div class="input-group-append">
+                                    <button id="send-message" class="btn btn-primary" type="button">Send</button>
+                                    <button id="clear-chat" class="btn btn-secondary" type="button">Clear</button>
+                                </div>
                             </div>
+                        </div>
+                        
                                         <!-- Server Actions Div -->
                 <div id="serverActions" class="flex flex-wrap justify-center items-center gap-4 sm:flex-nowrap">
                     <!-- Notification Section -->
@@ -785,7 +787,7 @@ fill: #2B641E;
                         <audio id="remoteAudio" autoplay class="hidden"></audio>
                     </div>
                 </div>
-                        </div>
+                        
                         <!-- Remaining code... -->                                      
                         <div id="successMessage" class="alert alert-success d-none">
                             <p></p>
@@ -1003,6 +1005,7 @@ if (!PCConstructor) {
             return peerConnection.setLocalDescription(offer);
         }).then(() => {
             // Here, peerConnection.localDescription contains the offer SDP
+            
             const offerSdp = peerConnection.localDescription.sdp;
             console.log("Offer SDP:", offerSdp);
         }).catch(error => {
@@ -1358,9 +1361,6 @@ async function startCall() {
         console.error('Error accessing media devices.', error);
     });
 
-
-        
-
         // Listener for the "Start Call" button within the modal
         document.getElementById('startCallButton').addEventListener('click', async () => {
             // Retrieve saved device selections from localStorage or current selection
@@ -1390,7 +1390,7 @@ async function startCall() {
             await peerConnection.setLocalDescription(offer);
 
             // Send the offer to the remote peer using your signaling mechanism
-            socket.emit('offer', { offer });
+            socket.emit('offer', { offer, to: deviceName });
 
         }); // Ensures this event listener is only triggered once per page load
 
@@ -1740,15 +1740,18 @@ socket.on('broadcast_message_to_server', function(data) {
     // Use the createMessageElement function to create the message element
     const msg = createMessageElement(messageText, className, data.timestamp);
 
-    // Get the chat container and append the new message element to it
-    const chatContainer = document.getElementById('chat-container');
-    chatContainer.appendChild(msg);
+    // Determine which chat container to use: check if cloneChatUI is active
+    const chatUIContainer = document.getElementById('chatUIContainer');
+    const isCloneActive = !chatUIContainer.classList.contains('hidden'); // 'hidden' is based on your visibility toggle
+    const chatContainer = isCloneActive ? chatUIContainer.querySelector('#chat-container') : document.getElementById('chat-container');
 
+    // Get the chat container and append the new message element to it
+    chatContainer.appendChild(msg);
     // Ensure the element is visible
     msg.style.opacity = 1;
 
     // Scroll the chat container to show the latest message
-    scrollToBottom(); // Make sure this function is defined to scroll the chat box to the bottom
+    chatContainer.scrollTop = chatContainer.scrollHeight;// Make sure this function is defined to scroll the chat box to the bottom
 });
 
 
@@ -3471,8 +3474,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
 document.addEventListener('DOMContentLoaded', function() {
-    document.getElementById('chatToggle').addEventListener('click', function() {
-        var chatUIContainer = document.getElementById('chatUIContainer');
+    var chatUIContainer = document.getElementById('chatUIContainer');
+    var chatToggle = document.getElementById('chatToggle');
+
+    chatToggle.addEventListener('click', function() {
         var originalChatUI = document.getElementById('chat-ui-primary');
         var cloneChatUI;
 
@@ -3494,16 +3499,32 @@ document.addEventListener('DOMContentLoaded', function() {
 
         // Function to handle sending messages
         function sendMessage() {
-            var chatContainer = chatUIContainer.querySelector('#chat-container');
             var messageContent = messageInput.textContent.trim(); // Get message text, trimming any whitespace
+            var targetDevice = selectedDevice;
+
+            if (targetDevice === 'Select a device') {
+                alert('Please select a device to send the message to.'); // Replace this with your warning display logic if necessary
+                return;
+            }
 
             if (messageContent) { // Only send if there's content
+                var chatContainer = chatUIContainer.querySelector('#chat-container');
                 var newMessage = document.createElement('div');
-                newMessage.className = 'chat-message device-message';
-                newMessage.textContent = messageContent; // Set text of new message
+                newMessage.className = 'chat-message server-message';
+                newMessage.textContent = `You: ${messageContent}`; // Set text of new message
                 chatContainer.appendChild(newMessage);
                 messageInput.textContent = ''; // Clear input field after sending
                 chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the latest message
+
+                // Emit the message to the server, specifying the target device
+                socket.emit('chat_message_to_device', {
+                    sender_device: 'Server', // Change this according to your needs
+                    message: messageContent,
+                    target_device: targetDevice,
+                    message_class: 'server-message' // Or any other class you use for styling
+                });
+            } else {
+                alert('Message content cannot be empty!'); // Replace this with your warning display logic if necessary
             }
         }
 
@@ -3524,6 +3545,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 });
+
 
 
 </script>
