@@ -1742,27 +1742,40 @@ socket.on('endCall', function(data) {
     callSetupModal.style.display = 'none';
 });
 
-    socket.on('broadcast_message', function(data) {
-    const messagesList = document.getElementById('chat-container');
+socket.on('broadcast_message', function(data) {
+    console.log('Received message:', data);
 
     // Assuming that 'message_class' is sent correctly from the server,
     // which should be either 'server-message' or 'device-message'.
     const messageClass = data.message_class || 'server-message'; // Fallback to 'server-message' if undefined
 
+    // Define references to both the primary and cloned chat UIs
+    const chatUIContainer = document.getElementById('chatUIContainer');
+    const originalChatUI = document.getElementById('chat-ui-primary');
+
+    // Determine which chat container to use: Check if the original chat UI (primary) is active or hidden
+    const isCloneActive = !chatUIContainer.classList.contains('hidden');
+    const activeChatContainer = isCloneActive ? chatUIContainer.querySelector('#chat-container') : originalChatUI.querySelector('#chat-container');
+
     // Use 'setTimeout' to ensure that the UI update happens after the current execution context.
     setTimeout(function() {
         // Create the message element with the received class
-        const msg = createMessageElement(`${data.sender_device}: ${data.message}`, messageClass, data.timestamp);
-        // Add the 'chat-message' class and the specific class (server or device) for styling
-        msg.classList.add('chat-message', messageClass);
+        const msg = document.createElement('div'); // Assuming direct creation, replace with your actual method if different
+        msg.textContent = `${data.sender_device}: ${data.message}`;
+        msg.className = `chat-message ${messageClass}`; // Apply the classes for styling
+
         // Ensure the message is fully visible (not transparent)
         msg.style.opacity = 1;
-        // Append the new message to the messages list
-        messagesList.appendChild(msg);
+
+        // Append the new message to the active chat container
+        activeChatContainer.appendChild(msg);
+
         // Scroll to the bottom of the chat container to show the new message
-        scrollToBottom();
+        activeChatContainer.scrollTop = activeChatContainer.scrollHeight;
     }, 0);
 });
+
+
 
 socket.on('ice_candidate', async data => {
     try {
