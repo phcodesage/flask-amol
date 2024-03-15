@@ -1885,17 +1885,13 @@ if (!PCConstructor) {
         // Monitoring ICE connection state changes
         peerConnection.oniceconnectionstatechange = () => {
             console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
-            const reconnectingOverlay = document.getElementById('reconnectingOverlay'); // Make sure this element exists in your HTML
             
             if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
                 console.log('WebRTC connection lost. Trying to reconnect...');
-                reconnectingOverlay.style.display = 'block';
-                reconnectingOverlay.textContent = 'Connection Lost. Trying to reconnect...'; // Update this message as needed
 
                 // Here you can implement logic for automatic reconnect or to wait for ICE to recover
                 
             } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
-                reconnectingOverlay.style.display = 'none';
             }
         };
 
@@ -3452,7 +3448,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Append message to chat
             var newMessage = document.createElement('div');
             newMessage.className = 'chat-message ' + messageClass;
-            newMessage.textContent = messageContent;
+            newMessage.textContent = `You: ${messageContent}`;
             chatContainer.appendChild(newMessage);
             messageInput.textContent = ''; // Clear input field after sending
             chatContainer.scrollTop = chatContainer.scrollHeight; // Auto-scroll to the latest message

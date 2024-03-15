@@ -611,7 +611,7 @@ fill: #2B641E;
                     </button>
 
                     <!-- End Call Button -->
-                    <button class="inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold rounded-full p-3" type="button" id="declineCallButton">
+                    <button class="inline-flex items-center justify-center bg-red-600 hover:bg-red-700 text-white font-bold rounded-full p-3" type="button" id="endCallButton">
                         <svg class="w-[22px] h-[22px] text-gray-800 dark:text-white" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 19 18">
                             <path d="M18 13.446a3.02 3.02 0 0 0-.946-1.985l-1.4-1.4a3.054 3.054 0 0 0-4.218 0l-.7.7a.983.983 0 0 1-1.39 0l-2.1-2.1a.983.983 0 0 1 0-1.389l.7-.7a2.98 2.98 0 0 0 0-4.217l-1.4-1.4a2.824 2.824 0 0 0-4.218 0c-3.619 3.619-3 8.229 1.752 12.979C6.785 16.639 9.45 18 11.912 18a7.175 7.175 0 0 0 5.139-2.325A2.9 2.9 0 0 0 18 13.446Z"/>
                             </svg>
@@ -983,13 +983,11 @@ if (!PCConstructor) {
     // Monitoring ICE connection state changes
     peerConnection.oniceconnectionstatechange = () => {
             console.log('ICE Connection State Change:', peerConnection.iceConnectionState);
-            const reconnectingOverlay = document.getElementById('reconnectingOverlay'); // Ensure this element exists in your HTML
+// Ensure this element exists in your HTML
 
             if (peerConnection.iceConnectionState === 'disconnected' || peerConnection.iceConnectionState === 'failed') {
                 console.log('WebRTC connection lost. Ending the call');
-                // Show some overlay or message to inform the user that the connection is trying to reconnect
-                reconnectingOverlay.style.display = 'block';
-                reconnectingOverlay.textContent = 'Connection Lost. Call will end'; // Update this as needed
+
                 resetWebRTCCall();
                 stopLocalMediaStreams(); 
                 document.getElementById('callEndedModal').classList.add('flex');
@@ -997,7 +995,7 @@ if (!PCConstructor) {
                 // Here, instead of ending the call, you can try to implement reconnect logic or wait for automatic ICE restart
             } else if (peerConnection.iceConnectionState === 'connected' || peerConnection.iceConnectionState === 'completed') {
                 // If the connection state recovers to 'connected' or 'completed', hide the overlay
-                reconnectingOverlay.style.display = 'none';
+
             }
         };
 
@@ -3173,7 +3171,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('endCallButton').addEventListener('click', function() {
+    endCallButton.addEventListener('click', function() {
         
         document.getElementById('webCallingUI').style.display = 'none';
         if (localStream) {
@@ -3267,6 +3265,7 @@ document.getElementById('answerCall').addEventListener('click', async () => {
 // Ensures the event listener is invoked only once
 
         document.getElementById('declineCallButton').addEventListener('click', () => {
+            console.log('clicked decline call')
             callSetupModal.style.display = 'none'; // Hide the call setup modal on decline
             socket.emit('declineCall', { reason: 'User declined the call' });
             // Optionally reset or close peer connection if needed
